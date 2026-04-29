@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="PresenceIQ — AI-powered online presence scanner for small businesses." />
-  <title>PresenceIQ — Is Your Business Invisible Online?</title>
+  <meta name="description" content="PresenceScanner — AI-powered online presence scanner for small businesses." />
+  <title>PresenceScanner — Is Your Business Invisible Online?</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -167,7 +167,7 @@ async function runScan(bizName, website, city) {
 }
 
 async function chatReply(history, results, bizName) {
-  const sys = "You are the PresenceIQ AI Advisor helping "+bizName+" improve their online presence. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+". Write like talking to a busy tradesperson. Plain English only. 2-3 short paragraphs max. End with one clear next action.";
+  const sys = "You are the PresenceScanner AI Advisor helping "+bizName+" improve their online presence. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+". Write like talking to a busy tradesperson. Plain English only. 2-3 short paragraphs max. End with one clear next action.";
   const msgs = [{role:"user",content:sys+"\n\nConversation:"},{role:"assistant",content:"Ready to help."},...history];
   return await callClaude(msgs, 500);
 }
@@ -322,7 +322,7 @@ function App(){
   return(
     <div className="wrap">
       <nav className="nav">
-        <div className="logo">PresenceIQ</div>
+        <div className="logo">PresenceScanner</div>
         <span className="badge">Beta</span>
       </nav>
 
