@@ -191,7 +191,7 @@ function Ring({score,c}){
 }
 
 function CatCard({cat}){
-  const [open,setOpen]=useState(false);
+  const [open,setOpen]=useState(true);
   const c=cat.score>=70?"good":cat.score>=40?"warn":"bad";
   return(
     <div className="cat">
