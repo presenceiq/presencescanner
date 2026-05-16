@@ -397,6 +397,9 @@ function App(){
   async function handleScan(){
     if(!bizName.trim()||!city.trim())return;
     setView("loading");setStepIdx(0);
+    if(email.trim()){
+      fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.trim()})}).catch(()=>{});
+    }
     try{
       const data=await runScan(bizName,website,city);
       setResults(data);setView("results");
