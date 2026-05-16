@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Mailchimp is not configured' });
     }
 
-    // Every Mailchimp API key ends in a data-center suffix, e.g. "...-us21"
+    // Every Mailchimp API key ends in a data-center suffix, e.g. "...-us17"
     const dc = apiKey.split('-')[1];
     if (!dc) {
       return res.status(500).json({ error: 'Mailchimp API key is malformed' });
@@ -35,6 +35,10 @@ export default async function handler(req, res) {
     const subscriberHash = crypto.createHash('md5').update(cleanEmail).digest('hex');
     const url = `https://${dc}.api.mailchimp.com/3.0/lists/${audienceId}/members/${subscriberHash}`;
 
+    // status_if_new: 'pending' = DOUBLE OPT-IN. A brand-new contact is added as
+    // "pending" and Mailchimp emails them a confirmation link. They only become
+    // "subscribed" after they click it. We intentionally do NOT send a top-level
+    // "status" field, so an existing contact's status is never overwritten.
     const mcRes = await fetch(url, {
       method: 'PUT',
       headers: {
@@ -43,8 +47,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         email_address: cleanEmail,
-        status_if_new: 'subscribed',
-        status: 'subscribed',
+        status_if_new: 'pending',
         tags: ['presence-scanner'],
       }),
     });
@@ -58,7 +61,7 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(200).json({ subscribed: true });
+    return res.status(200).json({ ok: true, status: data.status || 'pending' });
 
   } catch (e) {
     return res.status(500).json({ error: e.message });
