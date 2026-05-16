@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="PresenceScanner — AI-powered online presence scanner for small businesses." />
-  <title>PresenceScanner — Is Your Business Invisible Online?</title>
+  <meta name="description" content="PresenceIQ — AI-powered online presence scanner for small businesses." />
+  <title>PresenceIQ — Is Your Business Invisible Online?</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -154,8 +154,40 @@ async function callClaude(messages, maxTokens=3000) {
   return d.content.map(b=>b.text||"").join("");
 }
 
+async function getGBPData(bizName, city) {
+  try {
+    const res = await fetch("/api/places", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({bizName, city})
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.found ? data : null;
+  } catch { return null; }
+}
+
 async function runScan(bizName, website, city) {
-  const prompt = "Audit this local business online presence. Return ONLY valid JSON, no other text.\n\nBusiness: "+bizName+"\nWebsite: "+(website||"none")+"\nCity: "+city+"\n\nReturn this JSON:\n{\"overallScore\":50,\"overallGrade\":\"Needs Work\",\"summary\":\"2 sentence summary\",\"topPriority\":\"top action\",\"hasWebsite\":false,\"categories\":[{\"name\":\"Website Health\",\"subtitle\":\"SEO and mobile\",\"icon\":\"🌐\",\"score\":50,\"findings\":[{\"title\":\"finding\",\"detail\":\"detail\",\"status\":\"warn\",\"action\":\"action\"}]},{\"name\":\"Google Business Profile\",\"subtitle\":\"Local ranking power\",\"icon\":\"📍\",\"score\":50,\"findings\":[]},{\"name\":\"AI Search Visibility\",\"subtitle\":\"ChatGPT and Google AI\",\"icon\":\"🤖\",\"score\":50,\"findings\":[]},{\"name\":\"Citation Consistency\",\"subtitle\":\"NAP across the web\",\"icon\":\"📋\",\"score\":50,\"findings\":[]},{\"name\":\"Social Presence\",\"subtitle\":\"Facebook and Instagram\",\"icon\":\"📱\",\"score\":50,\"findings\":[]},{\"name\":\"Review Authority\",\"subtitle\":\"Volume and recency\",\"icon\":\"⭐\",\"score\":50,\"findings\":[]}]}\n\nFill in real values specific to this business. Each category needs 3 findings with title, detail (1 short sentence), status (good/warn/bad), action. Be specific to this business type and location.";
+  // Fetch real GBP data first
+  const gbp = await getGBPData(bizName, city);
+  
+  const gbpContext = gbp ? `
+REAL GOOGLE BUSINESS PROFILE DATA (use this for GBP category — do not guess):
+- GBP Found: Yes
+- Business Name on Google: ${gbp.name}
+- Star Rating: ${gbp.rating || 'No rating yet'}
+- Total Reviews: ${gbp.reviewCount}
+- Address: ${gbp.address || 'Not listed'}
+- Phone: ${gbp.phone || 'Not listed'}
+- Website on GBP: ${gbp.website || 'None'}
+- Has Business Hours Set: ${gbp.hasHours ? 'Yes' : 'No'}
+- Photo Count: ${gbp.photoCount}
+- Business Status: ${gbp.businessStatus || 'Unknown'}
+` : `
+REAL GOOGLE BUSINESS PROFILE DATA: No GBP listing found for this business. Score GBP category very low.
+`;
+
+  const prompt = "Audit this local business online presence. Return ONLY valid JSON, no other text.\n\nBusiness: "+bizName+"\nWebsite: "+(website||"none")+"\nCity: "+city+"\n\n"+gbpContext+"\n\nReturn this JSON:\n{\"overallScore\":50,\"overallGrade\":\"Needs Work\",\"summary\":\"2 sentence summary\",\"topPriority\":\"top action\",\"hasWebsite\":false,\"categories\":[{\"name\":\"Website Health\",\"subtitle\":\"SEO and mobile\",\"icon\":\"🌐\",\"score\":50,\"findings\":[{\"title\":\"finding\",\"detail\":\"detail\",\"status\":\"warn\",\"action\":\"action\"}]},{\"name\":\"Google Business Profile\",\"subtitle\":\"Local ranking power\",\"icon\":\"📍\",\"score\":50,\"findings\":[]},{\"name\":\"AI Search Visibility\",\"subtitle\":\"ChatGPT and Google AI\",\"icon\":\"🤖\",\"score\":50,\"findings\":[]},{\"name\":\"Citation Consistency\",\"subtitle\":\"NAP across the web\",\"icon\":\"📋\",\"score\":50,\"findings\":[]},{\"name\":\"Social Presence\",\"subtitle\":\"Facebook and Instagram\",\"icon\":\"📱\",\"score\":50,\"findings\":[]},{\"name\":\"Review Authority\",\"subtitle\":\"Volume and recency\",\"icon\":\"⭐\",\"score\":50,\"findings\":[]}},{\\"name\\":\\"GEO Score\\",\\"subtitle\\":\\"AI search trust and authority\\",\\"icon\\":\\"\xf0\x9f\xa7\xa0\\",\\"score\\":50,\\"findings\\":[]}]}\n\nFill in real values. Use the REAL GBP DATA above for the Google Business Profile category scores and findings. Be specific. Each category needs 3 findings. For the GEO Score category: assess whether this business would appear if someone asked ChatGPT or Perplexity to recommend a local business in this category and city, whether the website has schema markup and FAQ content that AI systems can cite, and whether enough authoritative external mentions exist for AI to confidently recommend it. Score harshly - most small businesses score under 30 on GEO. Give 3 specific actionable findings with time estimates.";
   const raw = await callClaude([{role:"user",content:prompt}], 3000);
   const clean = raw.replace(/```json|```/g,"").trim();
   try { return JSON.parse(clean); }
@@ -167,7 +199,7 @@ async function runScan(bizName, website, city) {
 }
 
 async function chatReply(history, results, bizName) {
-  const sys = "You are the PresenceScanner AI Advisor helping "+bizName+" improve their online presence. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+". Write like talking to a busy tradesperson. Plain English only. 2-3 short paragraphs max. End with one clear next action.";
+  const sys = "You are the PresenceIQ AI Advisor helping "+bizName+" improve their online presence. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+". Write like talking to a busy tradesperson. Plain English only. 2-3 short paragraphs max. End with one clear next action.";
   const msgs = [{role:"user",content:sys+"\n\nConversation:"},{role:"assistant",content:"Ready to help."},...history];
   return await callClaude(msgs, 500);
 }
@@ -250,6 +282,61 @@ function AffCards({results,bizName}){
   );
 }
 
+
+function AlgorithmFeed({bizType, city}) {
+  const [news, setNews] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    async function fetchNews() {
+      setLoading(true);
+      try {
+        const prompt = "You are a local SEO and AI search expert. List the 3 most important recent changes to Google local search and AI search visibility (ChatGPT, Perplexity, Google AI) affecting a " + bizType + " business in " + city + ". Plain English only. Format as JSON array: [{title, change, action}]. Return only valid JSON.";
+        const res = await fetch("/api/scan", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:prompt}]})
+        });
+        const data = await res.json();
+        const text = data.content.map(b => b.text || "").join("");
+        const clean = text.replace(/```json|```/g,"").trim();
+        setNews(JSON.parse(clean));
+      } catch(e) { setNews(null); }
+      setLoading(false);
+    }
+    fetchNews();
+  }, []);
+
+  if(loading) return (
+    <div style={{background:"var(--s1)",border:"1px solid var(--b1)",borderRadius:16,padding:20,marginBottom:16}}>
+      <div style={{fontSize:"0.8rem",color:"var(--t2)"}}>Loading algorithm updates...</div>
+    </div>
+  );
+  if(!news) return null;
+
+  return (
+    <div style={{background:"var(--s1)",border:"1px solid rgba(124,58,237,0.3)",borderRadius:16,overflow:"hidden",marginBottom:16}}>
+      <div style={{padding:"14px 20px",borderBottom:"1px solid var(--b1)",display:"flex",alignItems:"center",gap:10,background:"rgba(124,58,237,0.05)"}}>
+        <span style={{fontSize:16}}>{"\u26a1"}</span>
+        <div>
+          <div style={{fontFamily:"var(--fh)",fontSize:"0.9rem",fontWeight:700}}>What Changed This Month</div>
+          <div style={{fontSize:"0.72rem",color:"var(--t2)"}}>Latest algorithm updates affecting your business</div>
+        </div>
+        <span style={{marginLeft:"auto",fontSize:"0.68rem",color:"#7c3aed",background:"rgba(124,58,237,0.1)",border:"1px solid rgba(124,58,237,0.2)",borderRadius:100,padding:"2px 8px",fontWeight:700}}>LIVE</span>
+      </div>
+      <div style={{padding:"4px 20px 16px"}}>
+        {news.map((item,i) => (
+          <div key={i} style={{padding:"12px 0",borderBottom:i<news.length-1?"1px solid rgba(30,45,69,0.35)":"none"}}>
+            <div style={{fontFamily:"var(--fh)",fontSize:"0.85rem",fontWeight:700,marginBottom:4,color:"var(--cyan)"}}>{item.title}</div>
+            <div style={{fontSize:"0.78rem",color:"var(--t2)",lineHeight:1.65,marginBottom:6}}>{item.change}</div>
+            <div style={{fontSize:"0.76rem",color:"var(--green)",lineHeight:1.55}}>{"\u2192"} {item.action}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Chat({results,bizName}){
   const [msgs,setMsgs]=useState([{r:"ai",t:"Hi! I just finished scanning "+bizName+". Your biggest win right now: "+results.topPriority+" — want me to walk you through exactly how to fix that first?"}]);
   const [input,setInput]=useState("");
@@ -322,15 +409,15 @@ function App(){
   return(
     <div className="wrap">
       <nav className="nav">
-        <div className="logo">PresenceScanner</div>
+        <div className="logo">PresenceIQ</div>
         <span className="badge">Beta</span>
       </nav>
 
       {view==="form"&&(
         <div className="hero">
           <div className="eyebrow"><span className="dot"/>AI-Powered Presence Scanner</div>
-          <h1>Is Your Business<br/><span className="grad">Invisible Online?</span></h1>
-          <p className="sub">Scan your entire online presence in seconds — Google, ChatGPT, social media, directories. We tell you exactly what to fix first. No tech knowledge needed.</p>
+          <h1>Is Your Business<br/><span className="grad">Invisible to AI?</span></h1>
+          <p className="sub">AI search has changed everything. When someone asks ChatGPT or Google AI to recommend a local business, does yours appear? Find out in 30 seconds — free.</p>
           <div className="card">
             <div className="field"><label>Business Name *</label>
               <input value={bizName} onChange={e=>setBizName(e.target.value)} placeholder="e.g. Joe's Plumbing & Drain"/></div>
@@ -383,6 +470,7 @@ function App(){
             </div>
           </div>
           <Chat results={results} bizName={bizName}/>
+          <AlgorithmFeed bizType={results.categories?.[0]?.findings?.[0]?.title || bizName} city={city}/>
           <AffCards results={results} bizName={bizName}/>
           <div className="cats">{results.categories?.map((cat,i)=><CatCard key={i} cat={cat}/>)}</div>
           <button className="rescan" onClick={reset}>← Scan Another Business</button>
