@@ -432,6 +432,10 @@ function App(){
   const [results,setResults]=useState(null);
   const [pendingMatch,setPendingMatch]=useState(null);
   const [errMsg,setErrMsg]=useState("");
+  // --- "Help us find your business" step (self-contained) ---
+  const [fhName,setFhName]=useState("");
+  const [fhAddress,setFhAddress]=useState("");
+  const [fhPhone,setFhPhone]=useState("");
 
   useEffect(()=>{
     if(view!=="loading")return;
@@ -470,8 +474,41 @@ function App(){
     }catch(e){setErrMsg(e.message);setView("error");}
   }
 
-  // User said none of the listed businesses are theirs — scan with no GBP.
-  async function pickNone(){
+  // User said none of the listed businesses are theirs.
+  // Instead of scanning blind, take them to the "help us find your business" step.
+  function pickNone(){
+    // Pre-fill the name field with what they already typed, as a convenience.
+    setFhName(bizName||"");
+    setFhAddress("");
+    setFhPhone(phone||"");
+    setView("findhelp");
+  }
+
+  // --- "Help us find your business" step handlers (self-contained) ---
+  // The user gave us their business details directly. Build a GBP-style
+  // object from what they entered and scan with it. This bypasses Google's
+  // search entirely — the user is telling us their business directly.
+  async function findHelpSubmit(){
+    if(!fhName.trim())return;
+    setView("loading");setStepIdx(0);
+    try{
+      const manualGBP={
+        name:fhName.trim(),
+        address:fhAddress.trim()||null,
+        phone:fhPhone.trim()||null,
+        rating:null,reviewCount:0,website:null,
+        hasHours:false,isOpen:null,photoCount:0,
+        businessStatus:null,types:[],
+        userProvided:true
+      };
+      const data=await runScan(bizName,website,city,phone,manualGBP);
+      setResults(data);setView("results");
+    }catch(e){setErrMsg(e.message);setView("error");}
+  }
+
+  // The user confirmed they have no Google listing at all.
+  // Scan with no GBP — this produces the honest "you're invisible" result.
+  async function findHelpNoListing(){
     setView("loading");setStepIdx(0);
     try{
       const data=await runScan(bizName,website,city,phone,null);
@@ -479,7 +516,7 @@ function App(){
     }catch(e){setErrMsg(e.message);setView("error");}
   }
 
-  function reset(){setView("form");setResults(null);setErrMsg("");setPendingMatch(null);}
+  function reset(){setView("form");setResults(null);setErrMsg("");setPendingMatch(null);setFhName("");setFhAddress("");setFhPhone("");}
   const sc=results?(results.overallScore>=70?"good":results.overallScore>=40?"warn":"bad"):"warn";
 
   return(
@@ -545,7 +582,27 @@ function App(){
                 </div>
               ))}
             </div>
-            <button className="rescan" style={{width:"100%"}} onClick={pickNone}>None of these — my business isn't on Google</button>
+            <button className="rescan" style={{width:"100%"}} onClick={pickNone}>None of these — help me find my business</button>
+          </div>
+        </div>
+      )}
+
+      {/* --- "Help us find your business" step (self-contained view) --- */}
+      {view==="findhelp"&&(
+        <div className="pad">
+          <div className="card" style={{maxWidth:560,margin:"0 auto"}}>
+            <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Help us find your business</h2>
+            <p className="sub" style={{marginTop:6}}>We couldn't confidently match your business in Google's results. Enter your details directly so your report is accurate — the more precise, the better the results.</p>
+            <div style={{margin:"14px 0"}}>
+              <div className="field"><label>Exact Business Name *</label>
+                <input value={fhName} onChange={e=>setFhName(e.target.value)} placeholder="Exactly as it appears on Google"/></div>
+              <div className="field"><label>Business Address</label>
+                <input value={fhAddress} onChange={e=>setFhAddress(e.target.value)} placeholder="Street, City, State"/></div>
+              <div className="field"><label>Business Phone</label>
+                <input value={fhPhone} onChange={e=>setFhPhone(e.target.value)} placeholder="e.g. (941) 662-9941"/></div>
+            </div>
+            <button className="sbtn" onClick={findHelpSubmit} disabled={!fhName.trim()}>Scan with these details</button>
+            <button className="rescan" style={{marginTop:10,width:"100%"}} onClick={findHelpNoListing}>I don't have a Google Business Profile</button>
           </div>
         </div>
       )}
