@@ -436,6 +436,8 @@ function App(){
   const [fhName,setFhName]=useState("");
   const [fhAddress,setFhAddress]=useState("");
   const [fhPhone,setFhPhone]=useState("");
+  const [fhMapsUrl,setFhMapsUrl]=useState("");
+  const [fhErr,setFhErr]=useState("");
 
   useEffect(()=>{
     if(view!=="loading")return;
@@ -485,9 +487,37 @@ function App(){
   }
 
   // --- "Help us find your business" step handlers (self-contained) ---
-  // The user gave us their business details directly. Build a GBP-style
-  // object from what they entered and scan with it. This bypasses Google's
-  // search entirely — the user is telling us their business directly.
+
+  // BEST PATH: the user pasted their Google Maps link. We send it to
+  // resolveplace.js, which reads the business ID out of the link and
+  // fetches the REAL listing — real reviews, photos, hours.
+  async function findHelpFromLink(){
+    if(!fhMapsUrl.trim())return;
+    setFhErr("");
+    setView("loading");setStepIdx(0);
+    try{
+      const res=await fetch("/api/resolveplace",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({mapsUrl:fhMapsUrl.trim()})
+      });
+      const gbp=await res.json();
+      if(gbp&&gbp.found){
+        const data=await runScan(bizName,website,city,phone,gbp);
+        setResults(data);setView("results");
+      }else{
+        // Couldn't read the link — send them back to try again / use fallback.
+        setFhErr((gbp&&gbp.message)||"We couldn't read that link. Try the full Google listing URL, or enter your details below.");
+        setView("findhelp");
+      }
+    }catch(e){
+      setFhErr("Something went wrong reading that link. Please try again, or enter your details below.");
+      setView("findhelp");
+    }
+  }
+
+  // FALLBACK: the user typed their details by hand. Honest limitation —
+  // this identifies the business but cannot pull real reviews/photos,
+  // so the GBP portion of the report is marked as user-provided.
   async function findHelpSubmit(){
     if(!fhName.trim())return;
     setView("loading");setStepIdx(0);
@@ -516,7 +546,7 @@ function App(){
     }catch(e){setErrMsg(e.message);setView("error");}
   }
 
-  function reset(){setView("form");setResults(null);setErrMsg("");setPendingMatch(null);setFhName("");setFhAddress("");setFhPhone("");}
+  function reset(){setView("form");setResults(null);setErrMsg("");setPendingMatch(null);setFhName("");setFhAddress("");setFhPhone("");setFhMapsUrl("");setFhErr("");}
   const sc=results?(results.overallScore>=70?"good":results.overallScore>=40?"warn":"bad"):"warn";
 
   return(
@@ -592,17 +622,37 @@ function App(){
         <div className="pad">
           <div className="card" style={{maxWidth:560,margin:"0 auto"}}>
             <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Help us find your business</h2>
-            <p className="sub" style={{marginTop:6}}>We couldn't confidently match your business in Google's results. Enter your details directly so your report is accurate — the more precise, the better the results.</p>
-            <div style={{margin:"14px 0"}}>
-              <div className="field"><label>Exact Business Name *</label>
-                <input value={fhName} onChange={e=>setFhName(e.target.value)} placeholder="Exactly as it appears on Google"/></div>
-              <div className="field"><label>Business Address</label>
-                <input value={fhAddress} onChange={e=>setFhAddress(e.target.value)} placeholder="Street, City, State"/></div>
-              <div className="field"><label>Business Phone</label>
-                <input value={fhPhone} onChange={e=>setFhPhone(e.target.value)} placeholder="e.g. (941) 662-9941"/></div>
+            <p className="sub" style={{marginTop:6}}>We couldn't confidently match your business. The most accurate way to fix this is to paste a link to your Google listing.</p>
+
+            {fhErr&&<div className="err" style={{margin:"10px 0"}}>{fhErr}</div>}
+
+            {/* PRIMARY PATH: paste the Google Maps link */}
+            <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
+              <div style={{fontWeight:700,marginBottom:6}}>Paste your Google listing link <span style={{opacity:0.55,fontWeight:400}}>(best — gets your real reviews & photos)</span></div>
+              <div style={{fontSize:"0.84rem",opacity:0.7,marginBottom:10,lineHeight:1.5}}>
+                On Google, find your business, tap the <strong>three dots ( ⋮ )</strong> menu, choose <strong>Share</strong>, then copy the link it gives you and paste it here.
+              </div>
+              <div className="field" style={{marginBottom:10}}>
+                <input value={fhMapsUrl} onChange={e=>setFhMapsUrl(e.target.value)} placeholder="Paste your Google listing link here"/></div>
+              <button className="sbtn" onClick={findHelpFromLink} disabled={!fhMapsUrl.trim()}>Find my business from this link</button>
             </div>
-            <button className="sbtn" onClick={findHelpSubmit} disabled={!fhName.trim()}>Scan with these details</button>
-            <button className="rescan" style={{marginTop:10,width:"100%"}} onClick={findHelpNoListing}>I don't have a Google Business Profile</button>
+
+            {/* FALLBACK: type details by hand */}
+            <details style={{margin:"14px 0"}}>
+              <summary style={{cursor:"pointer",opacity:0.75,fontSize:"0.9rem"}}>Don't have a link? Enter your details by hand instead</summary>
+              <div style={{marginTop:12}}>
+                <p className="sub" style={{fontSize:"0.84rem",marginTop:0}}>Note: entered by hand, we can't verify your Google reviews or photos, so that part of your report will be limited.</p>
+                <div className="field"><label>Exact Business Name *</label>
+                  <input value={fhName} onChange={e=>setFhName(e.target.value)} placeholder="Exactly as it appears on Google"/></div>
+                <div className="field"><label>Business Address</label>
+                  <input value={fhAddress} onChange={e=>setFhAddress(e.target.value)} placeholder="Street, City, State"/></div>
+                <div className="field"><label>Business Phone</label>
+                  <input value={fhPhone} onChange={e=>setFhPhone(e.target.value)} placeholder="e.g. (941) 662-9941"/></div>
+                <button className="sbtn" onClick={findHelpSubmit} disabled={!fhName.trim()}>Scan with these details</button>
+              </div>
+            </details>
+
+            <button className="rescan" style={{marginTop:6,width:"100%"}} onClick={findHelpNoListing}>I don't have a Google Business Profile</button>
           </div>
         </div>
       )}
