@@ -176,9 +176,22 @@ async function getGBPData(bizName, city) {
   } catch { return null; }
 }
 
+async function getSiteData(website) {
+  try {
+    const res = await fetch("/api/fetchsite", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ website })
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
 async function runScan(bizName, website, city) {
-  // Fetch real GBP data first
+  // Fetch real GBP data AND real website data first
   const gbp = await getGBPData(bizName, city);
+  const site = await getSiteData(website);
   
   const gbpContext = gbp ? `
 REAL GOOGLE BUSINESS PROFILE DATA (use this for GBP category — do not guess):
@@ -196,7 +209,23 @@ REAL GOOGLE BUSINESS PROFILE DATA (use this for GBP category — do not guess):
 REAL GOOGLE BUSINESS PROFILE DATA: No GBP listing found for this business. Score GBP category very low.
 `;
 
-  const prompt = "Audit this local business online presence. Return ONLY valid JSON, no other text.\n\nBusiness: "+bizName+"\nWebsite: "+(website||"none")+"\nCity: "+city+"\n\n"+gbpContext+"\n\nReturn this JSON:\n{\"overallScore\":50,\"overallGrade\":\"Needs Work\",\"summary\":\"2 sentence summary\",\"topPriority\":\"top action\",\"hasWebsite\":false,\"categories\":[{\"name\":\"Website Health\",\"subtitle\":\"SEO and mobile\",\"icon\":\"🌐\",\"score\":50,\"findings\":[{\"title\":\"finding\",\"detail\":\"detail\",\"status\":\"warn\",\"action\":\"action\"}]},{\"name\":\"Google Business Profile\",\"subtitle\":\"Local ranking power\",\"icon\":\"📍\",\"score\":50,\"findings\":[]},{\"name\":\"AI Search Visibility\",\"subtitle\":\"ChatGPT and Google AI\",\"icon\":\"🤖\",\"score\":50,\"findings\":[]},{\"name\":\"Citation Consistency\",\"subtitle\":\"NAP across the web\",\"icon\":\"📋\",\"score\":50,\"findings\":[]},{\"name\":\"Social Presence\",\"subtitle\":\"Facebook and Instagram\",\"icon\":\"📱\",\"score\":50,\"findings\":[]},{\"name\":\"Review Authority\",\"subtitle\":\"Volume and recency\",\"icon\":\"⭐\",\"score\":50,\"findings\":[]},{\"name\":\"GEO Score\",\"subtitle\":\"AI search trust and authority\",\"icon\":\"🧠\",\"score\":50,\"findings\":[]}]}\n\nFill in real values. Use the REAL GBP DATA above for the Google Business Profile category scores and findings. Be specific. Each category needs 3 findings. For the GEO Score category: assess whether this business would appear if someone asked ChatGPT or Perplexity to recommend a local business in this category and city, whether the website has schema markup and FAQ content that AI systems can cite, and whether enough authoritative external mentions exist for AI to confidently recommend it. Score harshly - most small businesses score under 30 on GEO. Give 3 specific actionable findings with time estimates.";
+  const siteContext = (site && site.fetched) ? `
+REAL WEBSITE DATA (use this for Website Health, AI Search Visibility, and GEO Score — do not guess):
+- Website reachable: Yes
+- Page title: ${site.title || '(none found)'}
+- Meta description: ${site.metaDescription || '(none found)'}
+- Has structured data / schema markup: ${site.hasSchema ? 'Yes' : 'No'}
+- Mobile viewport tag present: ${site.hasViewport ? 'Yes' : 'No'}
+- H1 headings: ${site.h1Count}, H2 headings: ${site.h2Count}
+- Has FAQ content: ${site.hasFAQ ? 'Yes' : 'No'}
+- Links to Facebook: ${site.hasFacebook ? 'Yes' : 'No'}, Links to Instagram: ${site.hasInstagram ? 'Yes' : 'No'}
+- Approx word count on homepage: ${site.wordCount}
+- Text sample from homepage: ${site.textSample || '(none)'}
+` : `
+REAL WEBSITE DATA: The website could not be analyzed (no website given, or the site blocked automated access). For Website Health, score low and note in the findings that the website could not be reached for analysis.
+`;
+
+  const prompt = "You are auditing a local business's online presence. Use ONLY the real data provided below. Do NOT invent facts. Return ONLY valid JSON, no other text.\n\nBusiness: "+bizName+"\nWebsite: "+(website||"none")+"\nCity: "+city+"\n\n"+gbpContext+"\n"+siteContext+"\n\nReturn this JSON:\n{\"overallScore\":50,\"overallGrade\":\"Needs Work\",\"summary\":\"2 sentence summary\",\"topPriority\":\"top action\",\"hasWebsite\":false,\"categories\":[{\"name\":\"Website Health\",\"subtitle\":\"SEO and mobile\",\"icon\":\"🌐\",\"score\":50,\"findings\":[{\"title\":\"finding\",\"detail\":\"detail\",\"status\":\"warn\",\"action\":\"action\"}]},{\"name\":\"Google Business Profile\",\"subtitle\":\"Local ranking power\",\"icon\":\"📍\",\"score\":50,\"findings\":[]},{\"name\":\"AI Search Visibility\",\"subtitle\":\"ChatGPT and Google AI\",\"icon\":\"🤖\",\"score\":50,\"findings\":[]},{\"name\":\"Citation Consistency\",\"subtitle\":\"NAP across the web\",\"icon\":\"📋\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Social Presence\",\"subtitle\":\"Facebook and Instagram\",\"icon\":\"📱\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Review Authority\",\"subtitle\":\"Volume and recency\",\"icon\":\"⭐\",\"score\":50,\"findings\":[]},{\"name\":\"GEO Score\",\"subtitle\":\"AI search trust and authority\",\"icon\":\"🧠\",\"score\":50,\"findings\":[]}]}\n\nSCORING RULES:\n- Score these FIVE categories with real numbers 0-100 based strictly on the real data above: Website Health, Google Business Profile, AI Search Visibility, Review Authority, GEO Score. Vary the scores honestly — a business with schema, FAQ, good word count and strong reviews should score well; one missing those should score low. Do NOT give every category a similar number.\n- For Citation Consistency and Social Presence: these are NOT measured yet. Keep score as -1 and comingSoon as true exactly as shown. Give each ONE finding with title 'Coming soon', a short detail explaining full citation/social analysis is being added, status 'warn', and no action. Do not invent a score for these two.\n- overallScore must be the average of ONLY the five real scored categories (ignore the two coming-soon ones).\n- Use the REAL GBP DATA for the Google Business Profile category. Use the REAL WEBSITE DATA for Website Health, AI Search Visibility and GEO Score.\n- Each of the five scored categories needs exactly 3 specific findings based on the real data. Be concrete — reference actual things found or missing.\n- For GEO Score: assess whether ChatGPT or Perplexity would recommend this business, based on whether the real website data shows schema markup and FAQ content AI can cite. Score harshly — most small businesses score under 35 on GEO.";
   const raw = await callClaude([{role:"user",content:prompt}], 3000);
   const clean = raw.replace(/```json|```/g,"").trim();
   try { return JSON.parse(clean); }
@@ -233,15 +262,22 @@ function Ring({score,c}){
 
 function CatCard({cat}){
   const [open,setOpen]=useState(true);
-  const c=cat.score>=70?"good":cat.score>=40?"warn":"bad";
+  const soon=cat.comingSoon||cat.score<0;
+  const c=soon?"warn":(cat.score>=70?"good":cat.score>=40?"warn":"bad");
   return(
     <div className="cat">
       <div className="chead" onClick={()=>setOpen(o=>!o)}>
         <div className={`cico ${c}-bg`}>{cat.icon}</div>
         <div className="cmeta"><h3>{cat.name}</h3><span>{cat.subtitle}</span></div>
         <div className="cright">
-          <div className="bw"><div className={`bf ${c}-b`} style={{width:cat.score+"%"}}/></div>
-          <span className={`cpct ${c}`}>{cat.score}%</span>
+          {soon?(
+            <span className={`cpct warn`} style={{fontSize:"0.7rem",fontWeight:700}}>Coming soon</span>
+          ):(
+            <>
+              <div className="bw"><div className={`bf ${c}-b`} style={{width:cat.score+"%"}}/></div>
+              <span className={`cpct ${c}`}>{cat.score}%</span>
+            </>
+          )}
           <span className={`chev ${open?"open":""}`}>▼</span>
         </div>
       </div>
