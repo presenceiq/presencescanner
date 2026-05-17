@@ -163,7 +163,7 @@ async function callClaude(messages, maxTokens=3000) {
   return d.content.map(b=>b.text||"").join("");
 }
 
-async function getGBPData(bizName, city, phone, website) {
+async function getCandidates(bizName, city, phone, website) {
   try {
     const res = await fetch("/api/places", {
       method: "POST",
@@ -171,8 +171,7 @@ async function getGBPData(bizName, city, phone, website) {
       body: JSON.stringify({bizName, city, phone, website})
     });
     if (!res.ok) return null;
-    const data = await res.json();
-    return data.found ? data : null;
+    return await res.json();
   } catch { return null; }
 }
 
@@ -188,17 +187,9 @@ async function getSiteData(website) {
   } catch { return null; }
 }
 
-async function runScan(bizName, website, city, phone, gbpOverride) {
-  // Use a pre-fetched GBP result if given. gbpOverride can be:
-  //   undefined  -> fetch it now (normal path)
-  //   null       -> caller said skip GBP (user rejected the match)
-  //   an object  -> caller already fetched it (confirmed match)
-  let gbp;
-  if (gbpOverride === undefined) {
-    gbp = await getGBPData(bizName, city, phone, website);
-  } else {
-    gbp = gbpOverride;
-  }
+async function runScan(bizName, website, city, phone, gbp) {
+  // gbp is the business the user picked (an object), or null if they
+  // said their business isn't on Google. runScan never fetches it itself.
   const site = await getSiteData(website);
   
   const gbpContext = gbp ? `
@@ -456,31 +447,31 @@ function App(){
       fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.trim()})}).catch(()=>{});
     }
     try{
-      // First check the Google match. If we found a business but aren't
-      // confident it's the right one, ask the user before scanning.
-      const gbp=await getGBPData(bizName,city,phone,website);
-      if(gbp&&gbp.confident===false){
-        setPendingMatch(gbp);
-        setView("confirm");
+      // Look up Google candidates first.
+      const result=await getCandidates(bizName,city,phone,website);
+      if(result&&result.found&&result.candidates&&result.candidates.length>0){
+        // Show the pick-a-list so the user confirms the right business.
+        setPendingMatch(result.candidates);
+        setView("pick");
         return;
       }
-      // Confident match, or no GBP found at all — proceed normally.
-      const data=await runScan(bizName,website,city,phone,gbp);
+      // Google found nothing — scan with no GBP (honest "no listing" result).
+      const data=await runScan(bizName,website,city,phone,null);
       setResults(data);setView("results");
     }catch(e){setErrMsg(e.message);setView("error");}
   }
 
-  // User confirmed the GBP match is correct — run the full scan.
-  async function confirmYes(){
+  // User picked a business from the list — scan that one.
+  async function pickBusiness(chosen){
     setView("loading");setStepIdx(0);
     try{
-      const data=await runScan(bizName,website,city,phone,pendingMatch);
+      const data=await runScan(bizName,website,city,phone,chosen);
       setResults(data);setView("results");
     }catch(e){setErrMsg(e.message);setView("error");}
   }
 
-  // User said the match is NOT their business — scan without GBP data.
-  async function confirmNo(){
+  // User said none of the listed businesses are theirs — scan with no GBP.
+  async function pickNone(){
     setView("loading");setStepIdx(0);
     try{
       const data=await runScan(bizName,website,city,phone,null);
@@ -538,19 +529,23 @@ function App(){
         </div>
       )}
 
-      {view==="confirm"&&pendingMatch&&(
+      {view==="pick"&&pendingMatch&&(
         <div className="pad">
-          <div className="card" style={{maxWidth:520,margin:"0 auto"}}>
-            <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Is this your business?</h2>
-            <p className="sub" style={{marginTop:6}}>We found a Google listing that might be yours. Please confirm before we scan — so your report is about the right business.</p>
-            <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
-              <div style={{fontWeight:700,fontSize:"1.05rem"}}>{pendingMatch.name}</div>
-              {pendingMatch.address&&<div style={{opacity:0.75,fontSize:"0.9rem",marginTop:4}}>{pendingMatch.address}</div>}
-              {pendingMatch.phone&&<div style={{opacity:0.75,fontSize:"0.9rem",marginTop:2}}>{pendingMatch.phone}</div>}
-              {pendingMatch.website&&<div style={{opacity:0.75,fontSize:"0.9rem",marginTop:2}}>{pendingMatch.website}</div>}
+          <div className="card" style={{maxWidth:560,margin:"0 auto"}}>
+            <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Which of these is your business?</h2>
+            <p className="sub" style={{marginTop:6}}>We found these Google listings. Pick yours so your report is about the right business.</p>
+            <div style={{margin:"14px 0"}}>
+              {pendingMatch.map((c,i)=>(
+                <div key={i} onClick={()=>pickBusiness(c)}
+                  style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"13px 15px",marginBottom:10,cursor:"pointer"}}>
+                  <div style={{fontWeight:700,fontSize:"1.02rem"}}>{c.name}</div>
+                  {c.address&&<div style={{opacity:0.7,fontSize:"0.88rem",marginTop:3}}>{c.address}</div>}
+                  {c.phone&&<div style={{opacity:0.7,fontSize:"0.88rem",marginTop:1}}>{c.phone}</div>}
+                  {c.rating&&<div style={{opacity:0.7,fontSize:"0.88rem",marginTop:1}}>{c.rating}★ · {c.reviewCount} reviews</div>}
+                </div>
+              ))}
             </div>
-            <button className="sbtn" onClick={confirmYes}>Yes, that's my business</button>
-            <button className="rescan" style={{marginTop:10,width:"100%"}} onClick={confirmNo}>No, that's not me — scan without it</button>
+            <button className="rescan" style={{width:"100%"}} onClick={pickNone}>None of these — my business isn't on Google</button>
           </div>
         </div>
       )}
