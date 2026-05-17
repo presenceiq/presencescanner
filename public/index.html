@@ -461,9 +461,11 @@ function App(){
         setView("pick");
         return;
       }
-      // Google found nothing — scan with no GBP (honest "no listing" result).
-      const data=await runScan(bizName,website,city,phone,null);
-      setResults(data);setView("results");
+      // Google's search found nothing. Don't scan blind — send the user
+      // to the "help us find your business" screen so they can paste
+      // their Google listing link directly. (pickNone sets that up.)
+      pickNone();
+      return;
     }catch(e){setErrMsg(e.message);setView("error");}
   }
 
