@@ -55,14 +55,32 @@ export default async function handler(req, res) {
 
     // ---------------------------------------------------------------
     // Step 2: if we only have a kgmid, resolve it to a place_id.
-    // Strategy: search the Places API by the business NAME from the URL,
-    // which is reliable for a specific named business. (The Places API
-    // has no direct kgmid lookup, so name search is the honest path.)
+    // Strategy: search the Places API by the business NAME from the URL.
+    // Long, messy GBP names (with en-dashes, &, taglines) often return
+    // nothing, so we try progressively simpler versions of the name.
     // ---------------------------------------------------------------
 
-    if (!placeId && (kgmid || nameFromUrl)) {
-      if (nameFromUrl) {
-        const sQuery = encodeURIComponent(nameFromUrl);
+    if (!placeId && nameFromUrl) {
+      // Normalize odd punctuation: en-dash/em-dash -> hyphen, collapse spaces.
+      const cleaned = nameFromUrl
+        .replace(/[\u2012-\u2015]/g, '-')   // en/em dashes -> hyphen
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Build a list of search attempts, simplest-likely-to-work included.
+      // e.g. "CMPCleaning Venice - House Cleaning & Vacation Rental Cleaning"
+      //  ->  also try just "CMPCleaning Venice"
+      const attempts = [cleaned];
+      const beforeDash = cleaned.split(/\s[-–—]\s/)[0].trim();
+      if (beforeDash && beforeDash !== cleaned) attempts.push(beforeDash);
+      // first 2-3 words as a last resort
+      const fewWords = cleaned.split(' ').slice(0, 3).join(' ')
+        .replace(/[\s\-–—&]+$/, '').trim();
+      if (fewWords && !attempts.includes(fewWords)) attempts.push(fewWords);
+
+      for (const attempt of attempts) {
+        if (placeId) break;
+        const sQuery = encodeURIComponent(attempt);
         const sUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${sQuery}&key=${apiKey}`;
         const sRes = await fetch(sUrl);
         const sData = await sRes.json();
