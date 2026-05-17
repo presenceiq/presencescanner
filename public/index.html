@@ -163,12 +163,12 @@ async function callClaude(messages, maxTokens=3000) {
   return d.content.map(b=>b.text||"").join("");
 }
 
-async function getGBPData(bizName, city) {
+async function getGBPData(bizName, city, phone, website) {
   try {
     const res = await fetch("/api/places", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({bizName, city})
+      body: JSON.stringify({bizName, city, phone, website})
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -188,9 +188,17 @@ async function getSiteData(website) {
   } catch { return null; }
 }
 
-async function runScan(bizName, website, city) {
-  // Fetch real GBP data AND real website data first
-  const gbp = await getGBPData(bizName, city);
+async function runScan(bizName, website, city, phone, gbpOverride) {
+  // Use a pre-fetched GBP result if given. gbpOverride can be:
+  //   undefined  -> fetch it now (normal path)
+  //   null       -> caller said skip GBP (user rejected the match)
+  //   an object  -> caller already fetched it (confirmed match)
+  let gbp;
+  if (gbpOverride === undefined) {
+    gbp = await getGBPData(bizName, city, phone, website);
+  } else {
+    gbp = gbpOverride;
+  }
   const site = await getSiteData(website);
   
   const gbpContext = gbp ? `
@@ -427,9 +435,11 @@ function App(){
   const [bizName,setBizName]=useState("");
   const [website,setWebsite]=useState("");
   const [city,setCity]=useState("");
+  const [phone,setPhone]=useState("");
   const [email,setEmail]=useState("");
   const [stepIdx,setStepIdx]=useState(0);
   const [results,setResults]=useState(null);
+  const [pendingMatch,setPendingMatch]=useState(null);
   const [errMsg,setErrMsg]=useState("");
 
   useEffect(()=>{
@@ -446,12 +456,39 @@ function App(){
       fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.trim()})}).catch(()=>{});
     }
     try{
-      const data=await runScan(bizName,website,city);
+      // First check the Google match. If we found a business but aren't
+      // confident it's the right one, ask the user before scanning.
+      const gbp=await getGBPData(bizName,city,phone,website);
+      if(gbp&&gbp.confident===false){
+        setPendingMatch(gbp);
+        setView("confirm");
+        return;
+      }
+      // Confident match, or no GBP found at all — proceed normally.
+      const data=await runScan(bizName,website,city,phone,gbp);
       setResults(data);setView("results");
     }catch(e){setErrMsg(e.message);setView("error");}
   }
 
-  function reset(){setView("form");setResults(null);setErrMsg("");}
+  // User confirmed the GBP match is correct — run the full scan.
+  async function confirmYes(){
+    setView("loading");setStepIdx(0);
+    try{
+      const data=await runScan(bizName,website,city,phone,pendingMatch);
+      setResults(data);setView("results");
+    }catch(e){setErrMsg(e.message);setView("error");}
+  }
+
+  // User said the match is NOT their business — scan without GBP data.
+  async function confirmNo(){
+    setView("loading");setStepIdx(0);
+    try{
+      const data=await runScan(bizName,website,city,phone,null);
+      setResults(data);setView("results");
+    }catch(e){setErrMsg(e.message);setView("error");}
+  }
+
+  function reset(){setView("form");setResults(null);setErrMsg("");setPendingMatch(null);}
   const sc=results?(results.overallScore>=70?"good":results.overallScore>=40?"warn":"bad"):"warn";
 
   return(
@@ -471,6 +508,8 @@ function App(){
               <input value={bizName} onChange={e=>setBizName(e.target.value)} placeholder="e.g. Joe's Plumbing & Drain"/></div>
             <div className="field"><label>Website URL <span style={{opacity:0.45,fontWeight:400,textTransform:"none",letterSpacing:0}}>(if you have one)</span></label>
               <input value={website} onChange={e=>setWebsite(e.target.value)} placeholder="e.g. https://joesplumbing.com"/></div>
+            <div className="field"><label>Business Phone <span style={{opacity:0.45,fontWeight:400,textTransform:"none",letterSpacing:0}}>(helps us find the right listing)</span></label>
+              <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="e.g. (941) 662-9941"/></div>
             <div className="field"><label>City & State *</label>
               <input value={city} onChange={e=>setCity(e.target.value)} placeholder="e.g. Venice, FL"/></div>
             <div className="field"><label>Email Address</label>
@@ -496,6 +535,23 @@ function App(){
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {view==="confirm"&&pendingMatch&&(
+        <div className="pad">
+          <div className="card" style={{maxWidth:520,margin:"0 auto"}}>
+            <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Is this your business?</h2>
+            <p className="sub" style={{marginTop:6}}>We found a Google listing that might be yours. Please confirm before we scan — so your report is about the right business.</p>
+            <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
+              <div style={{fontWeight:700,fontSize:"1.05rem"}}>{pendingMatch.name}</div>
+              {pendingMatch.address&&<div style={{opacity:0.75,fontSize:"0.9rem",marginTop:4}}>{pendingMatch.address}</div>}
+              {pendingMatch.phone&&<div style={{opacity:0.75,fontSize:"0.9rem",marginTop:2}}>{pendingMatch.phone}</div>}
+              {pendingMatch.website&&<div style={{opacity:0.75,fontSize:"0.9rem",marginTop:2}}>{pendingMatch.website}</div>}
+            </div>
+            <button className="sbtn" onClick={confirmYes}>Yes, that's my business</button>
+            <button className="rescan" style={{marginTop:10,width:"100%"}} onClick={confirmNo}>No, that's not me — scan without it</button>
+          </div>
         </div>
       )}
 
