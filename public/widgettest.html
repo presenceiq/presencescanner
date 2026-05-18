@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autocomplete Widget Test</title>
+<style>
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    max-width: 560px;
+    margin: 40px auto;
+    padding: 0 20px;
+    color: #111;
+  }
+  h1 { font-size: 1.3rem; }
+  p { color: #555; line-height: 1.5; }
+  #ac {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 1rem;
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+  #result {
+    margin-top: 20px;
+    padding: 16px;
+    border-radius: 8px;
+    background: #f4f4f4;
+    border: 1px solid #ddd;
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+  }
+  .ok { color: #137333; font-weight: bold; }
+  .err { color: #c5221f; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Autocomplete Widget Test</h1>
+<p>Start typing a business name below. Google should show a dropdown. Pick one — the business details (including its Place ID) should appear in the gray box.</p>
+
+<input id="ac" type="text" placeholder="Start typing a business name or address..." />
+
+<div id="result">Waiting — start typing above and pick a business from the dropdown.</div>
+
+<script>
+  // This function is called by the Google script tag once it finishes loading.
+  function initAutocomplete() {
+    var input = document.getElementById('ac');
+    var resultBox = document.getElementById('result');
+
+    // Safety check: did Google's library actually load?
+    if (!window.google || !google.maps || !google.maps.places) {
+      resultBox.innerHTML = '<span class="err">FAILED:</span> Google Maps Places library did not load. Check the API key and that Maps JavaScript API is enabled.';
+      return;
+    }
+
+    var autocomplete = new google.maps.places.Autocomplete(input, {
+      types: ['establishment'],
+      fields: ['place_id', 'name', 'formatted_address', 'formatted_phone_number']
+    });
+
+    autocomplete.addListener('place_changed', function () {
+      var place = autocomplete.getPlace();
+      if (!place || !place.place_id) {
+        resultBox.innerHTML = '<span class="err">No details returned.</span> Try picking a business directly from the dropdown list.';
+        return;
+      }
+      resultBox.innerHTML =
+        '<span class="ok">SUCCESS — Google returned a business:</span>\n\n' +
+        'Name: ' + (place.name || '(none)') + '\n' +
+        'Address: ' + (place.formatted_address || '(none)') + '\n' +
+        'Phone: ' + (place.formatted_phone_number || '(none)') + '\n' +
+        'Place ID: ' + place.place_id;
+    });
+
+    resultBox.innerHTML = 'Google library loaded OK. Now start typing a business name above.';
+  }
+
+  // If the Google script fails to load at all, show an error after a few seconds.
+  setTimeout(function () {
+    if (!window.google) {
+      document.getElementById('result').innerHTML =
+        '<span class="err">FAILED:</span> Google script never loaded. The API key may be wrong, restricted incorrectly, or Maps JavaScript API not enabled.';
+    }
+  }, 6000);
+</script>
+
+<!-- ============================================================
+     PASTE YOUR GOOGLE BROWSER KEY BELOW.
+     Replace the text  PASTE_YOUR_BROWSER_KEY_HERE  with the new
+     "PresenceScanner Browser Key" you created in Google Cloud.
+     Keep the quotes/format exactly — only swap the placeholder text.
+     ============================================================ -->
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAO8fNTowmk2VhQGNfUDLApUUJHJtALIjA&libraries=places&callback=initAutocomplete">
+</script>
+
+</body>
+</html>
