@@ -455,6 +455,12 @@ function App(){
     return()=>clearInterval(iv);
   },[view]);
 
+  // When results load, jump to the top so the user sees the score first
+  // (not partway down the page at the AI advisor). Finding #2 fix.
+  useEffect(()=>{
+    if(view==="results"){window.scrollTo(0,0);}
+  },[view]);
+
   async function handleScan(){
     if(!bizName.trim()||!city.trim())return;
     setView("loading");setStepIdx(0);
