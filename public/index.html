@@ -432,6 +432,8 @@ function App(){
   const [results,setResults]=useState(null);
   const [pendingMatch,setPendingMatch]=useState(null);
   const [errMsg,setErrMsg]=useState("");
+  // --- Phone-first match confirmation (self-contained) ---
+  const [phoneMatch,setPhoneMatch]=useState(null);
   // --- "Help us find your business" step (self-contained) ---
   const [fhName,setFhName]=useState("");
   const [fhAddress,setFhAddress]=useState("");
@@ -453,19 +455,58 @@ function App(){
       fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.trim()})}).catch(()=>{});
     }
     try{
-      // Look up Google candidates first.
+      // STEP 1 (Carl's flow): phone-first lookup. Phone numbers are far
+      // more unique than business names, so try this before anything else.
+      if(phone&&phone.trim()){
+        const pRes=await fetch("/api/findplace",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({phone:phone.trim()})
+        });
+        const pData=await pRes.json();
+        if(pData&&pData.found){
+          // Found a business by phone. Show it and let the owner confirm.
+          setPhoneMatch(pData);
+          setView("phoneconfirm");
+          return;
+        }
+      }
+      // No phone match (or no phone given) — fall through to the
+      // existing name-search flow (pick-a-list / findhelp).
       const result=await getCandidates(bizName,city,phone,website);
       if(result&&result.found&&result.candidates&&result.candidates.length>0){
-        // Show the pick-a-list so the user confirms the right business.
         setPendingMatch(result.candidates);
         setView("pick");
         return;
       }
       // Google's search found nothing. Don't scan blind — send the user
-      // to the "help us find your business" screen so they can paste
-      // their Google listing link directly. (pickNone sets that up.)
+      // to the "help us find your business" screen.
       pickNone();
       return;
+    }catch(e){setErrMsg(e.message);setView("error");}
+  }
+
+  // --- Phone-match confirmation handlers (self-contained) ---
+  // Owner confirmed the phone-matched business is theirs — scan it.
+  async function phoneConfirmYes(){
+    setView("loading");setStepIdx(0);
+    try{
+      const data=await runScan(bizName,website,city,phone,phoneMatch);
+      setResults(data);setView("results");
+    }catch(e){setErrMsg(e.message);setView("error");}
+  }
+
+  // Owner said the phone-matched business is NOT theirs — fall through
+  // to the existing name-search flow so they can find the right one.
+  async function phoneConfirmNo(){
+    setView("loading");setStepIdx(0);
+    try{
+      const result=await getCandidates(bizName,city,phone,website);
+      if(result&&result.found&&result.candidates&&result.candidates.length>0){
+        setPendingMatch(result.candidates);
+        setView("pick");
+        return;
+      }
+      pickNone();
     }catch(e){setErrMsg(e.message);setView("error");}
   }
 
@@ -548,7 +589,7 @@ function App(){
     }catch(e){setErrMsg(e.message);setView("error");}
   }
 
-  function reset(){setView("form");setResults(null);setErrMsg("");setPendingMatch(null);setFhName("");setFhAddress("");setFhPhone("");setFhMapsUrl("");setFhErr("");}
+  function reset(){setView("form");setResults(null);setErrMsg("");setPendingMatch(null);setPhoneMatch(null);setFhName("");setFhAddress("");setFhPhone("");setFhMapsUrl("");setFhErr("");}
   const sc=results?(results.overallScore>=70?"good":results.overallScore>=40?"warn":"bad"):"warn";
 
   return(
@@ -595,6 +636,24 @@ function App(){
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* --- Phone-match confirmation (self-contained view) --- */}
+      {view==="phoneconfirm"&&phoneMatch&&(
+        <div className="pad">
+          <div className="card" style={{maxWidth:560,margin:"0 auto"}}>
+            <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Is this your business?</h2>
+            <p className="sub" style={{marginTop:6}}>We found this Google listing from your phone number. Confirm it's yours so your report is about the right business.</p>
+            <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
+              <div style={{fontWeight:700,fontSize:"1.05rem"}}>{phoneMatch.name}</div>
+              {phoneMatch.address&&<div style={{opacity:0.7,fontSize:"0.9rem",marginTop:3}}>{phoneMatch.address}</div>}
+              {phoneMatch.phone&&<div style={{opacity:0.7,fontSize:"0.9rem",marginTop:1}}>{phoneMatch.phone}</div>}
+              {phoneMatch.rating&&<div style={{opacity:0.7,fontSize:"0.9rem",marginTop:1}}>{phoneMatch.rating}★ · {phoneMatch.reviewCount} reviews</div>}
+            </div>
+            <button className="sbtn" onClick={phoneConfirmYes}>Yes, this is my business</button>
+            <button className="rescan" style={{marginTop:10,width:"100%"}} onClick={phoneConfirmNo}>No, that's not my business</button>
+          </div>
         </div>
       )}
 
