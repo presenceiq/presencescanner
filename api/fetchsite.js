@@ -27,13 +27,24 @@ export default async function handler(req, res) {
     try {
       pageRes = await fetch(website, {
         signal: controller.signal,
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PresenceScanner/1.0)' },
+        // Real browser-like headers so ordinary bot-detection lets us in.
+        // (Many sites block a fetcher that announces itself as a bot.)
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
       });
     } catch (fetchErr) {
       clearTimeout(timeout);
       return res.status(200).json({
         fetched: false,
-        reason: 'Could not reach the website',
+        // Honest signal: a failed fetch is OFTEN just a security setting,
+        // NOT a real problem with the site. The report must not claim
+        // the website is "broken" — see reasonForUser below.
+        reason: 'Could not reach the website automatically',
+        reasonForUser: 'We could not reach this website with our automated scanner. This is commonly caused by the site\'s security settings (firewall or bot protection) and does NOT necessarily mean anything is wrong with the website. Website analysis was skipped for this scan.',
+        likelyAccessibleToHumans: true,
       });
     }
     clearTimeout(timeout);
@@ -42,6 +53,8 @@ export default async function handler(req, res) {
       return res.status(200).json({
         fetched: false,
         reason: 'Website returned status ' + pageRes.status,
+        reasonForUser: 'Our automated scanner received an unexpected response (status ' + pageRes.status + ') from this website. This can be caused by security or server settings and does NOT necessarily mean the website is broken for visitors. Website analysis was skipped for this scan.',
+        likelyAccessibleToHumans: true,
       });
     }
 
