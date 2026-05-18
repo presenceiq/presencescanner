@@ -6,8 +6,37 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { mapsUrl } = req.body || {};
+    const { mapsUrl, placeId: directPlaceId } = req.body || {};
     const apiKey = process.env.GOOGLE_PLACES_KEY;
+
+    // FAST PATH: the autocomplete widget gives us an exact place_id
+    // directly. No URL parsing needed — go straight to fetching details.
+    if (directPlaceId && String(directPlaceId).trim()) {
+      const pid = String(directPlaceId).trim();
+      const fields = 'name,rating,user_ratings_total,formatted_address,formatted_phone_number,website,opening_hours,photos,business_status,types';
+      const dUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${pid}&fields=${fields}&key=${apiKey}`;
+      const dRes = await fetch(dUrl);
+      const dData = await dRes.json();
+      if (!dData.result) {
+        return res.status(200).json({ found: false, message: "We couldn't load that business's details. Please try again." });
+      }
+      const d = dData.result;
+      return res.status(200).json({
+        found: true,
+        placeId: pid,
+        name: d.name || null,
+        rating: d.rating || null,
+        reviewCount: d.user_ratings_total || 0,
+        address: d.formatted_address || null,
+        phone: d.formatted_phone_number || null,
+        website: d.website || null,
+        hasHours: !!(d.opening_hours),
+        isOpen: d.opening_hours?.open_now ?? null,
+        photoCount: d.photos?.length || 0,
+        businessStatus: d.business_status || null,
+        types: d.types || [],
+      });
+    }
 
     if (!mapsUrl || !String(mapsUrl).trim()) {
       return res.status(400).json({ error: 'A Google Maps link is required' });
