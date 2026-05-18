@@ -625,7 +625,15 @@ function App(){
       });
       const gbp=await res.json();
       if(gbp&&gbp.found){
-        const data=await runScan(bizName,website,city,phone,gbp);
+        // Use the PICKED business's own name and website — not the
+        // stale form fields. The form may have a made-up name or a
+        // blank website; the picked business is the real one.
+        const realName=gbp.name||picked.name||bizName;
+        const realWebsite=gbp.website||"";
+        // Update the displayed business name so the report title,
+        // loading screen, and AI advisor all show the picked business.
+        if(realName)setBizName(realName);
+        const data=await runScan(realName,realWebsite,city,phone,gbp);
         setResults(data);setView("results");
       }else{
         setFhErr((gbp&&gbp.message)||"We couldn't load that business. Please try again or use another option below.");
