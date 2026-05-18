@@ -10,6 +10,15 @@
     gtag('js', new Date());
     gtag('config', 'G-WD4QS0XK2C');
   </script>
+  <!-- ============================================================
+       GOOGLE MAPS — powers the "find your business" autocomplete.
+       PASTE YOUR BROWSER KEY: replace  PASTE_YOUR_BROWSER_KEY_HERE
+       below with your "PresenceScanner Browser Key". Only swap that
+       placeholder text — keep everything else exactly as is.
+       ============================================================ -->
+  <script async
+    src="https://maps.googleapis.com/maps/api/js?key=PASTE_YOUR_BROWSER_KEY_HERE&libraries=places">
+  </script>
   <!-- End Google Analytics -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="PresenceIQ — AI-powered online presence scanner for small businesses." />
@@ -428,6 +437,61 @@ function Chat({results,bizName}){
   );
 }
 
+// --- Google Place Autocomplete widget, wrapped as a React component ---
+// Mounts Google's autocomplete on an input. When the user picks a
+// business from the dropdown, calls onPick with {placeId, name, address}.
+function BusinessAutocomplete({ onPick }) {
+  const inputRef = useRef(null);
+  const mountedRef = useRef(false);
+  const [status, setStatus] = useState("loading"); // loading | ready | failed
+
+  useEffect(() => {
+    // Wait for Google's library to be available, then mount once.
+    let tries = 0;
+    const tryMount = () => {
+      if (mountedRef.current) return;
+      if (window.google && window.google.maps && window.google.maps.places && inputRef.current) {
+        mountedRef.current = true;
+        const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
+          types: ["establishment"],
+          fields: ["place_id", "name", "formatted_address"],
+        });
+        ac.addListener("place_changed", () => {
+          const place = ac.getPlace();
+          if (place && place.place_id) {
+            onPick({
+              placeId: place.place_id,
+              name: place.name || "",
+              address: place.formatted_address || "",
+            });
+          }
+        });
+        setStatus("ready");
+        return;
+      }
+      tries++;
+      if (tries > 40) { setStatus("failed"); return; } // ~10s of waiting
+      setTimeout(tryMount, 250);
+    };
+    tryMount();
+  }, []);
+
+  return (
+    <div>
+      <input ref={inputRef} type="text"
+        placeholder="Start typing your business name..."
+        style={{width:"100%",padding:"12px 14px",fontSize:"1rem",
+          border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,
+          background:"rgba(255,255,255,0.06)",color:"inherit",boxSizing:"border-box"}} />
+      {status==="failed" && (
+        <div className="err" style={{marginTop:8,fontSize:"0.85rem"}}>
+          The business search could not load. Please use one of the options below instead.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App(){
   const [view,setView]=useState("form");
   const [bizName,setBizName]=useState("");
@@ -547,6 +611,32 @@ function App(){
   // BEST PATH: the user pasted their Google Maps link. We send it to
   // resolveplace.js, which reads the business ID out of the link and
   // fetches the REAL listing — real reviews, photos, hours.
+  // BEST PATH: the user picked their business from the autocomplete
+  // widget. We have the exact Google place_id — fetch that exact
+  // business and scan it. No guessing, no wrong business.
+  async function findHelpFromWidget(picked){
+    if(!picked||!picked.placeId)return;
+    setFhErr("");
+    setView("loading");setStepIdx(0);
+    try{
+      const res=await fetch("/api/resolveplace",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({placeId:picked.placeId})
+      });
+      const gbp=await res.json();
+      if(gbp&&gbp.found){
+        const data=await runScan(bizName,website,city,phone,gbp);
+        setResults(data);setView("results");
+      }else{
+        setFhErr((gbp&&gbp.message)||"We couldn't load that business. Please try again or use another option below.");
+        setView("findhelp");
+      }
+    }catch(e){
+      setFhErr("Something went wrong loading that business. Please try again.");
+      setView("findhelp");
+    }
+  }
+
   async function findHelpFromLink(){
     if(!fhMapsUrl.trim())return;
     setFhErr("");
@@ -695,25 +785,36 @@ function App(){
       {view==="findhelp"&&(
         <div className="pad">
           <div className="card" style={{maxWidth:560,margin:"0 auto"}}>
-            <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Help us find your business</h2>
-            <p className="sub" style={{marginTop:6}}>We couldn't confidently match your business. The most accurate way to fix this is to paste a link to your Google listing.</p>
+            <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Find your business</h2>
+            <p className="sub" style={{marginTop:6}}>Start typing your business name and select it from the list — this is the most accurate way to find your exact Google listing.</p>
 
             {fhErr&&<div className="err" style={{margin:"10px 0"}}>{fhErr}</div>}
 
-            {/* PRIMARY PATH: paste the Google Maps link */}
+            {/* PRIMARY PATH: the Google autocomplete widget */}
             <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
-              <div style={{fontWeight:700,marginBottom:6}}>Paste your Google listing link <span style={{opacity:0.55,fontWeight:400}}>(best — gets your real reviews & photos)</span></div>
-              <div style={{fontSize:"0.84rem",opacity:0.7,marginBottom:10,lineHeight:1.5}}>
-                On Google, find your business, tap the <strong>three dots ( ⋮ )</strong> menu, choose <strong>Share</strong>, then copy the link it gives you and paste it here.
+              <div style={{fontWeight:700,marginBottom:8}}>Search for your business <span style={{opacity:0.55,fontWeight:400}}>(recommended)</span></div>
+              <BusinessAutocomplete onPick={findHelpFromWidget} />
+              <div style={{fontSize:"0.8rem",opacity:0.6,marginTop:8,lineHeight:1.5}}>
+                Tip: if several businesses share a similar name, check the address to pick yours.
               </div>
-              <div className="field" style={{marginBottom:10}}>
-                <input value={fhMapsUrl} onChange={e=>setFhMapsUrl(e.target.value)} placeholder="Paste your Google listing link here"/></div>
-              <button className="sbtn" onClick={findHelpFromLink} disabled={!fhMapsUrl.trim()}>Find my business from this link</button>
             </div>
 
-            {/* FALLBACK: type details by hand */}
+            {/* FALLBACK 1: paste a Google Maps link */}
             <details style={{margin:"14px 0"}}>
-              <summary style={{cursor:"pointer",opacity:0.75,fontSize:"0.9rem"}}>Don't have a link? Enter your details by hand instead</summary>
+              <summary style={{cursor:"pointer",opacity:0.75,fontSize:"0.9rem"}}>Can't find it? Paste your Google listing link instead</summary>
+              <div style={{marginTop:12}}>
+                <div style={{fontSize:"0.84rem",opacity:0.7,marginBottom:10,lineHeight:1.5}}>
+                  On Google, find your business, tap the <strong>three dots ( ⋮ )</strong> menu, choose <strong>Share</strong>, then copy the link and paste it here.
+                </div>
+                <div className="field" style={{marginBottom:10}}>
+                  <input value={fhMapsUrl} onChange={e=>setFhMapsUrl(e.target.value)} placeholder="Paste your Google listing link here"/></div>
+                <button className="sbtn" onClick={findHelpFromLink} disabled={!fhMapsUrl.trim()}>Find my business from this link</button>
+              </div>
+            </details>
+
+            {/* FALLBACK 2: type details by hand */}
+            <details style={{margin:"14px 0"}}>
+              <summary style={{cursor:"pointer",opacity:0.75,fontSize:"0.9rem"}}>Or enter your details by hand</summary>
               <div style={{marginTop:12}}>
                 <p className="sub" style={{fontSize:"0.84rem",marginTop:0}}>Note: entered by hand, we can't verify your Google reviews or photos, so that part of your report will be limited.</p>
                 <div className="field"><label>Exact Business Name *</label>
