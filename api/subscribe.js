@@ -8,13 +8,23 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { email } = req.body || {};
+    const { email, tag } = req.body || {};
 
     // Validate the email before doing anything else
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
       return res.status(400).json({ error: 'A valid email address is required' });
     }
     const cleanEmail = String(email).trim().toLowerCase();
+
+    // Optional tag. If the caller sends one we use it (e.g. the founding-member
+    // waitlist sends 'founding-member-waitlist'). If none is sent, we default to
+    // 'presence-scanner' so existing scan-form signups behave exactly as before.
+    // A short allow-list of characters keeps a junk value from reaching Mailchimp.
+    let safeTag = 'presence-scanner';
+    if (tag && typeof tag === 'string') {
+      const cleaned = tag.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+      if (cleaned) safeTag = cleaned;
+    }
 
     const apiKey = process.env.MAILCHIMP_API_KEY || process.env.REACT_APP_MAILCHIMP_KEY;
     const audienceId = process.env.MAILCHIMP_AUDIENCE_ID;
@@ -48,7 +58,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         email_address: cleanEmail,
         status_if_new: 'pending',
-        tags: ['presence-scanner'],
+        tags: [safeTag],
       }),
     });
 
