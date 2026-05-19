@@ -676,7 +676,9 @@ function App(){
   async function phoneConfirmYes(){
     setView("loading");setStepIdx(0);
     try{
-      const data=await runScan(bizName,website,city,phone,phoneMatch);
+      // Use the website from the phone-matched Google listing. The form
+      // field may be blank; the matched listing is the real business.
+      const data=await runScan(bizName,phoneMatch.website||website,city,phone,phoneMatch);
       setResults(data);setView("results");
     }catch(e){setErrMsg(e.message);setView("error");}
   }
@@ -765,7 +767,8 @@ function App(){
       });
       const gbp=await res.json();
       if(gbp&&gbp.found){
-        const data=await runScan(bizName,website,city,phone,gbp);
+        // Use the website from the resolved Google listing, not the form field.
+        const data=await runScan(bizName,gbp.website||website,city,phone,gbp);
         setResults(data);setView("results");
       }else{
         // Couldn't read the link — send them back to try again / use fallback.
