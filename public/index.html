@@ -76,6 +76,11 @@
     .sinfo{flex:1;min-width:180px}
     .gpill{display:inline-block;padding:4px 13px;border-radius:100px;font-family:var(--fh);font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:9px}
     .sinfo h2{font-family:var(--fh);font-size:1.3rem;font-weight:700;margin-bottom:7px;line-height:1.25}
+    .sident{margin:4px 0 10px;padding:9px 12px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;font-size:0.78rem;color:var(--t2);line-height:1.55}
+    .sident b{color:var(--t1);font-weight:600}
+    .sident .sident-row{display:block;margin-top:3px}
+    .sident .sident-row:first-child{margin-top:0}
+    .sident .sident-none{color:var(--amber);font-weight:500}
     .sinfo p{color:var(--t2);font-size:0.85rem;line-height:1.7}
     .priority{margin-top:12px;padding:10px 14px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:8px;font-size:0.8rem;color:var(--cyan);line-height:1.6}
     .priority strong{display:block;font-size:0.68rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;opacity:0.7}
@@ -271,10 +276,20 @@ REAL WEBSITE DATA: This business has no website. For Website Health, AI Search V
   const prompt = "You are auditing a local business's online presence. Use ONLY the real data provided below. Do NOT invent facts. Return ONLY valid JSON, no other text.\n\nBusiness: "+bizName+"\nWebsite: "+(website||"none")+"\nCity: "+city+"\n\n"+gbpContext+"\n"+siteContext+"\n\nReturn this JSON:\n{\"overallScore\":50,\"overallGrade\":\"Needs Work\",\"summary\":\"2 sentence summary\",\"topPriority\":\"top action\",\"hasWebsite\":false,\"categories\":[{\"name\":\"Website Health\",\"subtitle\":\"SEO and mobile\",\"icon\":\"🌐\",\"score\":50,\"findings\":[{\"title\":\"finding\",\"detail\":\"detail\",\"status\":\"warn\",\"action\":\"action\"}]},{\"name\":\"Google Business Profile\",\"subtitle\":\"Local ranking power\",\"icon\":\"📍\",\"score\":50,\"findings\":[]},{\"name\":\"AI Search Visibility\",\"subtitle\":\"ChatGPT and Google AI\",\"icon\":\"🤖\",\"score\":50,\"findings\":[]},{\"name\":\"Citation Consistency\",\"subtitle\":\"NAP across the web\",\"icon\":\"📋\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Social Presence\",\"subtitle\":\"Facebook and Instagram\",\"icon\":\"📱\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Review Authority\",\"subtitle\":\"Volume and recency\",\"icon\":\"⭐\",\"score\":50,\"findings\":[]},{\"name\":\"GEO Score\",\"subtitle\":\"AI search trust and authority\",\"icon\":\"🧠\",\"score\":50,\"findings\":[]}]}\n\nSCORING RULES:\n- Score these FIVE categories with real numbers 0-100 based strictly on the real data above: Website Health, Google Business Profile, AI Search Visibility, Review Authority, GEO Score. Vary the scores honestly — a business with schema, FAQ, good word count and strong reviews should score well; one missing those should score low. Do NOT give every category a similar number.\n- For Citation Consistency and Social Presence: these are NOT measured yet. Keep score as -1 and comingSoon as true exactly as shown. Give each ONE finding with title 'Coming soon', a short detail explaining full citation/social analysis is being added, status 'warn', and no action. Do not invent a score for these two.\n- overallScore must be the average of ONLY the five real scored categories (ignore the two coming-soon ones).\n- Use the REAL GBP DATA for the Google Business Profile category. Use the REAL WEBSITE DATA for Website Health, AI Search Visibility and GEO Score.\n- Each of the five scored categories needs exactly 3 specific findings based on the real data. Be concrete — reference actual things found or missing.\n- For GEO Score: assess whether ChatGPT or Perplexity would recommend this business, based on whether the real website data shows schema markup and FAQ content AI can cite. Score harshly — most small businesses score under 35 on GEO.";
   const raw = await callClaude([{role:"user",content:prompt}], 3000);
   const clean = raw.replace(/```json|```/g,"").trim();
-  try { return JSON.parse(clean); }
+  // Helper: attach the matched-business context to the parsed result so the
+  // results page can show the user "here is the business we actually scanned"
+  // (Glitch #2). gbp may be null when the user said they have no listing.
+  function withIdentity(parsed){
+    if(parsed && typeof parsed==='object'){
+      parsed.gbp = gbp || null;
+      parsed.scannedInputs = { bizName, city };
+    }
+    return parsed;
+  }
+  try { return withIdentity(JSON.parse(clean)); }
   catch {
     const s=clean.indexOf("{"), e=clean.lastIndexOf("}");
-    if(s!==-1&&e!==-1){try{return JSON.parse(clean.slice(s,e+1));}catch(e2){}}
+    if(s!==-1&&e!==-1){try{return withIdentity(JSON.parse(clean.slice(s,e+1)));}catch(e2){}}
     throw new Error("Please try again — the scan occasionally needs a second attempt.");
   }
 }
@@ -983,6 +998,19 @@ function App(){
             <div className="sinfo">
               <div className={`gpill ${sc}-g`}>{results.overallGrade}</div>
               <h2>Presence Report: {bizName}</h2>
+              {results.gbp ? (
+                <div className="sident">
+                  <span className="sident-row"><b>Scanned:</b> {results.gbp.name}</span>
+                  {results.gbp.address && <span className="sident-row">{results.gbp.address}</span>}
+                  {results.gbp.phone && <span className="sident-row">{results.gbp.phone}</span>}
+                  {results.gbp.rating && <span className="sident-row">⭐ {results.gbp.rating} · {results.gbp.reviewCount || 0} reviews</span>}
+                </div>
+              ) : (
+                <div className="sident">
+                  <span className="sident-row"><b>Scanned:</b> {results.scannedInputs?.bizName || bizName}{results.scannedInputs?.city ? ` · ${results.scannedInputs.city}` : ''}</span>
+                  <span className="sident-row sident-none">No Google Business Profile was matched for this scan</span>
+                </div>
+              )}
               <p>{results.summary}</p>
               <div className="priority"><strong>Top Priority</strong>{results.topPriority}</div>
             </div>
