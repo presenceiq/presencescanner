@@ -812,7 +812,24 @@ function App(){
     }catch(e){setErrMsg(e.message);setView("error");}
   }
 
-  function reset(){setView("form");setResults(null);setErrMsg("");setPendingMatch(null);setPhoneMatch(null);setFhName("");setFhAddress("");setFhPhone("");setFhMapsUrl("");setFhErr("");}
+  function reset(){
+    // Clear EVERY piece of state the form holds, so a second scan in the
+    // same browser session cannot inherit anything from a previous one.
+    // This is the fix for Glitch #6: session contamination across scans.
+    setView("form");
+    setResults(null);
+    setErrMsg("");
+    setPendingMatch(null);
+    setPhoneMatch(null);
+    setFhName("");setFhAddress("");setFhPhone("");setFhMapsUrl("");setFhErr("");
+    // The five user-typed form fields — previously NOT cleared, which is what
+    // let an old website value bleed into a later scan and contaminate the AI input.
+    setBizName("");
+    setWebsite("");
+    setCity("");
+    setPhone("");
+    setEmail("");
+  }
   const sc=results?(results.overallScore>=70?"good":results.overallScore>=40?"warn":"bad"):"warn";
 
   return(
