@@ -81,6 +81,7 @@
     .sident .sident-row{display:block;margin-top:3px}
     .sident .sident-row:first-child{margin-top:0}
     .sident .sident-none{color:var(--amber);font-weight:500}
+    .sident .sident-stars{color:#fbbf24;letter-spacing:1px;margin-right:3px}
     .sinfo p{color:var(--t2);font-size:0.85rem;line-height:1.7}
     .priority{margin-top:12px;padding:10px 14px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:8px;font-size:0.8rem;color:var(--cyan);line-height:1.6}
     .priority strong{display:block;font-size:0.68rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;opacity:0.7}
@@ -1003,7 +1004,7 @@ function App(){
                   <span className="sident-row"><b>Scanned:</b> {results.gbp.name}</span>
                   {results.gbp.address && <span className="sident-row">{results.gbp.address}</span>}
                   {results.gbp.phone && <span className="sident-row">{results.gbp.phone}</span>}
-                  {results.gbp.rating && <span className="sident-row">⭐ {results.gbp.rating} · {results.gbp.reviewCount || 0} reviews</span>}
+                  {results.gbp.rating && <span className="sident-row"><span className="sident-stars">★★★★★</span> {results.gbp.rating} · {results.gbp.reviewCount || 0} reviews</span>}
                 </div>
               ) : (
                 <div className="sident">
