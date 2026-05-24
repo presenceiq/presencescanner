@@ -1018,9 +1018,14 @@ function App(){
           </div>
           <Chat results={results} bizName={bizName}/>
           <AlgorithmFeed bizType={results.categories?.[0]?.findings?.[0]?.title || bizName} city={city}/>
+          {/* AFFILIATE PLACEMENT PRINCIPLE (Decision 4, May 24 2026):
+              category findings come FIRST so the user receives the diagnosis
+              before any recommendations to spend money. AffCards and the
+              founding-member waitlist then sit AFTER the diagnosis, where
+              they read as helpful next steps rather than salesy interruptions. */}
+          <div className="cats">{results.categories?.map((cat,i)=><CatCard key={i} cat={cat}/>)}</div>
           <AffCards results={results} bizName={bizName}/>
           <FoundingWaitlist/>
-          <div className="cats">{results.categories?.map((cat,i)=><CatCard key={i} cat={cat}/>)}</div>
           <button className="rescan" onClick={reset}>← Scan Another Business</button>
         </div>
       )}
