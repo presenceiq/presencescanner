@@ -42,6 +42,16 @@ The repo docs (STATE.md / DECISIONS.md) are the OFFICIAL summary — what next-C
 reads on session start. The two are different on purpose: notes are raw and chronological;
 the repo docs are curated and current. Both have a job; one does not replace the other.
 
+**Diagnose before fixing.**
+When a bug appears, the disciplined response is to find the cause with evidence (controlled
+re-test, code reading, console output) BEFORE writing a fix. Theory-driven fixes are
+guesses dressed as solutions. Evidence-driven fixes are real.
+
+**"Can't reproduce" is a legitimate outcome.**
+If a bug appears once and cannot be reproduced under controlled testing, the honest position
+is "watch-list, not closed, not actively broken" — not "write a speculative fix anyway." Real
+bugs reappear; transient API hiccups don't.
+
 ---
 
 ## ABANDONED — DO NOT RESURRECT
@@ -67,6 +77,17 @@ Was suggested as a "fix" for not receiving Mailchimp confirmation emails. Not a 
 **SMS/text waitlist signup (deferred for beta).**
 Needs a separate service (Twilio), separate cost, separate TCPA compliance. Its own project. Email-only for beta.
 
+**Pure affiliate marketing as the business model.**
+Considered and rejected May 23 after external strategic review. Affiliate-only has no
+moat, no owned asset, and is being eroded by AI search. Affiliates remain a real revenue
+layer underneath the proprietary tool (see Five-Layer Product Model), but they are not
+the business itself.
+
+**Out-featuring Semrush / BrightLocal / Yext / Birdeye.**
+These platforms have dev teams, funding, and mature infrastructure. Trying to compete on
+their features is a losing battlefield. The opening is serving the confused small business
+owner, not the SEO professional — see Diagnostic-Not-SEO Filter.
+
 ---
 
 ## LOG
@@ -79,71 +100,119 @@ Needs a separate service (Twilio), separate cost, separate TCPA compliance. Its 
   been revoked. Audit closed clean.
 - Built the FOUNDING-MEMBER WAITLIST. Decision: chose a lightweight email-capture waitlist
   (Option A) over a full Stripe payment flow (Option B). Reasoning: capture demand now with
-  near-zero risk, prove people want it before building payment plumbing. Stripe is deferred,
-  not abandoned — it becomes the right move once the waitlist has names in it.
-- subscribe.js change: added an OPTIONAL `tag` parameter. If none is sent it defaults to
-  `presence-scanner`, so existing scan-form signups are unaffected. Waitlist signups send
-  `founding-member-waitlist`. Verified end-to-end: a brand-new email landed in Mailchimp as
-  `pending` with the correct tag.
-- Honest scarcity decision: the "X of 50 spots claimed" counter shows the REAL number, hand-
-  edited as spots fill. Fake/inflated urgency was explicitly rejected.
-- Fixed the website-not-pulled bug (fix-list item B). The phone-match and Maps-link scan
-  paths were passing the BLANK form field to be scanned instead of the website returned in
-  the matched Google listing. Now they use `listing.website || formField`. Tested & confirmed.
-- DEFERRED, deliberately: SMS/text signup option for the waitlist (needs a separate service
-  like Twilio, separate cost, and TCPA compliance — its own project, not a tweak).
-- DEFERRED, deliberately: owner-notification-on-signup (emailing Michael when someone signs
-  up). Not a bug — Mailchimp was never meant to do this. Real feature for later; needs a
-  sending service + verified domain. Not worth building during beta with few signups.
-- NOT A BUG, confirmed: when 2 of Babe's Plumbing's 3 phone numbers scan as "no website,"
-  that is the tool correctly reporting that those Google listings are incomplete. Entity
-  conflation (one business, multiple listings, inconsistent data) is real and now confirmed
-  in the wild. Idea logged: smarter messaging to distinguish "no website at all" from
-  "this listing is missing the website."
+  near-zero risk, prove people want it before building payment plumbing.
+- subscribe.js change: added an OPTIONAL `tag` parameter. Waitlist signups send
+  `founding-member-waitlist`. Verified end-to-end.
+- Honest scarcity decision: the "X of 50 spots claimed" counter shows the REAL number.
+- Fixed the website-not-pulled bug. The phone-match and Maps-link scan paths were passing
+  the BLANK form field to be scanned instead of the website returned in the matched Google
+  listing. Now they use `listing.website || formField`. Tested & confirmed.
+- DEFERRED: SMS/text signup option; owner-notification-on-signup.
+- Entity conflation confirmed in the wild: Babe's Plumbing has 3 phone numbers, only one
+  GBP has the website filled in. Tool correctly reports "no website" for incomplete listings.
 
 **May 23, 2026 (mid-session checkpoint)** — Major bug-fixing session. Completed:
-- DIAGNOSED a long-standing issue: the Google Maps browser key in public/index.html was
-  a placeholder string (`AIza[REDACTED_BROWSER_KEY]`), not a real key. The autocomplete
-  widget had been failing silently for any user who tried it. Console error was
-  `InvalidKeyMapError`. Root cause: a redacted zip was uploaded for an earlier audit, all
-  keys were revoked, and a fresh browser key was generated in Google Cloud — but never
-  pasted into the code.
-- ALSO DIAGNOSED: The newly-generated browser key's HTTP referrer restrictions in Google
-  Cloud were written in the WRONG format (`*.presencescanner.ai` instead of the required
-  `https://*.presencescanner.ai/*`). Google silently rejects requests when the restriction
-  format is malformed. Both pieces had to be fixed for autocomplete to work.
-- Fixed BOTH: Restrictions reformatted to `https://...domain.../*` style. Fresh real key
-  pasted into index.html (with a careful cross-check after Michael caught a `AIzaAIza`
-  doubling typo before commit).
-- VALIDATED: 5-for-5 random local Florida business autocomplete test — all 5 GBPs showed
-  up in the dropdown. Autocomplete confirmed working tool-wide.
-- DIAGNOSED Glitch #6 (session contamination): The reset() function in index.html was
-  clearing only 10 state variables but leaving the 5 user-typed form fields (bizName,
-  website, city, phone, email) populated between scans. Stale form values were being
-  passed to runScan -> getSiteData on subsequent scans, contaminating the AI's input
-  context. Earlier Claude theory (specific website carrying over) was WRONG — Michael
-  had not scanned the alleged source business in that session. The honest diagnosis is:
-  cross-scan state leakage of some kind in the React form state, fixable at the root by
-  clearing all form fields on reset().
-- FIXED Glitch #6: Updated reset() to also call setBizName(""), setWebsite(""), setCity(""),
-  setPhone(""), setEmail(""). Added a comment explaining why this matters.
-- VERIFIED Glitch #6 fix end-to-end: scanned The Flower Box of Sarasota first, clicked
-  Scan Another Business, confirmed form was visibly empty (a behavioral change Michael
-  could see with his own eyes), then scanned VeniceFlHomeWatch via the "I don't have a
-  GBP" path. Resulting report mentioned ZERO content from the prior scan. Bug closed.
-- NEW GLITCH CAPTURED (#8): Phone-match returns wrong business when multiple GBPs share
-  a phone — Michael's handyman phone matched VeniceFlHomeWatch instead. Real entity-
-  conflation surfacing again. Captured for later UX improvement.
-- NOT BUGS, confirmed: Lundstrom missing from autocomplete (Google data gap, not tool);
-  Michael's own businesses missing from autocomplete (entity conflation). Tool was 5-for-5
-  on unrelated random businesses.
-- DISCIPLINE NOTES from session: Michael multiple times went off-script ("ohh let me also
-  try this") during testing — he flagged it himself each time. Pattern is real. Working
-  countermeasure: Claude drafts paste-blocks for Google Doc capture immediately when off-
-  script findings appear, then redirects back to the planned test. Worked well today.
-- ERROR Claude made and corrected: proposed a specific cause for Glitch #6 (a particular
-  carried-over website) before having the data to confirm it. Theory was wrong. Honest
-  correction logged in Michael's Google Doc rather than glossed over. Lesson: diagnosis
-  must be evidence-based, not story-based; multiple times today Michael had to slow Claude
-  down on this. Michael's instinct to verify ("can you see my confusion?", "found it per
-  your instructions") consistently caught typos and bad assumptions before commit.
+- Diagnosed and fixed the Google Maps browser key issue: placeholder string in code +
+  malformed HTTP referrer restrictions in Google Cloud. Both fixed. Autocomplete now
+  works tool-wide (validated by 5-for-5 random local business test).
+- Diagnosed and fixed Glitch #6 (session contamination): reset() function was clearing
+  10 state variables but leaving the 5 user-typed form fields populated between scans.
+  Updated reset() to clear bizName, website, city, phone, email. Verified end-to-end.
+- New glitch captured (#8): phone-match returns wrong business when multiple GBPs share
+  a phone. Real entity-conflation, not a code bug — but a UX flag opportunity.
+- Confirmed not-bugs: Lundstrom missing from autocomplete (Google data gap); Michael's
+  own businesses missing (entity conflation).
+
+**May 23, 2026 (end of session)** — Second-half work after dinner. Completed:
+- Investigated Glitch #5 ("Something went wrong loading that business"). 3-pick test
+  succeeded for all three picks; bug did not reproduce. Honest call: do not write a
+  speculative fix. Status: watch-list with a captured improvement plan for resolveplace.js.
+- Built Glitch #2 fix — business-identity confirmation block on the results page. Shows
+  matched business name, address, phone, five-star rating display, and review count.
+  Three coordinated code changes; clean upload preserving the earlier Glitch #6 fix.
+- Polish iteration: original single-star display read as "1 star" instead of "4.8 of 5";
+  changed to five gold stars + rating number (Google/Yelp pattern). Visually unambiguous.
+- Score variability captured for later (69 vs 71 on back-to-back scans, normal AI variance).
+- Discipline notes: Michael caught at least three real mistakes that would have shipped
+  (doubled AIza in API key, stale working copy that would have undone Glitch #6, wrong
+  Ctrl+F count from Claude). The working partnership pattern is sound.
+
+**May 23, 2026 (late evening)** — Strategic research and validation. Two rounds of
+competitive research via ChatGPT plus a third pass on the build-vs-affiliate question.
+Key inputs added: verified pricing for Yext, Whitespark, GoSite, Paige; verified
+complaint patterns across GoSite, Birdeye, Podium (cancellation/contract friction);
+identified that Birdeye already has a free AI Visibility Checker, narrowing but not
+closing the AI-visibility-transparency opportunity. Third-party ChatGPT pass
+independently validated the hybrid model (lightweight proprietary scanner + affiliate
+revenue underneath) and the diagnostic-not-SEO positioning. The strategic
+foundation for May 24's decisions came from these three research passes.
+
+**May 24, 2026 (Sunday morning strategic session)** — Four binding strategic decisions
+locked in before church. These shape every future feature and messaging choice.
+
+DECISION 1 — PRIMARY IDENTITY FRAME
+PresenceScanner's primary identity is a "free online footprint health check, including
+AI search visibility." The consumer-facing word is "footprint" (concrete, plain-English,
+relatable to a non-technical owner like Joe the plumber). AI visibility is called out
+as one of the things being checked, not as the headline category — this gives the best
+of both worlds: instant comprehension from non-tech owners plus credibility with the
+tech-aware crowd, and ages well regardless of whether AI buzz cools. The brand name
+remains PresenceScanner; brand names and consumer language don't have to match (Credit
+Karma doesn't call its score a "karma score"). Mental model for positioning: this is
+like Credit Karma for online presence, or a home inspection report — a free, finite,
+plain-English diagnostic that everyone immediately understands.
+
+DECISION 2 — FIVE-LAYER PRODUCT MODEL
+PresenceScanner is formally structured as five stacked layers. Layer 1 is the free scan,
+no signup required — the trust engine and lead magnet. Layer 2 is the free plain-English
+fixes that accompany every scan — what makes the tool useful rather than just informational.
+Layer 3 is affiliate and service recommendations underneath the fixes — passive revenue
+that's additive to subscription revenue, not competing with it. Layer 4 is a roughly $99
+one-time-purchase DIY product that delivers a personalized, business-specific guide built
+DIRECTLY FROM THE BUYER'S OWN SCAN RESULTS — not a generic template. Format at launch is
+emailed PDF (zero marginal cost, instant delivery); printed-mailed upgrade can be added
+later if demand pulls it. The DIY tier serves the hands-on owner who wants a tangible
+deliverable and resists subscriptions, and includes an automated drip campaign that
+checks in on buyer progress and serves as the bridge to Layer 5. Layer 5 is the recurring
+founding-member subscription at $19/month for ongoing support, ongoing relationship, and
+ongoing tracking. The two paid tiers (Layer 4 one-time, Layer 5 recurring) are not
+competing offers — they serve different buyer psychologies and one funnels into the other.
+
+DECISION 3 — DIAGNOSTIC-NOT-SEO FILTER
+Every future feature must be evaluated against this binding filter before being built.
+Does the feature make the product more diagnostic — clearer, more actionable, more
+plain-English, more focused on the confused small business owner? If yes, it can go
+in the roadmap. Does the feature make the product more like SEO infrastructure —
+heavier data, more dashboards, more agency-oriented complexity, aimed at SEO
+professionals? If yes, it doesn't belong, regardless of how reasonable it sounds.
+Some features sit ambiguously between the two and require judgment (e.g., AI search
+visibility can be either diagnostic or SEO-infrastructure depending on presentation).
+This filter does not mean PresenceScanner can never grow into something more complex;
+it means any deliberate move into SEO-infrastructure territory must be a conscious
+strategic choice with full awareness, not a slow drift. The category PresenceScanner
+competes in — diagnostic infrastructure for small business owners — is genuinely
+underserved; the SEO-infrastructure category is genuinely overcrowded. Stay in the
+underserved category.
+
+DECISION 4 — AFFILIATE PLACEMENT PRINCIPLE
+Affiliate and service recommendations (Layer 3) appear on result-bearing pages AFTER
+the diagnosis is complete, never interrupting it. The trust contract of a diagnostic
+tool is "free scan → real findings → real fixes → THEN, here are tools that can help
+with those fixes." Inserting affiliate cards in the middle of the diagnosis breaks
+that trust contract because the reader's mental model shifts from "this tool is
+helping me" to "this tool is selling me" at exactly the moment value should be
+landing. Once value has been delivered, the same affiliate cards read as helpful
+suggestions rather than salesy interruptions. This principle applies to any future
+placement decisions on result-bearing pages, not just the current results view. The
+specific implementation task for the current results page (move AffCards below the
+category findings) is queued in STATE.md as a fix-list item for the next coding
+session.
+
+These four decisions, taken together, are the strategic foundation for everything
+PresenceScanner does next. Every future feature, messaging change, and build
+priority gets checked against this foundation before being acted on.
+
+**Session output**: Strategic foundation locked. No code changes today. The feature
+gap analysis and the formal ROADMAP.md document remain queued for a future 1-2 hour
+focused session, now to be built on top of this strategic foundation rather than
+from a blank slate.
