@@ -209,6 +209,16 @@
     .bug-howto-steps{font-size:0.94rem;color:var(--t2);line-height:1.55}
     .bug-howto-steps b{color:var(--t1);font-weight:700}
     .bug-howto-tip{font-size:0.88rem;color:var(--t3);margin-top:14px;line-height:1.55;font-style:italic}
+    /* Sentiment pulse strip (Fix #6) — bottom of results page */
+    .mood-strip{background:var(--s1);border:1px solid var(--b1);border-radius:14px;padding:18px 22px;margin-bottom:16px;text-align:center}
+    .mood-question{font-family:var(--fh);font-size:1.02rem;font-weight:700;color:var(--t1);margin-bottom:12px}
+    .mood-buttons{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+    .mood-btn{display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:10px 18px;background:var(--s2);border:1.5px solid var(--b1);border-radius:12px;color:var(--t1);font-family:var(--fb);cursor:pointer;transition:all 0.15s;min-width:96px}
+    .mood-btn:hover{border-color:var(--cyan);background:rgba(43,142,176,0.06);transform:translateY(-1px)}
+    .mood-emoji{font-size:28px;line-height:1}
+    .mood-label{font-size:0.84rem;color:var(--t2);font-weight:500}
+    .mood-btn:hover .mood-label{color:var(--t1)}
+    .mood-thanks{font-family:var(--fh);font-size:1.02rem;font-weight:600;color:var(--green);padding:6px}
     .bug-send{width:100%;margin-top:20px;padding:14px;background:linear-gradient(135deg,var(--cyan),#1f6c87);border:none;border-radius:8px;color:#fff;font-family:var(--fh);font-size:1rem;font-weight:700;cursor:pointer}
     .bug-send:disabled{opacity:0.5;cursor:not-allowed}
     .bug-close{position:absolute;top:10px;right:14px;background:transparent;border:none;color:var(--t3);font-size:28px;font-weight:300;cursor:pointer;line-height:1;padding:0;width:32px;height:32px}
@@ -717,18 +727,36 @@ function BusinessAutocomplete({ onPick }) {
   );
 }
 
-// --- Bug report widget (Fix #5) ---
-// Persistent "Something off?" link bottom-right. Click opens a modal
-// with a text area, optional screenshot, optional email. Submissions
-// go to Formspree (form ID set in BUG_REPORT_FORMSPREE_ID above).
-function BugReport(){
-  const [open,setOpen]=useState(false);
+// --- Bug report widget (Fix #5) + sentiment-pulse handler (Fix #6) ---
+// Renders the persistent "Something off?" button AND the feedback modal.
+// The modal is now controlled from App so the sentiment-pulse strip can
+// also open it. When `mood` is non-null the modal copy adjusts to match
+// the user's emotional state (😐 okay / 😞 frustrating).
+function BugReport({open,setOpen,mood,setMood}){
   const [showHowto,setShowHowto]=useState(false);
   const [text,setText]=useState("");
   const [file,setFile]=useState(null);
   const [email,setEmail]=useState("");
   const [state,setState]=useState("idle"); // idle | sending | sent | error
   const [errMsg,setErrMsg]=useState("");
+
+  // Copy varies depending on what triggered the modal.
+  const copy = mood==="frustrating" ? {
+    title:"Sorry that was frustrating",
+    intro:"I want to fix this. Tell me what felt frustrating and I'll work on it — quick and casual is fine.",
+    msgLabel:"What's frustrating?",
+    placeholder:"Tell me what felt wrong or annoying…"
+  } : mood==="okay" ? {
+    title:"Tell me what's missing",
+    intro:"You're testing this with me — that's the help I need. What felt incomplete, off, or could be better? Quick and casual is fine.",
+    msgLabel:"What's missing or could be better?",
+    placeholder:"Tell me what felt incomplete or could be improved…"
+  } : {
+    title:"Spotted something off?",
+    intro:"You're testing this with me — that's the help I need. Tell me what looked wrong, weird, or confusing, and I'll fix it. Quick and casual is fine.",
+    msgLabel:"What happened?",
+    placeholder:"Just describe it in your own words…"
+  };
 
   function close(){
     setOpen(false);
@@ -737,12 +765,13 @@ function BugReport(){
     setTimeout(()=>{
       setText("");setFile(null);setEmail("");
       setState("idle");setErrMsg("");
+      if(setMood)setMood(null);
     },200);
   }
 
   async function submit(){
     if(!text.trim()){
-      setErrMsg("Please tell me what happened.");
+      setErrMsg("Please tell me a little about it.");
       setState("error");
       return;
     }
@@ -750,6 +779,7 @@ function BugReport(){
     try{
       const fd=new FormData();
       fd.append("message",text.trim());
+      fd.append("mood",mood||"bug-report");
       if(email.trim())fd.append("email",email.trim());
       if(file)fd.append("screenshot",file);
       fd.append("page_url",window.location.href);
@@ -773,7 +803,7 @@ function BugReport(){
 
   return (
     <>
-      <button className="bug-link" onClick={()=>setOpen(true)} title="Report something off">
+      <button className="bug-link" onClick={()=>{if(setMood)setMood(null);setOpen(true);}} title="Report something off">
         Something off?
         <span className="bug-link-beta">BETA</span>
       </button>
@@ -789,11 +819,11 @@ function BugReport(){
             ) : (
               <>
                 <button className="bug-close" onClick={close} aria-label="Close">×</button>
-                <h3>Spotted something off?</h3>
-                <p>You're testing this with me — that's the help I need. Tell me what looked wrong, weird, or confusing, and I'll fix it. Quick and casual is fine.</p>
-                <label>What happened?</label>
+                <h3>{copy.title}</h3>
+                <p>{copy.intro}</p>
+                <label>{copy.msgLabel}</label>
                 <textarea value={text} onChange={e=>setText(e.target.value)}
-                  placeholder="Just describe it in your own words…"
+                  placeholder={copy.placeholder}
                   disabled={state==="sending"} />
                 <label>Screenshot (optional but encouraged)</label>
                 <div className="bug-file-wrap">
@@ -851,6 +881,66 @@ function BugReport(){
   );
 }
 
+// --- Sentiment pulse strip (Fix #6) ---
+// Three-emoji mood read at the bottom of the results page.
+//   😀 Good        → silent quick vote to Formspree, strip becomes "Thanks!"
+//   😐 Okay        → opens the bug-report modal with mood="okay"
+//   😞 Frustrating → opens the bug-report modal with mood="frustrating"
+// Both negative paths use the same modal — same screenshot field, same
+// "How do I take a screenshot?" instructions — just with copy adjusted
+// to match the mood. One vote per scan session; resets on new scan.
+function SentimentStrip({onTextFeedback,voted,setVoted}){
+  async function quickVote(){
+    setVoted(true);
+    try{
+      const fd=new FormData();
+      fd.append("mood","good");
+      fd.append("message","[quick mood vote: 😀 Good]");
+      fd.append("page_url",window.location.href);
+      await fetch("https://formspree.io/f/"+BUG_REPORT_FORMSPREE_ID,{
+        method:"POST",body:fd,headers:{"Accept":"application/json"}
+      });
+    }catch{}
+  }
+
+  function chooseMood(m){
+    if(m==="good"){
+      quickVote();
+    }else{
+      setVoted(true);
+      onTextFeedback(m);
+    }
+  }
+
+  if(voted){
+    return (
+      <div className="mood-strip">
+        <div className="mood-thanks">Thanks for the feedback!</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mood-strip">
+      <div className="mood-question">How are you finding PresenceScanner so far?</div>
+      <div className="mood-buttons">
+        <button className="mood-btn" onClick={()=>chooseMood("good")} title="Good">
+          <span className="mood-emoji">😀</span>
+          <span className="mood-label">Good</span>
+        </button>
+        <button className="mood-btn" onClick={()=>chooseMood("okay")} title="Okay">
+          <span className="mood-emoji">😐</span>
+          <span className="mood-label">Okay</span>
+        </button>
+        <button className="mood-btn" onClick={()=>chooseMood("frustrating")} title="Frustrating">
+          <span className="mood-emoji">😞</span>
+          <span className="mood-label">Frustrating</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function App(){
   const [view,setView]=useState("form");
   const [bizName,setBizName]=useState("");
@@ -870,6 +960,18 @@ function App(){
   const [fhPhone,setFhPhone]=useState("");
   const [fhMapsUrl,setFhMapsUrl]=useState("");
   const [fhErr,setFhErr]=useState("");
+  // --- Feedback modal (controls BugReport from outside so SentimentStrip
+  // can also open it with a mood context) ---
+  const [bugOpen,setBugOpen]=useState(false);
+  const [bugMood,setBugMood]=useState(null);
+  // --- Sentiment pulse vote (one per scan session, resets on new scan) ---
+  const [moodVoted,setMoodVoted]=useState(false);
+
+  // Triggered when the sentiment strip's 😐 or 😞 is clicked.
+  function requestFeedback(mood){
+    setBugMood(mood);
+    setBugOpen(true);
+  }
 
   useEffect(()=>{
     if(view!=="loading")return;
@@ -1092,6 +1194,9 @@ function App(){
     setCity("");
     setPhone("");
     setEmail("");
+    // Sentiment pulse: clear the vote flag so the user can react fresh to
+    // each new scan, not just the first one.
+    setMoodVoted(false);
   }
   const sc=results?(results.overallScore>=70?"good":results.overallScore>=40?"warn":"bad"):"warn";
 
@@ -1290,10 +1395,11 @@ function App(){
           <AffCards results={results} bizName={bizName}/>
           <AlgorithmFeed bizType={results.categories?.[0]?.findings?.[0]?.title || bizName} city={city}/>
           <FoundingWaitlist/>
+          <SentimentStrip onTextFeedback={requestFeedback} voted={moodVoted} setVoted={setMoodVoted}/>
           <button className="rescan" onClick={reset}>← Scan Another Business</button>
         </div>
       )}
-      <BugReport/>
+      <BugReport open={bugOpen} setOpen={setBugOpen} mood={bugMood} setMood={setBugMood}/>
     </div>
   );
 }
