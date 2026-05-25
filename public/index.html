@@ -300,7 +300,7 @@ REAL WEBSITE DATA: This business has no website. For Website Health, AI Search V
 }
 
 async function chatReply(history, results, bizName) {
-  const sys = "You are the PresenceIQ AI Advisor helping "+bizName+" improve their online presence. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+". Write like talking to a busy tradesperson. Plain English only. 2-3 short paragraphs max. End with one clear next action.";
+  const sys = "You are the PresenceScanner AI Advisor, helping "+bizName+" understand and improve their online footprint — how customers and AI search engines find them. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+". Write like talking to a busy small business owner. Plain English only, no jargon. 2-3 short paragraphs max. End with one clear next action.";
   const msgs = [{role:"user",content:sys+"\n\nConversation:"},{role:"assistant",content:"Ready to help."},...history];
   return await callClaude(msgs, 500);
 }
@@ -527,7 +527,7 @@ function AlgorithmFeed({bizType, city}) {
 }
 
 function Chat({results,bizName}){
-  const [msgs,setMsgs]=useState([{r:"ai",t:"Hi! I just finished scanning "+bizName+". Your biggest win right now: "+results.topPriority+" — want me to walk you through exactly how to fix that first?"}]);
+  const [msgs,setMsgs]=useState([{r:"ai",t:"Hi! I just finished checking "+bizName+"'s online footprint. Your biggest opportunity right now: "+results.topPriority+" — want me to walk you through how to address that first?"}]);
   const [input,setInput]=useState("");
   const [busy,setBusy]=useState(false);
   const bottom=useRef(null);
@@ -549,7 +549,7 @@ function Chat({results,bizName}){
     <div className="chat">
       <div className="chat-top">
         <div className="chat-ico">🤖</div>
-        <h3>AI Presence Advisor</h3>
+        <h3>AI Footprint Advisor</h3>
         <span className="live"><span className="dot"/>Live</span>
       </div>
       <div className="msgs">
@@ -887,8 +887,8 @@ function App(){
       {view==="loading"&&(
         <div className="loading">
           <div className="spinner"/>
-          <h3>Scanning {bizName}…</h3>
-          <p>Checking your presence across Google, AI search, social media, and directories</p>
+          <h3>Checking {bizName}'s footprint…</h3>
+          <p>Looking at Google, AI search, your website, reviews, and more</p>
           <ul className="steps">
             {STEPS.map((s,i)=>(
               <li key={i} className={i<stepIdx?"ok":i===stepIdx?"on":""}>
