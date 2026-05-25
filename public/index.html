@@ -237,6 +237,19 @@ async function getSiteData(website) {
 async function runScan(bizName, website, city, phone, gbp) {
   // gbp is the business the user picked (an object), or null if they
   // said their business isn't on Google. runScan never fetches it itself.
+
+  // Fix #3 — figure out the website situation deterministically up front,
+  // instead of letting the AI guess from incomplete signals. Three real cases:
+  //   (A) business has a website AND it's listed on their Google profile
+  //   (B) business has a website but Google's profile doesn't show it
+  //   (C) we genuinely can't tell — no website anywhere we looked
+  const formWebsite = (website||'').trim();
+  const realGBP = !!(gbp && !gbp.userProvided);
+  const gbpWebsite = realGBP ? ((gbp.website||'').trim()) : '';
+  const knownWebsite = gbpWebsite || formWebsite;
+  const websiteMissingFromGBP = realGBP && !!formWebsite && !gbpWebsite;
+  const noWebsiteAnywhere = !knownWebsite;
+
   const site = await getSiteData(website);
   
   const gbpContext = gbp ? `
@@ -247,10 +260,11 @@ REAL GOOGLE BUSINESS PROFILE DATA (use this for GBP category — do not guess):
 - Total Reviews: ${gbp.reviewCount}
 - Address: ${gbp.address || 'Not listed'}
 - Phone: ${gbp.phone || 'Not listed'}
-- Website on GBP: ${gbp.website || 'None'}
+- Website on GBP: ${gbp.website || 'NOT SET'}
 - Has Business Hours Set: ${gbp.hasHours ? 'Yes' : 'No'}
 - Photo Count: ${gbp.photoCount}
-- Business Status: ${gbp.businessStatus || 'Unknown'}
+- Business Status: ${gbp.businessStatus || 'Unknown'}${websiteMissingFromGBP ? `
+- IMPORTANT FIX OPPORTUNITY: The GBP website field is EMPTY but the business has a website (${formWebsite}). Customers searching Google cannot click through. This is a high-priority, free, 2-minute fix.` : ''}
 ` : `
 REAL GOOGLE BUSINESS PROFILE DATA: No GBP listing found for this business. Score GBP category very low.
 `;
@@ -274,11 +288,13 @@ IMPORTANT — handle this honestly:
 - Do NOT claim the website has "technical issues", "server configuration problems", or is "broken" or "inaccessible to customers". You do not know that — it is not true based on this data.
 - For Website Health, AI Search Visibility, and GEO Score: do NOT score these low as a penalty. Treat them as NOT MEASURED for this scan. Give each a neutral score of 50 and ONE finding explaining honestly that the website could not be scanned automatically (often due to security settings) so analysis was skipped — status 'warn', a gentle action like 'Website analysis was skipped — this is usually a security setting, not a problem'.
 - The overall score must not be dragged down just because our scanner was blocked.
+` : noWebsiteAnywhere ? `
+REAL WEBSITE DATA: No website was provided by the user and none is listed on the Google Business Profile. Be honest about the ambiguity in your findings: we cannot tell from this data whether (a) the business has no website at all, or (b) the business has one but it isn't on their Google listing and wasn't given to us. Either way, customers searching online can't easily find a website for this business, which genuinely limits visibility. For Website Health, AI Search Visibility, and GEO Score, score honestly low. In the findings say "no website was found anywhere we checked" rather than "this business has no website."
 ` : `
-REAL WEBSITE DATA: This business has no website. For Website Health, AI Search Visibility, and GEO Score, score honestly low and note in the findings that no website was found — having no website genuinely limits online visibility.
+REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automated scanner could not fetch it. Treat Website Health, AI Search Visibility, and GEO Score as NOT MEASURED — give each a neutral score of 50 with ONE finding explaining honestly that the website could not be scanned automatically (often a security setting), so analysis was skipped. Do NOT claim the website is broken. Do NOT penalize the overall score.
 `;
 
-  const prompt = "You are auditing a local business's online presence. Use ONLY the real data provided below. Do NOT invent facts. Return ONLY valid JSON, no other text.\n\nBusiness: "+bizName+"\nWebsite: "+(website||"none")+"\nCity: "+city+"\n\n"+gbpContext+"\n"+siteContext+"\n\nReturn this JSON:\n{\"overallScore\":50,\"overallGrade\":\"Needs Work\",\"summary\":\"2 sentence summary\",\"topPriority\":\"top action\",\"hasWebsite\":false,\"categories\":[{\"name\":\"Website Health\",\"subtitle\":\"SEO and mobile\",\"icon\":\"🌐\",\"score\":50,\"findings\":[{\"title\":\"finding\",\"detail\":\"detail\",\"status\":\"warn\",\"action\":\"action\"}]},{\"name\":\"Google Business Profile\",\"subtitle\":\"Local ranking power\",\"icon\":\"📍\",\"score\":50,\"findings\":[]},{\"name\":\"AI Search Visibility\",\"subtitle\":\"ChatGPT and Google AI\",\"icon\":\"🤖\",\"score\":50,\"findings\":[]},{\"name\":\"Citation Consistency\",\"subtitle\":\"NAP across the web\",\"icon\":\"📋\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Social Presence\",\"subtitle\":\"Facebook and Instagram\",\"icon\":\"📱\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Review Authority\",\"subtitle\":\"Volume and recency\",\"icon\":\"⭐\",\"score\":50,\"findings\":[]},{\"name\":\"GEO Score\",\"subtitle\":\"AI search trust and authority\",\"icon\":\"🧠\",\"score\":50,\"findings\":[]}]}\n\nSCORING RULES:\n- Score these FIVE categories with real numbers 0-100 based strictly on the real data above: Website Health, Google Business Profile, AI Search Visibility, Review Authority, GEO Score. Vary the scores honestly — a business with schema, FAQ, good word count and strong reviews should score well; one missing those should score low. Do NOT give every category a similar number.\n- For Citation Consistency and Social Presence: these are NOT measured yet. Keep score as -1 and comingSoon as true exactly as shown. Give each ONE finding with title 'Coming soon', a short detail explaining full citation/social analysis is being added, status 'warn', and no action. Do not invent a score for these two.\n- overallScore must be the average of ONLY the five real scored categories (ignore the two coming-soon ones).\n- Use the REAL GBP DATA for the Google Business Profile category. Use the REAL WEBSITE DATA for Website Health, AI Search Visibility and GEO Score.\n- Each of the five scored categories needs exactly 3 specific findings based on the real data. Be concrete — reference actual things found or missing.\n- For GEO Score: assess whether ChatGPT or Perplexity would recommend this business, based on whether the real website data shows schema markup and FAQ content AI can cite. Score harshly — most small businesses score under 35 on GEO.";
+  const prompt = "You are auditing a local business's online presence. Use ONLY the real data provided below. Do NOT invent facts. Return ONLY valid JSON, no other text.\n\nBusiness: "+bizName+"\nWebsite: "+(website||"none")+"\nCity: "+city+"\n\n"+gbpContext+"\n"+siteContext+"\n\nReturn this JSON:\n{\"overallScore\":50,\"overallGrade\":\"Needs Work\",\"summary\":\"2 sentence summary\",\"topPriority\":\"top action\",\"hasWebsite\":false,\"categories\":[{\"name\":\"Website Health\",\"subtitle\":\"SEO and mobile\",\"icon\":\"🌐\",\"score\":50,\"findings\":[{\"title\":\"finding\",\"detail\":\"detail\",\"status\":\"warn\",\"action\":\"action\"}]},{\"name\":\"Google Business Profile\",\"subtitle\":\"Local ranking power\",\"icon\":\"📍\",\"score\":50,\"findings\":[]},{\"name\":\"AI Search Visibility\",\"subtitle\":\"ChatGPT and Google AI\",\"icon\":\"🤖\",\"score\":50,\"findings\":[]},{\"name\":\"Citation Consistency\",\"subtitle\":\"NAP across the web\",\"icon\":\"📋\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Social Presence\",\"subtitle\":\"Facebook and Instagram\",\"icon\":\"📱\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Review Authority\",\"subtitle\":\"Volume and recency\",\"icon\":\"⭐\",\"score\":50,\"findings\":[]},{\"name\":\"GEO Score\",\"subtitle\":\"AI search trust and authority\",\"icon\":\"🧠\",\"score\":50,\"findings\":[]}]}\n\nSCORING RULES:\n- Score these FIVE categories with real numbers 0-100 based strictly on the real data above: Website Health, Google Business Profile, AI Search Visibility, Review Authority, GEO Score. Vary the scores honestly — a business with schema, FAQ, good word count and strong reviews should score well; one missing those should score low. Do NOT give every category a similar number.\n- For Citation Consistency and Social Presence: these are NOT measured yet. Keep score as -1 and comingSoon as true exactly as shown. Give each ONE finding with title 'Coming soon', a short detail explaining full citation/social analysis is being added, status 'warn', and no action. Do not invent a score for these two.\n- overallScore must be the average of ONLY the five real scored categories (ignore the two coming-soon ones).\n- Use the REAL GBP DATA for the Google Business Profile category. Use the REAL WEBSITE DATA for Website Health, AI Search Visibility and GEO Score.\n- Each of the five scored categories needs exactly 3 specific findings based on the real data. Be concrete — reference actual things found or missing.\n- For GEO Score: assess whether ChatGPT or Perplexity would recommend this business, based on whether the real website data shows schema markup and FAQ content AI can cite. Score harshly — most small businesses score under 35 on GEO.\n- If 'IMPORTANT FIX OPPORTUNITY' is mentioned in the GBP data above, you MUST surface it as one of the three findings in the Google Business Profile category. Title it 'Website missing from your Google listing', detail it in one short sentence, status 'bad', action: 'Add your website URL to your Google Business Profile dashboard — a free 2-minute fix.'";
   const raw = await callClaude([{role:"user",content:prompt}], 3000);
   const clean = raw.replace(/```json|```/g,"").trim();
   // Helper: attach the matched-business context to the parsed result so the
@@ -288,6 +304,9 @@ REAL WEBSITE DATA: This business has no website. For Website Health, AI Search V
     if(parsed && typeof parsed==='object'){
       parsed.gbp = gbp || null;
       parsed.scannedInputs = { bizName, city };
+      // Fix #3 — trust our deterministic state, not the AI's guess.
+      parsed.hasWebsite = !noWebsiteAnywhere;
+      parsed.websiteMissingFromGBP = websiteMissingFromGBP;
     }
     return parsed;
   }
@@ -366,8 +385,12 @@ function CatCard({cat}){
 function AffCards({results,bizName}){
   const cards=[];
   if(!results.hasWebsite){
-    cards.push({ico:"🌐",title:"Claim Your Domain",desc:"Every business needs a web address. Search for yours before someone else takes it.",label:"Search Domains →",href:AFF.domain(bizName),note:"From ~$12/yr via GoDaddy"});
+    // We found no website anywhere — the business may genuinely not have one yet.
+    cards.push({ico:"🌐",title:"Claim Your Domain",desc:"If you don't have a website yet, every business needs a web address. Search for yours before someone else takes it.",label:"Search Domains →",href:AFF.domain(bizName),note:"From ~$12/yr via GoDaddy"});
     cards.push({ico:"🖥️",title:"Get Web Hosting",desc:"Once you have a domain you need a home for your website.",label:"View Hosting →",href:AFF.hosting(),note:"From ~$6/mo"});
+  } else if(results.websiteMissingFromGBP){
+    // Business has a website — it's just not listed on their Google profile.
+    cards.push({ico:"🔗",title:"Add Your Website to Google",desc:"Your website isn't on your Google Business Profile, so customers searching Google can't click through. Free 2-minute fix in your Google dashboard.",label:"Open Google Business Profile →",href:"https://business.google.com/",note:"Free — about 2 minutes"});
   }
   const gbp=results.categories?.find(c=>c.name==="Google Business Profile");
   if(gbp&&gbp.score<65)cards.push({ico:"📍",title:"Claim Google Listing",desc:"Your Google Business Profile is your most powerful free marketing tool.",label:"Claim Free →",href:AFF.gbp(),note:"Free — takes about 10 minutes"});
