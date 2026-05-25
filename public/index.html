@@ -176,11 +176,11 @@
     .pad{padding:0 20px}
     @media(max-width:500px){.nav{padding:14px 18px}.hero{padding:36px 18px 28px}.card,.shero{padding:22px 18px}.results{padding:20px 14px 60px}}
     /* Bug report widget (Fix #5) — persistent "Something off?" link + modal */
-    .bug-link{position:fixed;left:14px;top:50%;transform:translateY(-50%);z-index:100;background:var(--s1);color:var(--cyan);border:1.5px solid var(--cyan);border-radius:100px;padding:10px 16px;font-family:var(--fb);font-size:0.88rem;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(43,142,176,0.18);transition:all 0.2s;display:inline-flex;align-items:center;gap:9px}
-    .bug-link:hover{background:var(--cyan);color:#fff;transform:translateY(-50%) translateX(2px);box-shadow:0 6px 18px rgba(43,142,176,0.28)}
+    .bug-link{position:fixed;top:50%;left:calc(75% + 140px);transform:translate(-50%,-50%);z-index:100;background:var(--s1);color:var(--cyan);border:1.5px solid var(--cyan);border-radius:100px;padding:10px 16px;font-family:var(--fb);font-size:0.88rem;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(43,142,176,0.18);transition:all 0.2s;display:inline-flex;align-items:center;gap:9px}
+    .bug-link:hover{background:var(--cyan);color:#fff;transform:translate(-50%,-50%) translateX(3px);box-shadow:0 6px 18px rgba(43,142,176,0.28)}
     .bug-link-beta{font-size:0.62rem;font-weight:700;letter-spacing:1.5px;background:var(--cyan);color:#fff;padding:2px 7px;border-radius:100px;line-height:1.3}
     .bug-link:hover .bug-link-beta{background:rgba(255,255,255,0.25)}
-    @media(max-width:500px){.bug-link{padding:8px 13px;font-size:0.8rem;gap:7px}.bug-link-beta{font-size:0.58rem;padding:1px 6px}}
+    @media(max-width:768px){.bug-link{top:auto;left:auto;bottom:14px;right:14px;transform:none;padding:8px 13px;font-size:0.8rem;gap:7px}.bug-link:hover{transform:translateY(-1px)}.bug-link-beta{font-size:0.58rem;padding:1px 6px}}
     .bug-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;animation:bug-fade 0.2s ease}
     @keyframes bug-fade{from{opacity:0}to{opacity:1}}
     .bug-modal{background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:28px 26px;max-width:500px;width:100%;position:relative;max-height:90vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.15)}
