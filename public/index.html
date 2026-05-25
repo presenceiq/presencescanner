@@ -82,6 +82,10 @@
     .sident .sident-row:first-child{margin-top:0}
     .sident .sident-none{color:var(--amber);font-weight:500}
     .sident .sident-stars{color:#fbbf24;letter-spacing:1px;margin-right:3px}
+    .sjumps{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+    .sjump{font-size:0.78rem;color:var(--t2);background:var(--s1);border:1px solid var(--b1);border-radius:100px;padding:6px 13px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:border-color 0.2s,color 0.2s}
+    .sjump:hover{border-color:rgba(0,212,255,0.35);color:var(--cyan)}
+    .sjump::after{content:'↓';font-size:0.7rem;opacity:0.5}
     .sinfo p{color:var(--t2);font-size:0.85rem;line-height:1.7}
     .priority{margin-top:12px;padding:10px 14px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:8px;font-size:0.8rem;color:var(--cyan);line-height:1.6}
     .priority strong{display:block;font-size:0.68rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;opacity:0.7}
@@ -369,7 +373,7 @@ function AffCards({results,bizName}){
   if(gbp&&gbp.score<65)cards.push({ico:"📍",title:"Claim Google Listing",desc:"Your Google Business Profile is your most powerful free marketing tool.",label:"Claim Free →",href:AFF.gbp(),note:"Free — takes about 10 minutes"});
   cards.push({ico:"📧",title:"Professional Email",desc:"joe@gmail.com loses customers. joe@joesplumbing.com wins them.",label:"Get Business Email →",href:AFF.workspace(),note:"Google Workspace from $6/user/mo"});
   return(
-    <div className="aff-wrap">
+    <div className="aff-wrap" id="jump-tools">
       <div className="section-label">Recommended Next Steps</div>
       <div className="aff-grid">
         {cards.map((card,i)=>(
@@ -418,7 +422,7 @@ function FoundingWaitlist(){
   }
 
   return(
-    <div className="fw">
+    <div className="fw" id="jump-founding">
       <span className="fw-beta">● Beta — Help Shape It</span>
       <h3>Become a PresenceScanner Founding Member</h3>
       <p className="fw-lead">
@@ -1015,6 +1019,14 @@ function App(){
               <p>{results.summary}</p>
               <div className="priority"><strong>Top Priority</strong>{results.topPriority}</div>
             </div>
+          </div>
+          {/* Small jump-link teasers so curious users can skip ahead to the
+              tools section or the founding-member offer without scrolling
+              past the full diagnosis. Visually quiet on purpose so they
+              don't compete with the score for attention. */}
+          <div className="sjumps">
+            <a className="sjump" onClick={()=>document.getElementById('jump-tools')?.scrollIntoView({behavior:'smooth'})}>See recommended tools</a>
+            <a className="sjump" onClick={()=>document.getElementById('jump-founding')?.scrollIntoView({behavior:'smooth'})}>Lock in founding pricing</a>
           </div>
           <Chat results={results} bizName={bizName}/>
           <AlgorithmFeed bizType={results.categories?.[0]?.findings?.[0]?.title || bizName} city={city}/>
