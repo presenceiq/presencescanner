@@ -297,3 +297,81 @@ Anchor teasers added to bridge the discoverability gap. Headline typography fixe
 Two real readability issues captured for proper handling in the next dedicated UX pass.
 Repo and docs reflect everything actually built. Tomorrow can pick up cleanly from a
 strong foundation.
+
+**May 25, 2026 (Monday afternoon — AI Advisor language pass)** — Continued completing
+the Decision 1 implementation work that the Sunday-evening homepage refresh started.
+Yesterday updated the headline, subhead, browser title, and meta description; today
+updated everything the user reads from the AI Advisor and the loading screen so the
+positioning language is consistent end-to-end rather than mixed between old and new.
+
+CHANGE D — AI Advisor language fully updated to footprint/health-check framing.
+Four coordinated copy edits, no logic changes:
+(1) Advisor intro line — from "Hi! I just finished scanning [bizName]. Your biggest win
+right now: [topPriority] — want me to walk you through exactly how to fix that first?"
+to "Hi! I just finished checking [bizName]'s online footprint. Your biggest opportunity
+right now: [topPriority] — want me to walk you through how to address that first?"
+"Checking" replaces "scanning" (more diagnostic, like a doctor or inspector). "Online
+footprint" replaces "scanning [bizName]" (positioning vocabulary). "Opportunity" replaces
+"win" (softer diagnostic framing — a doctor doesn't say "biggest win," they say "biggest
+opportunity for improvement"). "Address that" replaces "fix that" (not everything in a
+footprint check is broken; some things just need attention).
+(2) System prompt that shapes every advisor reply — updated from "You are the PresenceIQ
+AI Advisor helping [bizName] improve their online presence. ... Write like talking to a
+busy tradesperson." to "You are the PresenceScanner AI Advisor, helping [bizName]
+understand and improve their online footprint — how customers and AI search engines find
+them. ... Write like talking to a busy small business owner. Plain English only, no
+jargon." Changes: PresenceIQ → PresenceScanner (brand consistency); "online presence" →
+"online footprint — how customers and AI search engines find them" (puts positioning
+frame directly into the prompt that shapes every advisor reply); "busy tradesperson" →
+"busy small business owner" (target audience is wider than tradespeople); added "no
+jargon" explicitly to enforce the diagnostic-not-SEO filter at the prompt level.
+(3) Advisor block heading — "AI Presence Advisor" → "AI Footprint Advisor" — aligns the
+section title with the new positioning vocabulary already used in the headline.
+(4) Loading-screen header and subhead — "Scanning [bizName]…" + "Checking your presence
+across Google, AI search, social media, and directories" → "Checking [bizName]'s
+footprint…" + "Looking at Google, AI search, your website, reviews, and more." The new
+subhead also drops "directories" (Citation Consistency is still coming-soon and the tool
+doesn't actually scan them yet) and adds "your website" (which the scan really does check)
+— more honest framing of what's actually happening during the 30-second wait.
+
+Deliberately left alone: the eight step-by-step loading messages ("Fetching website
+signals…", "Analyzing SEO structure…", etc.) were not changed. They have a small positive
+purpose during the loading screen — making the tool feel like it's doing real work rather
+than just sitting there — and the brief moment they appear isn't the right place to push
+positioning language. Don't fix what isn't broken.
+
+Tested in fresh incognito on Flower Box of Sarasota — all four pieces of new copy
+verified working: loading screen showed "Checking the flower box of sarasota's footprint…"
+plus the new subhead, advisor block titled "AI Footprint Advisor," advisor intro message
+used the exact new wording. Decision 1 is now fully expressed in the product from
+headline through advisor — no inconsistency between what the homepage promises and what
+the advisor delivers.
+
+WISH-LIST ITEM captured (from Michael during this session): the colored text on the
+results page (blue, gray, green, orange) is too small to read comfortably. This maps
+directly onto the readability observation from yesterday and to STATE.md fix-list item 8
+(the site-wide UX/readability pass). Not patched piecemeal — properly waiting for the
+focused UX session where typography sizing, color saturation, contrast, and theme choice
+are all treated together. Recorded explicitly in STATE.md so it's visible as a real
+wish-list item rather than just an observation.
+
+PARALLEL CONVERSATION on non-code topic: Michael is dealing with VeniceFlHomeWatch, a
+dormant Google Business Profile from a business attempt years ago at 3716 Beeber St,
+North Port — an address he still owns but doesn't operate from. The listing's "verification
+required" status combined with shared phone number is causing entity-conflation in
+search results, surfacing as one of the real-world data issues that Glitch #8 represents.
+He attempted a phone number edit on the listing today; Google's dashboard accepted the
+edit but the public listing still shows the old number, which is normal cache delay of
+24-72 hours. Strategy agreed: wait for the phone change to propagate (check in incognito
+after 48-72 hours), then mark the business permanently closed. Only verification path
+Google offers is video verification at the physical location, which is not legitimately
+available since the business never operated. If the phone edit doesn't propagate within
+a week, fall back to "Suggest an edit" from the public Maps view. Nuclear option held in
+reserve: new phone number for Putnam Realty Group if entity-conflation residue persists.
+Not a PresenceScanner code matter — but worth recording because the cleanup directly
+affects whether Glitch #8 manifests in Michael's own future test scans.
+
+Session output: Decision 1 implementation now complete end-to-end (headline + advisor +
+loading screen all aligned). Two-day arc closed cleanly: four strategic decisions locked,
+two of the four (Decisions 1 and 4) fully expressed in shipped code, supporting fixes
+captured for the queued UX pass. Strong foundation for the next session.
