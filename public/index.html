@@ -732,7 +732,7 @@ function BusinessAutocomplete({ onPick }) {
 // The modal is now controlled from App so the sentiment-pulse strip can
 // also open it. When `mood` is non-null the modal copy adjusts to match
 // the user's emotional state (😐 okay / 😞 frustrating).
-function BugReport({open,setOpen,mood,setMood}){
+function BugReport({open,setOpen,mood,setMood,onSubmitted}){
   const [showHowto,setShowHowto]=useState(false);
   const [text,setText]=useState("");
   const [file,setFile]=useState(null);
@@ -789,6 +789,7 @@ function BugReport({open,setOpen,mood,setMood}){
       });
       if(res.ok){
         setState("sent");
+        if(onSubmitted)onSubmitted(mood);
         setTimeout(close,2500);
       }else{
         const d=await res.json().catch(()=>({}));
@@ -905,9 +906,12 @@ function SentimentStrip({onTextFeedback,voted,setVoted}){
 
   function chooseMood(m){
     if(m==="good"){
+      // The tap is the feedback — submit immediately and confirm.
       quickVote();
     }else{
-      setVoted(true);
+      // For 😐 / 😞, opening the modal is NOT yet a vote. Strip stays
+      // unchanged until the user actually submits. If they close the
+      // modal without submitting, they can vote again.
       onTextFeedback(m);
     }
   }
@@ -1399,7 +1403,8 @@ function App(){
           <button className="rescan" onClick={reset}>← Scan Another Business</button>
         </div>
       )}
-      <BugReport open={bugOpen} setOpen={setBugOpen} mood={bugMood} setMood={setBugMood}/>
+      <BugReport open={bugOpen} setOpen={setBugOpen} mood={bugMood} setMood={setBugMood}
+        onSubmitted={(m)=>{if(m==="okay"||m==="frustrating")setMoodVoted(true);}}/>
     </div>
   );
 }
