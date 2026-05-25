@@ -176,8 +176,11 @@
     .pad{padding:0 20px}
     @media(max-width:500px){.nav{padding:14px 18px}.hero{padding:36px 18px 28px}.card,.shero{padding:22px 18px}.results{padding:20px 14px 60px}}
     /* Bug report widget (Fix #5) — persistent "Something off?" link + modal */
-    .bug-link{position:fixed;bottom:14px;right:14px;z-index:100;background:var(--s1);color:var(--t2);border:1px solid var(--b1);border-radius:100px;padding:8px 16px;font-family:var(--fb);font-size:0.82rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:all 0.2s}
-    .bug-link:hover{color:var(--t1);border-color:var(--cyan);transform:translateY(-1px)}
+    .bug-link{position:fixed;left:14px;top:50%;transform:translateY(-50%);z-index:100;background:var(--s1);color:var(--cyan);border:1.5px solid var(--cyan);border-radius:100px;padding:10px 16px;font-family:var(--fb);font-size:0.88rem;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(43,142,176,0.18);transition:all 0.2s;display:inline-flex;align-items:center;gap:9px}
+    .bug-link:hover{background:var(--cyan);color:#fff;transform:translateY(-50%) translateX(2px);box-shadow:0 6px 18px rgba(43,142,176,0.28)}
+    .bug-link-beta{font-size:0.62rem;font-weight:700;letter-spacing:1.5px;background:var(--cyan);color:#fff;padding:2px 7px;border-radius:100px;line-height:1.3}
+    .bug-link:hover .bug-link-beta{background:rgba(255,255,255,0.25)}
+    @media(max-width:500px){.bug-link{padding:8px 13px;font-size:0.8rem;gap:7px}.bug-link-beta{font-size:0.58rem;padding:1px 6px}}
     .bug-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;animation:bug-fade 0.2s ease}
     @keyframes bug-fade{from{opacity:0}to{opacity:1}}
     .bug-modal{background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:28px 26px;max-width:500px;width:100%;position:relative;max-height:90vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.15)}
@@ -188,6 +191,24 @@
     .bug-modal textarea{min-height:100px;resize:vertical}
     .bug-modal textarea:focus,.bug-modal input[type="email"]:focus{border-color:var(--cyan)}
     .bug-modal input[type="file"]{width:100%;padding:8px 0;color:var(--t2);font-size:0.9rem;font-family:var(--fb)}
+    .bug-help{font-size:0.92rem;color:var(--t2);margin:-4px 0 10px;line-height:1.55}
+    .bug-file-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:2px}
+    .bug-file-wrap input[type="file"]{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+    .bug-file-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;background:var(--s2);border:1.5px dashed var(--b1);border-radius:8px;color:var(--t2);font-size:0.95rem;cursor:pointer;font-weight:500;transition:all 0.15s;text-transform:none;letter-spacing:0;margin:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .bug-file-btn:hover{border-color:var(--cyan);color:var(--t1);background:rgba(43,142,176,0.05)}
+    .bug-file-clear{padding:6px 12px;background:transparent;border:1px solid var(--b1);border-radius:6px;color:var(--t3);font-family:var(--fb);font-size:0.85rem;cursor:pointer}
+    .bug-file-clear:hover{color:var(--red);border-color:var(--red)}
+    .bug-tip{font-size:0.84rem;color:var(--t3);margin-top:8px;line-height:1.55}
+    .bug-howto-btn{margin-top:10px;padding:8px 14px;background:transparent;border:1px solid var(--b1);border-radius:6px;color:var(--cyan);font-family:var(--fb);font-size:0.88rem;font-weight:500;cursor:pointer}
+    .bug-howto-btn:hover{border-color:var(--cyan);background:rgba(43,142,176,0.05)}
+    .bug-howto-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;animation:bug-fade 0.2s ease}
+    .bug-howto-modal{background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:28px 26px;max-width:500px;width:100%;position:relative;max-height:90vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.2)}
+    .bug-howto-modal h3{font-family:var(--fh);font-size:1.25rem;font-weight:700;margin-bottom:16px;color:var(--t1)}
+    .bug-howto-section{margin-bottom:12px;padding:12px 14px;background:var(--s2);border:1px solid var(--b1);border-radius:10px}
+    .bug-howto-platform{font-family:var(--fh);font-size:0.95rem;font-weight:700;color:var(--t1);margin-bottom:4px}
+    .bug-howto-steps{font-size:0.94rem;color:var(--t2);line-height:1.55}
+    .bug-howto-steps b{color:var(--t1);font-weight:700}
+    .bug-howto-tip{font-size:0.88rem;color:var(--t3);margin-top:14px;line-height:1.55;font-style:italic}
     .bug-send{width:100%;margin-top:20px;padding:14px;background:linear-gradient(135deg,var(--cyan),#1f6c87);border:none;border-radius:8px;color:#fff;font-family:var(--fh);font-size:1rem;font-weight:700;cursor:pointer}
     .bug-send:disabled{opacity:0.5;cursor:not-allowed}
     .bug-close{position:absolute;top:10px;right:14px;background:transparent;border:none;color:var(--t3);font-size:28px;font-weight:300;cursor:pointer;line-height:1;padding:0;width:32px;height:32px}
@@ -702,6 +723,7 @@ function BusinessAutocomplete({ onPick }) {
 // go to Formspree (form ID set in BUG_REPORT_FORMSPREE_ID above).
 function BugReport(){
   const [open,setOpen]=useState(false);
+  const [showHowto,setShowHowto]=useState(false);
   const [text,setText]=useState("");
   const [file,setFile]=useState(null);
   const [email,setEmail]=useState("");
@@ -753,6 +775,7 @@ function BugReport(){
     <>
       <button className="bug-link" onClick={()=>setOpen(true)} title="Report something off">
         Something off?
+        <span className="bug-link-beta">BETA</span>
       </button>
       {open && (
         <div className="bug-backdrop" onClick={close}>
@@ -772,10 +795,19 @@ function BugReport(){
                 <textarea value={text} onChange={e=>setText(e.target.value)}
                   placeholder="Just describe it in your own words…"
                   disabled={state==="sending"} />
-                <label>Screenshot (optional)</label>
-                <input type="file" accept="image/*"
-                  onChange={e=>setFile(e.target.files[0]||null)}
-                  disabled={state==="sending"} />
+                <label>Screenshot (optional but encouraged)</label>
+                <div className="bug-file-wrap">
+                  <input type="file" accept="image/*" id="bug-file"
+                    onChange={e=>setFile(e.target.files[0]||null)}
+                    disabled={state==="sending"} />
+                  <label htmlFor="bug-file" className="bug-file-btn">
+                    {file ? `📎 ${file.name}` : "📸 Choose a screenshot…"}
+                  </label>
+                  {file && <button type="button" className="bug-file-clear" onClick={()=>setFile(null)}>Remove</button>}
+                </div>
+                <button type="button" className="bug-howto-btn" onClick={()=>setShowHowto(true)}>
+                  How do I take a screenshot?
+                </button>
                 <label>Your email (optional, only if you want a reply)</label>
                 <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
                   placeholder="your@email.com"
@@ -787,6 +819,31 @@ function BugReport(){
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+      {showHowto && (
+        <div className="bug-howto-backdrop" onClick={()=>setShowHowto(false)}>
+          <div className="bug-howto-modal" onClick={e=>e.stopPropagation()}>
+            <button className="bug-close" onClick={()=>setShowHowto(false)} aria-label="Close">×</button>
+            <h3>How to take a screenshot</h3>
+            <div className="bug-howto-section">
+              <div className="bug-howto-platform">📱 iPhone</div>
+              <div className="bug-howto-steps">Press the <b>Side button</b> + <b>Volume Up</b> at the same time. The screenshot saves to your Photos.</div>
+            </div>
+            <div className="bug-howto-section">
+              <div className="bug-howto-platform">📱 Android phone</div>
+              <div className="bug-howto-steps">Press the <b>Power button</b> + <b>Volume Down</b> at the same time. The screenshot saves to your Gallery.</div>
+            </div>
+            <div className="bug-howto-section">
+              <div className="bug-howto-platform">🖥️ Windows computer</div>
+              <div className="bug-howto-steps">Press <b>Windows key + Shift + S</b>, drag to select what to capture. The screenshot copies to your clipboard — paste it into a Word doc or email to save it.</div>
+            </div>
+            <div className="bug-howto-section">
+              <div className="bug-howto-platform">🖥️ Mac computer</div>
+              <div className="bug-howto-steps">Press <b>⌘ + Shift + 4</b>, drag to select what to capture. The screenshot saves to your Desktop.</div>
+            </div>
+            <p className="bug-howto-tip">Once you have the screenshot saved, close this and tap "Choose a screenshot…" to find it.</p>
           </div>
         </div>
       )}
