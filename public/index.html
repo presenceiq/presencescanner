@@ -664,6 +664,37 @@ function namesLookDifferent(typed, matched){
   return true;
 }
 
+// --- Google URL identifier extractor (Venice-Italy bug fix) ---
+// Pulls a real Place ID out of a pasted Google URL when one is present.
+// Most Google share links DO NOT include a Place ID (they use Knowledge
+// Graph IDs or data IDs instead, which can't be deterministically converted
+// to a Place ID). When no Place ID is found we refuse to scan that URL
+// and route the user to the manual paste path instead — that's what
+// prevents the tool from falling back to a text search and returning the
+// wrong country / wrong business.
+function extractGoogleUrlIds(url){
+  if(!url)return{placeId:null,bizName:null};
+  let d=url;
+  try{d=decodeURIComponent(url);}catch{}
+  const placeId =
+    d.match(/place_id:([A-Za-z0-9_-]+)/)?.[1] ||
+    d.match(/[?&]query_place_id=([^&]+)/)?.[1] ||
+    d.match(/[?&]placeid=([A-Za-z0-9_-]+)/)?.[1] ||
+    null;
+  // Try to recover the business name from the URL so we can pre-fill the
+  // manual paste form when the link itself isn't usable. Two common spots:
+  // ?q=Business+Name  and  /maps/place/Business+Name/...
+  let bizName = null;
+  const q = d.match(/[?&]q=([^&]+)/)?.[1];
+  if(q){
+    bizName = q.replace(/\+/g," ").trim();
+  } else {
+    const pm = d.match(/\/maps\/place\/([^\/\?]+)/);
+    if(pm) bizName = pm[1].replace(/\+/g," ").replace(/-/g," ").trim();
+  }
+  return {placeId, bizName};
+}
+
 // --- Google Place Autocomplete widget, wrapped as a React component ---
 // Mounts Google's autocomplete on an input. When the user picks a
 // business from the dropdown, calls onPick with {placeId, name, address}.
@@ -964,6 +995,15 @@ function App(){
   const [fhPhone,setFhPhone]=useState("");
   const [fhMapsUrl,setFhMapsUrl]=useState("");
   const [fhErr,setFhErr]=useState("");
+  // --- Expanded "Copy from your Google Business Profile" fields ---
+  // Optional copy/paste fields the user can fill in from their GBP
+  // dashboard so the scan has real data to score against. Only Name is
+  // required; the rest sharpen the report when provided.
+  const [fhWebsite,setFhWebsite]=useState("");
+  const [fhRating,setFhRating]=useState("");
+  const [fhReviewCount,setFhReviewCount]=useState("");
+  const [fhHasHours,setFhHasHours]=useState(false);
+  const [fhCategory,setFhCategory]=useState("");
   // --- Feedback modal (controls BugReport from outside so SentimentStrip
   // can also open it with a mood context) ---
   const [bugOpen,setBugOpen]=useState(false);
@@ -1125,11 +1165,27 @@ function App(){
   async function findHelpFromLink(){
     if(!fhMapsUrl.trim())return;
     setFhErr("");
+    // Venice-Italy bug fix: most pasted Google URLs do NOT include a usable
+    // Place ID — they carry Knowledge Graph IDs (kgmid) or data IDs that
+    // can't be deterministically converted. If we send those to the server
+    // it falls back to a text search, which has been returning the wrong
+    // country / wrong business. Refuse early here and offer the manual
+    // paste path as the reliable alternative.
+    const url=fhMapsUrl.trim();
+    const ids=extractGoogleUrlIds(url);
+    if(!ids.placeId){
+      // Pre-fill the manual form with the business name from the URL if we
+      // could find one, so the user doesn't have to retype it.
+      if(ids.bizName && !fhName) setFhName(ids.bizName);
+      setFhErr("This Google link doesn't include a Place ID we can use — that's normal for Share links. Use the \"Copy from your Google Business Profile\" option below instead — we've pre-filled what we could read from the link.");
+      setFhMapsUrl("");
+      return;
+    }
     setView("loading");setStepIdx(0);
     try{
       const res=await fetch("/api/resolveplace",{
         method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({mapsUrl:fhMapsUrl.trim()})
+        body:JSON.stringify({placeId:ids.placeId})
       });
       const gbp=await res.json();
       if(gbp&&gbp.found){
@@ -1141,32 +1197,46 @@ function App(){
         setResults(data);setView("results");
       }else{
         // Couldn't read the link — send them back to try again / use fallback.
-        setFhErr((gbp&&gbp.message)||"We couldn't read that link. Try the full Google listing URL, or enter your details below.");
+        setFhErr((gbp&&gbp.message)||"We couldn't read that link. Try the full Google listing URL, or use the option below.");
         setView("findhelp");
       }
     }catch(e){
-      setFhErr("Something went wrong reading that link. Please try again, or enter your details below.");
+      setFhErr("Something went wrong reading that link. Please try again, or use the option below.");
       setView("findhelp");
     }
   }
 
-  // FALLBACK: the user typed their details by hand. Honest limitation —
-  // this identifies the business but cannot pull real reviews/photos,
-  // so the GBP portion of the report is marked as user-provided.
+  // The user copied their GBP info into the manual form. Use what they
+  // provided as the basis for the scan, syncing the name to what they
+  // typed so the report consistently describes their business.
   async function findHelpSubmit(){
     if(!fhName.trim())return;
     setView("loading");setStepIdx(0);
     try{
+      // Parse the optional numeric fields softly — bad input becomes null
+      // rather than crashing the scan.
+      const ratingNum=parseFloat(fhRating);
+      const reviewNum=parseInt(fhReviewCount,10);
+      const realName=fhName.trim();
+      const realWebsite=fhWebsite.trim();
       const manualGBP={
-        name:fhName.trim(),
+        name:realName,
         address:fhAddress.trim()||null,
         phone:fhPhone.trim()||null,
-        rating:null,reviewCount:0,website:null,
-        hasHours:false,isOpen:null,photoCount:0,
-        businessStatus:null,types:[],
+        rating:(!isNaN(ratingNum)&&ratingNum>0)?ratingNum:null,
+        reviewCount:(!isNaN(reviewNum)&&reviewNum>=0)?reviewNum:0,
+        website:realWebsite||null,
+        hasHours:!!fhHasHours,
+        isOpen:null,
+        photoCount:0,
+        businessStatus:null,
+        types:fhCategory.trim()?[fhCategory.trim()]:[],
         userProvided:true
       };
-      const data=await runScan(bizName,website,city,phone,manualGBP);
+      // Sync the displayed business name so the report title, advisor,
+      // and findings all describe the SAME business.
+      if(realName)setBizName(realName);
+      const data=await runScan(realName,realWebsite||website,city,phone,manualGBP);
       setResults(data);setView("results");
     }catch(e){setErrMsg(e.message);setView("error");}
   }
@@ -1191,6 +1261,7 @@ function App(){
     setPendingMatch(null);
     setPhoneMatch(null);
     setFhName("");setFhAddress("");setFhPhone("");setFhMapsUrl("");setFhErr("");
+    setFhWebsite("");setFhRating("");setFhReviewCount("");setFhHasHours(false);setFhCategory("");
     // The five user-typed form fields — previously NOT cleared, which is what
     // let an old website value bleed into a later scan and contaminate the AI input.
     setBizName("");
@@ -1314,35 +1385,54 @@ function App(){
               </div>
             </div>
 
-            {/* FALLBACK 1: paste a Google Maps link */}
+            {/* FALLBACK 1 (primary): Copy from your Google Business Profile.
+                This used to be the "enter by hand" path. Renamed and expanded
+                to capture real GBP data via copy-paste — sidesteps every
+                Google API matching problem while giving the AI accurate
+                signal to score against. */}
+            <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
+              <div style={{fontWeight:700,marginBottom:6}}>Copy from your Google Business Profile</div>
+              <div style={{fontSize:"0.88rem",opacity:0.75,marginBottom:14,lineHeight:1.55}}>
+                Open your Google Business Profile dashboard in another tab, then copy each piece of info into the boxes below. Only the business name is required — the more you fill in, the more accurate your report.
+              </div>
+              <div className="field"><label>Business Name *</label>
+                <input value={fhName} onChange={e=>setFhName(e.target.value)} placeholder="Exactly as it appears on Google"/></div>
+              <div className="field"><label>Business Address</label>
+                <input value={fhAddress} onChange={e=>setFhAddress(e.target.value)} placeholder="Street, City, State"/></div>
+              <div className="field"><label>Business Phone</label>
+                <input value={fhPhone} onChange={e=>setFhPhone(e.target.value)} placeholder="e.g. (941) 662-9941"/></div>
+              <div className="field"><label>Website URL on Google</label>
+                <input value={fhWebsite} onChange={e=>setFhWebsite(e.target.value)} placeholder="https://yourbusiness.com — leave blank if not set on Google"/></div>
+              <div className="field"><label>Star Rating</label>
+                <input value={fhRating} onChange={e=>setFhRating(e.target.value)} placeholder="e.g. 4.8"/></div>
+              <div className="field"><label>Total Reviews</label>
+                <input value={fhReviewCount} onChange={e=>setFhReviewCount(e.target.value)} placeholder="e.g. 47"/></div>
+              <div className="field"><label>Business Category on Google</label>
+                <input value={fhCategory} onChange={e=>setFhCategory(e.target.value)} placeholder="e.g. Flower Shop, Plumber, Salon"/></div>
+              <label style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer",margin:"12px 0",fontSize:"0.92rem"}}>
+                <input type="checkbox" checked={fhHasHours} onChange={e=>setFhHasHours(e.target.checked)} style={{width:18,height:18,cursor:"pointer"}}/>
+                <span>My Google Business Profile has business hours filled in</span>
+              </label>
+              <button className="sbtn" onClick={findHelpSubmit} disabled={!fhName.trim()}>Scan with these details</button>
+            </div>
+
+            {/* FALLBACK 2 (rare): paste a Google Maps share link. Most Google
+                share links don't include a Place ID — this only works when
+                yours does. The validator above refuses non-Place-ID URLs
+                and routes the user to the "Copy from your GBP" path. */}
             <details style={{margin:"14px 0"}}>
-              <summary style={{cursor:"pointer",opacity:0.75,fontSize:"0.9rem"}}>Can't find it? Paste your Google listing link instead</summary>
+              <summary style={{cursor:"pointer",opacity:0.65,fontSize:"0.88rem"}}>Have a Google listing link with a Place ID? (advanced)</summary>
               <div style={{marginTop:12}}>
-                <div style={{fontSize:"0.84rem",opacity:0.7,marginBottom:10,lineHeight:1.5}}>
-                  On Google, find your business, tap the <strong>three dots ( ⋮ )</strong> menu, choose <strong>Share</strong>, then copy the link and paste it here.
+                <div style={{fontSize:"0.84rem",opacity:0.65,marginBottom:10,lineHeight:1.5}}>
+                  Most Google "Share" links don't include a Place ID. If yours does, paste it here. If not, use the option above.
                 </div>
                 <div className="field" style={{marginBottom:10}}>
-                  <input value={fhMapsUrl} onChange={e=>setFhMapsUrl(e.target.value)} placeholder="Paste your Google listing link here"/></div>
+                  <input value={fhMapsUrl} onChange={e=>setFhMapsUrl(e.target.value)} placeholder="Paste a Google link with a Place ID"/></div>
                 <button className="sbtn" onClick={findHelpFromLink} disabled={!fhMapsUrl.trim()}>Find my business from this link</button>
               </div>
             </details>
 
-            {/* FALLBACK 2: type details by hand */}
-            <details style={{margin:"14px 0"}}>
-              <summary style={{cursor:"pointer",opacity:0.75,fontSize:"0.9rem"}}>Or enter your details by hand</summary>
-              <div style={{marginTop:12}}>
-                <p className="sub" style={{fontSize:"0.84rem",marginTop:0}}>Note: entered by hand, we can't verify your Google reviews or photos, so that part of your report will be limited.</p>
-                <div className="field"><label>Exact Business Name *</label>
-                  <input value={fhName} onChange={e=>setFhName(e.target.value)} placeholder="Exactly as it appears on Google"/></div>
-                <div className="field"><label>Business Address</label>
-                  <input value={fhAddress} onChange={e=>setFhAddress(e.target.value)} placeholder="Street, City, State"/></div>
-                <div className="field"><label>Business Phone</label>
-                  <input value={fhPhone} onChange={e=>setFhPhone(e.target.value)} placeholder="e.g. (941) 662-9941"/></div>
-                <button className="sbtn" onClick={findHelpSubmit} disabled={!fhName.trim()}>Scan with these details</button>
-              </div>
-            </details>
-
-            <button className="rescan" style={{marginTop:6,width:"100%"}} onClick={findHelpNoListing}>I don't have a Google Business Profile</button>
+            <button className="rescan" style={{marginTop:6,width:"100%"}} onClick={findHelpNoListing}>I don't have a Google Business Profile yet</button>
           </div>
         </div>
       )}
