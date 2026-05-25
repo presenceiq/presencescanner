@@ -175,6 +175,26 @@
     .err{max-width:520px;margin:40px auto;padding:20px 24px;background:rgba(185,28,28,0.07);border:1px solid rgba(185,28,28,0.2);border-radius:12px;color:#b91c1c;font-size:1rem;line-height:1.65;text-align:center}
     .pad{padding:0 20px}
     @media(max-width:500px){.nav{padding:14px 18px}.hero{padding:36px 18px 28px}.card,.shero{padding:22px 18px}.results{padding:20px 14px 60px}}
+    /* Bug report widget (Fix #5) — persistent "Something off?" link + modal */
+    .bug-link{position:fixed;bottom:14px;right:14px;z-index:100;background:var(--s1);color:var(--t2);border:1px solid var(--b1);border-radius:100px;padding:8px 16px;font-family:var(--fb);font-size:0.82rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:all 0.2s}
+    .bug-link:hover{color:var(--t1);border-color:var(--cyan);transform:translateY(-1px)}
+    .bug-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;animation:bug-fade 0.2s ease}
+    @keyframes bug-fade{from{opacity:0}to{opacity:1}}
+    .bug-modal{background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:28px 26px;max-width:500px;width:100%;position:relative;max-height:90vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.15)}
+    .bug-modal h3{font-family:var(--fh);font-size:1.3rem;font-weight:700;margin-bottom:10px;color:var(--t1)}
+    .bug-modal p{font-size:0.98rem;color:var(--t2);line-height:1.6;margin-bottom:16px}
+    .bug-modal label{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--t2);margin-bottom:6px;margin-top:14px}
+    .bug-modal textarea,.bug-modal input[type="email"]{width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:12px 14px;color:var(--t1);font-family:var(--fb);font-size:1rem;outline:none;box-sizing:border-box}
+    .bug-modal textarea{min-height:100px;resize:vertical}
+    .bug-modal textarea:focus,.bug-modal input[type="email"]:focus{border-color:var(--cyan)}
+    .bug-modal input[type="file"]{width:100%;padding:8px 0;color:var(--t2);font-size:0.9rem;font-family:var(--fb)}
+    .bug-send{width:100%;margin-top:20px;padding:14px;background:linear-gradient(135deg,var(--cyan),#1f6c87);border:none;border-radius:8px;color:#fff;font-family:var(--fh);font-size:1rem;font-weight:700;cursor:pointer}
+    .bug-send:disabled{opacity:0.5;cursor:not-allowed}
+    .bug-close{position:absolute;top:10px;right:14px;background:transparent;border:none;color:var(--t3);font-size:28px;font-weight:300;cursor:pointer;line-height:1;padding:0;width:32px;height:32px}
+    .bug-close:hover{color:var(--t1)}
+    .bug-err{background:rgba(185,28,28,0.1);border:1px solid rgba(185,28,28,0.3);border-radius:8px;padding:10px 12px;color:var(--red);font-size:0.92rem;margin-top:14px}
+    .bug-thanks{text-align:center;padding:24px 10px}
+    .bug-thanks-mark{font-size:48px;color:var(--green);margin-bottom:12px;font-weight:700;line-height:1}
   </style>
 </head>
 <body>
@@ -199,6 +219,14 @@ const AFF = {
 // re-commit. Do NOT inflate it — fake urgency was explicitly rejected.
 const FOUNDING_SPOTS_CLAIMED = 0;
 const FOUNDING_SPOTS_TOTAL = 50;
+
+// ── BUG REPORT FORMSPREE FORM ID ──────────────────────────────────────
+// Where "Something off?" submissions go. To set up: log into Formspree,
+// create a new form named "PresenceScanner Bug Reports", copy its form
+// ID (the random characters at the end of the form URL), and paste it
+// below. Until this is set, the modal will still open but submissions
+// will fail with an error message.
+const BUG_REPORT_FORMSPREE_ID = "xpqnyrdq";
 
 async function callClaude(messages, maxTokens=3000) {
   const res = await fetch("/api/scan", {
@@ -668,6 +696,104 @@ function BusinessAutocomplete({ onPick }) {
   );
 }
 
+// --- Bug report widget (Fix #5) ---
+// Persistent "Something off?" link bottom-right. Click opens a modal
+// with a text area, optional screenshot, optional email. Submissions
+// go to Formspree (form ID set in BUG_REPORT_FORMSPREE_ID above).
+function BugReport(){
+  const [open,setOpen]=useState(false);
+  const [text,setText]=useState("");
+  const [file,setFile]=useState(null);
+  const [email,setEmail]=useState("");
+  const [state,setState]=useState("idle"); // idle | sending | sent | error
+  const [errMsg,setErrMsg]=useState("");
+
+  function close(){
+    setOpen(false);
+    // Clear the form state shortly after the modal closes so it's fresh
+    // next time the link is clicked.
+    setTimeout(()=>{
+      setText("");setFile(null);setEmail("");
+      setState("idle");setErrMsg("");
+    },200);
+  }
+
+  async function submit(){
+    if(!text.trim()){
+      setErrMsg("Please tell me what happened.");
+      setState("error");
+      return;
+    }
+    setState("sending");setErrMsg("");
+    try{
+      const fd=new FormData();
+      fd.append("message",text.trim());
+      if(email.trim())fd.append("email",email.trim());
+      if(file)fd.append("screenshot",file);
+      fd.append("page_url",window.location.href);
+      fd.append("user_agent",navigator.userAgent);
+      const res=await fetch("https://formspree.io/f/"+BUG_REPORT_FORMSPREE_ID,{
+        method:"POST",body:fd,headers:{"Accept":"application/json"}
+      });
+      if(res.ok){
+        setState("sent");
+        setTimeout(close,2500);
+      }else{
+        const d=await res.json().catch(()=>({}));
+        setErrMsg((d&&d.error)||"Couldn't send. Please try again.");
+        setState("error");
+      }
+    }catch(e){
+      setErrMsg("Couldn't send. Check your internet and try again.");
+      setState("error");
+    }
+  }
+
+  return (
+    <>
+      <button className="bug-link" onClick={()=>setOpen(true)} title="Report something off">
+        Something off?
+      </button>
+      {open && (
+        <div className="bug-backdrop" onClick={close}>
+          <div className="bug-modal" onClick={e=>e.stopPropagation()}>
+            {state==="sent" ? (
+              <div className="bug-thanks">
+                <div className="bug-thanks-mark">✓</div>
+                <h3>Thanks — got it.</h3>
+                <p>I'll take a look.</p>
+              </div>
+            ) : (
+              <>
+                <button className="bug-close" onClick={close} aria-label="Close">×</button>
+                <h3>Spotted something off?</h3>
+                <p>You're testing this with me — that's the help I need. Tell me what looked wrong, weird, or confusing, and I'll fix it. Quick and casual is fine.</p>
+                <label>What happened?</label>
+                <textarea value={text} onChange={e=>setText(e.target.value)}
+                  placeholder="Just describe it in your own words…"
+                  disabled={state==="sending"} />
+                <label>Screenshot (optional)</label>
+                <input type="file" accept="image/*"
+                  onChange={e=>setFile(e.target.files[0]||null)}
+                  disabled={state==="sending"} />
+                <label>Your email (optional, only if you want a reply)</label>
+                <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  disabled={state==="sending"} />
+                {state==="error" && <div className="bug-err">{errMsg}</div>}
+                <button className="bug-send" onClick={submit}
+                  disabled={state==="sending"||!text.trim()}>
+                  {state==="sending" ? "Sending…" : "Send it"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function App(){
   const [view,setView]=useState("form");
   const [bizName,setBizName]=useState("");
@@ -1110,6 +1236,7 @@ function App(){
           <button className="rescan" onClick={reset}>← Scan Another Business</button>
         </div>
       )}
+      <BugReport/>
     </div>
   );
 }
