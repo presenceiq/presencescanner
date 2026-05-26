@@ -1,4 +1,5 @@
 import { isSiteDisabled, disabledResponse } from './_killswitch.js';
+import { checkRateLimit, rateLimitedResponse } from './_ratelimit.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -9,6 +10,14 @@ export default async function handler(req, res) {
 
   // KILL SWITCH — if SITE_DISABLED=true in Vercel env vars, return immediately.
   if (isSiteDisabled()) return disabledResponse(res);
+
+  // RATE LIMITER — block IPs that have already done their daily quota.
+  // scan.js is the ONLY endpoint that consumes the rate limit, because
+  // every full scan necessarily calls scan.js exactly once. Other
+  // endpoints (findplace, resolveplace, fetchsite) are scan helpers
+  // that get called as part of a single scan attempt.
+  const rl = await checkRateLimit(req);
+  if (!rl.allowed) return rateLimitedResponse(res, rl.message);
 
   try {
     const body = req.body;
