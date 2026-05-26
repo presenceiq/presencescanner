@@ -12,10 +12,15 @@
 // - If at the limit, blocks the scan with a friendly message
 // - Counters expire after 24 hours automatically (Redis TTL)
 //
+// OWNER BYPASS:
+// - If the incoming IP matches one in the OWNER_IPS env var
+//   (comma-separated list), the rate limit is skipped entirely.
+// - Set OWNER_IPS in Vercel env vars like:
+//     OWNER_IPS=73.124.45.198,99.234.55.187
+// - Useful so the owner doesn't lock themselves out during testing.
+//
 // CONFIGURATION:
 //   DAILY_LIMIT = 3   (scans per IP per day)
-//
-// Adjust DAILY_LIMIT below if you change your mind later.
 // ---------------------------------------------------------------
 
 const DAILY_LIMIT = 3;
@@ -34,6 +39,14 @@ function getClientIp(req) {
   return 'unknown';
 }
 
+// Check if this IP is in the owner allow-list from env var.
+function isOwnerIp(ip) {
+  const list = (process.env.OWNER_IPS || '').trim();
+  if (!list) return false;
+  const owners = list.split(',').map(s => s.trim()).filter(Boolean);
+  return owners.includes(ip);
+}
+
 // Build today's date string (UTC) so the counter key naturally rolls
 // over at midnight UTC. Example: "2026-05-26"
 function todayKey() {
@@ -50,7 +63,6 @@ async function getCount(ip) {
   const url = process.env.KV_REST_API_URL;
   const token = process.env.KV_REST_API_TOKEN;
   if (!url || !token) {
-    // If env vars aren't set, log it but don't block the user — fail open.
     console.error('Rate limiter: KV env vars missing, allowing request');
     return 0;
   }
@@ -75,7 +87,6 @@ async function increment(ip) {
   if (!url || !token) return;
   const key = `rl:${todayKey()}:${ip}`;
   try {
-    // Atomic increment, then set expiry to 24 hours from now.
     await fetch(`${url}/incr/${encodeURIComponent(key)}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -91,6 +102,12 @@ async function increment(ip) {
 // Returns { allowed: true/false, message: '...' if blocked }
 export async function checkRateLimit(req) {
   const ip = getClientIp(req);
+
+  // OWNER BYPASS — skip rate limit for owner IPs.
+  if (isOwnerIp(ip)) {
+    return { allowed: true, owner: true };
+  }
+
   const count = await getCount(ip);
   if (count >= DAILY_LIMIT) {
     return {
