@@ -1,6 +1,12 @@
 import { isSiteDisabled, disabledResponse } from './_killswitch.js';
 import { checkRateLimit, rateLimitedResponse } from './_ratelimit.js';
 
+// Hard timeout for the Anthropic API call. If the API hangs or runs
+// slow, we abort the request after this many milliseconds so a single
+// stuck request can't sit open eating Vercel function time and
+// Anthropic tokens indefinitely.
+const SCAN_TIMEOUT_MS = 60000; // 60 seconds
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -12,12 +18,14 @@ export default async function handler(req, res) {
   if (isSiteDisabled()) return disabledResponse(res);
 
   // RATE LIMITER — block IPs that have already done their daily quota.
-  // scan.js is the ONLY endpoint that consumes the rate limit, because
-  // every full scan necessarily calls scan.js exactly once. Other
-  // endpoints (findplace, resolveplace, fetchsite) are scan helpers
-  // that get called as part of a single scan attempt.
   const rl = await checkRateLimit(req);
   if (!rl.allowed) return rateLimitedResponse(res, rl.message);
+
+  // SCAN TIMEOUT — abort the Anthropic call if it takes longer than
+  // SCAN_TIMEOUT_MS. AbortController is the standard way to cancel
+  // a fetch() in flight.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), SCAN_TIMEOUT_MS);
 
   try {
     const body = req.body;
@@ -28,11 +36,22 @@ export default async function handler(req, res) {
         'x-api-key': process.env.ANTHROPIC_KEY,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
     const data = await response.json();
     return res.status(200).json(data);
   } catch (e) {
+    clearTimeout(timeoutId);
+    // Distinguish a timeout abort from any other error so the frontend
+    // can show the right message and the user knows what happened.
+    if (e.name === 'AbortError') {
+      return res.status(504).json({
+        timeout: true,
+        error: 'The scan took too long and was stopped. Please try again — this is usually temporary.',
+      });
+    }
     return res.status(500).json({ error: e.message });
   }
 }
