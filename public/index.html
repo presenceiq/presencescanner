@@ -262,10 +262,16 @@ const BUG_REPORT_FORMSPREE_ID = "xpqnyrdq";
 async function callClaude(messages, maxTokens=3000) {
   const res = await fetch("/api/scan", {
     method:"POST", headers:HEADERS,
-    body:JSON.stringify({model:"claude-sonnet-4-20250514", max_tokens:maxTokens, messages})
+    body:JSON.stringify({model:"claude-sonnet-4-6", max_tokens:maxTokens, messages})
   });
   if(!res.ok){const t=await res.text();throw new Error("API "+res.status+": "+t.slice(0,200));}
   const d=await res.json();
+  // Safety guard: if the response doesn't have a content array (e.g. the
+  // API returned an error object instead of a normal message), fail with a
+  // clear message instead of crashing on undefined.map.
+  if(!d || !Array.isArray(d.content)){
+    throw new Error("The scan service returned an unexpected response. Please try again in a moment.");
+  }
   return d.content.map(b=>b.text||"").join("");
 }
 
@@ -566,9 +572,10 @@ function AlgorithmFeed({bizType, city}) {
         const res = await fetch("/api/scan", {
           method: "POST",
           headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:prompt}]})
+          body: JSON.stringify({model:"claude-sonnet-4-6",max_tokens:600,messages:[{role:"user",content:prompt}]})
         });
         const data = await res.json();
+        if(!data || !Array.isArray(data.content)){ setNews(null); setLoading(false); return; }
         const text = data.content.map(b => b.text || "").join("");
         const clean = text.replace(/```json|```/g,"").trim();
         setNews(JSON.parse(clean));
