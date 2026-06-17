@@ -1,105 +1,162 @@
-# STATE.md — PresenceScanner Current State
+# PresenceScanner — STATE.md
+Last updated: June 16, 2026 (Monday evening session)
 
-**Snapshot date:** May 25, 2026 (Monday afternoon sign-off)
-**This file is overwritten every session. It shows the project as it is RIGHT NOW.**
+This is the current snapshot of where PresenceScanner is RIGHT NOW. For the
+full history and the reasoning behind decisions, see the Glitch Log and
+DECISIONS.md. STATE.md is overwritten each session; DECISIONS.md is append-only.
 
 ---
 
-## NEXT STEP
-Two real paths, pick deliberately when the next session starts. Path A: complete the queued strategy session — produce the feature gap analysis and the formal ROADMAP.md document, built on top of the four locked strategic decisions. Estimated 1-2 hour focused session. Path B: pick the next item from the build list below and execute it. Recommended next build item if Path B is chosen: Glitch #4 (autocomplete drops listings as you type) or Glitch #8 (phone-match returns wrong business when phones shared) — both are real bugs with user impact. Item 8 (site-wide UX/readability pass) is also a strong candidate but is a bigger session.
+## ONE-LINE STATUS
 
-## LIVE AND DEPLOYED
-- Site: presencescanner.ai (also presencescanner.vercel.app)
-- Repo: github.com/presenceiq/presencescanner — hosted on Vercel, auto-deploys on every commit
-- Architecture: single self-contained HTML file, NO build step
-- Repo structure: `api/` folder, `public/` folder, `vercel.json` at root, `docs/` folder
-- API keys live ONLY in Vercel environment variables: ANTHROPIC_KEY, GOOGLE_PLACES_KEY, REACT_APP_MAILCHIMP_KEY, MAILCHIMP_API_KEY, MAILCHIMP_AUDIENCE_ID
-- Google Maps browser key lives in public/index.html (correct — browser keys are visible by design, protected by HTTP referrer restrictions in Google Cloud)
-- Google Cloud HTTP referrer restrictions for the browser key (exactly): `https://*.presencescanner.ai/*`, `https://presencescanner.ai/*`, `https://*.vercel.app/*`
-- Config (not secret): Mailchimp audience d81f996825, server us17; GA4 ID G-WD4QS0XK2C
+Trickle-ready. All launch blockers for a quiet soft-share are cleared. One
+final code deploy pending (the unknown-fields fix), then the only remaining
+items are Michael's own Anthropic console tasks. A full Facebook announcement
+wants a balance top-up + spend alert + measured cost/scan first.
 
-## STRATEGIC FOUNDATION (locked May 24, 2026 — see DECISIONS.md)
-- Primary identity frame: "Free online footprint health check, including AI search visibility." Consumer word is "footprint."
-- Five-layer product model: free scan → free fixes → affiliate recommendations → $99 personalized DIY guide → $19/mo founding-member subscription.
-- Diagnostic-not-SEO filter applies to all future feature decisions.
-- Affiliate placement principle: affiliates go after the diagnosis is complete, never interrupting it.
+---
+
+## WHAT IT IS
+
+PresenceScanner.ai — a free, beta diagnostic tool that scans how a local
+small business shows up online (Google Business Profile, website, AI search
+visibility) and returns a 0-100 score with plain-English fixes. Positioned as
+a trust-based diagnostic by a real Florida operator, NOT as an "AI visibility
+checker" (that's now table stakes — Perplexity, Birdeye offer it free).
+
+Legal entity: Putnam Enterprises LLC (L19000236139). Public face: Michael
+Putnam. Contact: putnamm@comcast.net.
+
+---
+
+## ARCHITECTURE (unchanged)
+
+- Single self-contained public/index.html, React via in-browser Babel, NO
+  build step. The "Babel transformer" console warning is expected and harmless.
+- Serverless functions in api/ on Vercel. Repo: github.com/presenceiq/
+  presencescanner. Auto-deploys from main on commit to public/.
+- Deploy workflow: Michael downloads the file from Claude, uploads via GitHub
+  web UI (Add file -> Upload files -> drag to replace -> commit). Must be
+  signed in to GitHub to see the upload option.
+- API keys in Vercel env vars (ANTHROPIC_KEY, GOOGLE_PLACES_KEY, Mailchimp).
+  Google Maps BROWSER key is embedded in index.html on purpose (referrer-
+  restricted — correct, not a leak).
+- Current AI model: claude-sonnet-4-6 (Sonnet 4.6). Used in callClaude and
+  fetchNews. Both have content-array safety guards now.
+
+---
 
 ## CONFIRMED BUILT AND WORKING
-- api/findplace.js — phone-first lookup (correctly returns website field)
-- api/resolveplace.js — place_id resolution (correctly returns website field)
-- api/fetchsite.js — website fetcher with browser headers; honest "could not reach" reporting
-- api/subscribe.js — Mailchimp signup; accepts optional `tag` param (defaults to `presence-scanner`)
-- api/scan.js — Anthropic API proxy (pass-through only, no scoring logic)
-- api/places.js — Google Places lookup
-- Phone confirmation screen ("Is this your business?")
-- Autocomplete widget — confirmed working tool-wide (5-for-5 random local business test May 23)
-- GEO Score (7th scan category)
-- "What Changed This Month" algorithm feed
-- Google Analytics (GA4)
-- public/widgettest.html — widget test page
-- Founding-member waitlist — results-page section; tested end-to-end May 19; pending tag in Mailchimp confirmed
-- Website-from-listing fix — phone-match and Maps-link scan paths pull website from matched Google listing
-- Session contamination fix (Glitch #6) — reset() now clears all 5 user form fields between scans
-- Business identity confirmation block (Glitch #2) — results page shows matched business name, address, phone, ★★★★★ rating · review count
-- Affiliate Placement Principle implemented (Decision 4) — affiliate cards and founding waitlist now render AFTER the seven category findings; trust contract preserved
-- Anchor teaser strip on results page — two small jump-links ("See recommended tools", "Lock in founding pricing") near the top of results, smooth-scroll to those sections; visually quiet by design
-- Homepage messaging refresh (Decision 1 in code) — headline now "Does Your Business Show Up Online as it Should?"; subhead about free online footprint health check; browser tab title and meta description updated; "AI-POWERED PRESENCE SCANNER" eyebrow preserved for tech-aware credibility
-- Headline typography fix — Syne font weight 600 with relaxed letter-spacing and increased line-height; font import expanded to include weights 400/500/600 so weight 600 renders as a real font weight rather than a faked one
-- AI Advisor language pass (Decision 1 continuation, shipped May 25) — advisor intro line, system prompt, advisor block heading ("AI Footprint Advisor"), and loading-screen header+subhead all updated to use footprint/check/opportunity language. Brand reference in system prompt corrected from PresenceIQ to PresenceScanner. Advisor target audience broadened from "busy tradesperson" to "busy small business owner." Loading subhead made more honest (drops the false "directories" mention; adds the real "your website" check).
 
-## FIX LIST — NOT YET BUILT (in priority order)
+- Seven-category scan + scored report + AI advisor chat + affiliate cards +
+  "What Changed This Month" news feed.
+- Four scan paths: autocomplete widget, phone lookup, paste-a-link (refuses
+  non-place_id URLs after the Venice Italy fix), manual "Copy from your GBP".
+- Glitch #8 name-mismatch warning (yellow banner when phone match returns a
+  differently-named business — catches Michael's shared-phone case).
+- Session-contamination fix (reset clears all form fields between scans).
+- Venice Italy fix (frontend URL validation + backend resolveplace.js Step-2
+  global text-search removed).
+- Light theme + readability pass (16px min body text).
+- Bug-report "Something off?" widget -> Formspree xpqnyrdq. Sentiment pulse
+  strip (😀/😐/😞).
+- SAFEGUARDS: per-IP scan rate limiter (3/day, Upstash Redis, owner-IP bypass),
+  manual kill switch (SITE_DISABLED env var, all 4 API endpoints), 60-sec scan
+  timeout, advisor chat turn cap (7), advisor chat char cap (600).
+- Legal: terms.html + privacy.html live; footer links on every page; results-
+  page disclaimer.
+- Founding-member block REMOVED from results page (model was killed weeks ago).
 
-### 1. Glitch #4 — Autocomplete drops listings as you type
-Type "VeniceFlH" finds it; next letter loses it; backspace finds it again. Lives partly in Google's Places library; may be diagnostic-only first pass with no full fix possible. Real credibility issue when it bites users — worth investigating even if the fix turns out to be UX mitigation rather than root-cause.
+---
 
-### 2. Glitch #8 — Phone-match returns wrong business when phones shared
-Real-world entity conflation (Michael's handyman phone returned home watch listing). UX flag opportunity: when name and matched-listing-name don't align, surface a "this isn't the right business?" prompt. Note: Michael is actively cleaning up the VeniceFlHomeWatch GBP that's part of this entity-conflation pattern, separate from code changes — but the UX flag in the code is still worth building because shared phones exist for many real businesses, not just Michael's.
+## DEPLOY-PENDING (staged, not yet live as of session end)
 
-### 3. Smarter "no website" messaging
-Distinguish "business has no website at all" from "this Google listing is missing the website field but the business has one." Two different problems, two different recommendations.
+THE UNKNOWN-FIELDS FIX (index.html at /mnt/user-data/outputs/). Manual-path
+blank fields now = "unknown / could not verify" instead of "no / zero", per
+scan path, with a prompt rule that unverified fields never produce negative
+findings or lower the score, plus a warning line above the manual form. This
+is the last code deploy of the session. NOTE: the staged index.html ALSO
+contains the model fix, chat caps, founding removal, footer, and disclaimer —
+deploying it carries everything. Test by re-scanning Venice FL Handyman via the
+manual path with hours unchecked + photos blank; report should say "could not
+verify", not "no", and not tank the score.
 
-### 4. PresenceIQ → PresenceScanner branding fix
-Logo and nav still say "PresenceIQ" while AI advisor, product copy, and system prompt now say "PresenceScanner." Pick one and unify everywhere. Probably PresenceScanner based on Decision 1 momentum.
+---
 
-### 5. Bug-report mechanism for beta users
-Small persistent "Something off?" link in footer, opens modal with text area + screenshot attachment + optional email. Submit to Formspree. Founding-member-ownership framing in the copy. Captured for pre-beta launch. Estimated 1-3 hours.
+## LEFT FOR MICHAEL (solo console tasks — none block a quiet trickle)
 
-### 6. Ambient sentiment pulse (😀😐😞 buttons)
-Separate feature from bug report. "How are you finding the tool so far?" — ongoing read on user mood. Different session, different placement.
+1. Deploy the staged unknown-fields index.html.
+2. Top up Anthropic beyond $22 (currently ~150-200 scans of runway).
+3. Set an Anthropic spend alert.
+4. Measure REAL cost/scan: run 10 scans, check console.anthropic.com, divide
+   by 10. (Estimate is ~$0.06-0.15/scan but it's calculated, not measured.)
+5. Mark the Formspree sender "not Other" so beta bug reports aren't missed.
 
-### 7. Glitch #5 — "Something went wrong loading that business" (WATCH-LIST)
-Could not reproduce on May 23 (3 picks succeeded). Status: not closed, not actively broken. Improvement plan when it next reappears: add proper error surfacing in api/resolveplace.js so the actual Google status/error_message is captured rather than swallowed.
+---
 
-### 8. SITE-WIDE UX/READABILITY PASS (BIG SESSION)
-Multiple compounding issues to address together, not piecemeal:
-- Bright saturated cyan/green/orange accents on near-black backgrounds cause eye strain even though contrast math passes (especially for the 40-60+ target audience)
-- Body text is 12.5-13.8px; modern accessibility standards call for 16px minimum
-- Michael's wish-list item: the blue, gray, green, and orange text on the results page is uncomfortably small to read — explicit user request to enlarge during this UX pass
-- Open strategic question: is the dark theme right for the audience at all? Competitors serving SMB owners (Birdeye, BrightLocal) lean toward light themes for readability reasons
-Treat typography sizing, color saturation, contrast, and theme choice all together in one focused 1-2 hour session. Best paired with any remaining homepage/advisor copy refinements since it touches a lot of surface area.
+## TIER LIST (post-trickle growth work)
 
-### 9. Earlier carry-over items
-Verify line-705 "candidate-chosen" path passes listing's website not form's; Stripe payment flow (for Layer 4 launch); Microsoft Clarity; address-nudge safeguard; guided fix-instructions; rate limiter; competitor comparison; real website crawling; before/after dashboard; exit-intent popup; delete PASTE_YOUR_BROWSER_KEY_HERE comment from the Google Maps script tag in index.html.
+TIER 2 (monetization + reach, in rough priority):
+- Homepage trust-building above the fold: Michael's face, name, FL broker
+  credentials, one-line "why I built this". (Top of Tier 2 — biggest trust
+  lever, uncopyable by faceless competitors.)
+- Google Search Console submission + sitemap for presencescanner.ai (without
+  it the landing pages can't rank — do early).
+- SEO/AI landing pages, wave-based: Wave 1 = 3-5 highest-intent cornerstones,
+  Wave 2 = trade-specific, Wave 3 = FL geo pages. Prose-then-list-then-prose,
+  FAQ + FAQPage schema, author attribution, real local specifics, humanize AI
+  drafts. Slow-compound, start now.
+- Affiliate links live in results + PDF (GoDaddy, Namecheap, Google Workspace,
+  Canva, Fiverr, Wix).
+- Custom-quote button on results page (Formspree -> Michael's inbox + scan
+  snapshot, he quotes by hand).
+- Free email-gated personalized PDF (Mailchimp list = the asset).
+- List PresenceScanner as a SERVICE under Putnam Realty Group GBP (community-
+  service framing, brokerage URL stays primary). NOT a standalone GBP. NOT
+  morphing VeniceFlHomeWatch.
 
-### 10. Layer 4 build — $99 personalized DIY guide
-Deliverable is the user's free-scan results reformatted and expanded into a tangible printable guide (PDF + email at launch). Needs: PDF generation, payment integration (Stripe), email delivery, drip campaign architecture. Real multi-session build. Queue after Layer 5 (founding-member subscription) traction validates demand.
+TIER 3 (positioning):
+- Homepage proof: visible scan categories, a real sample report, testimonials
+  (Ken = first proof-case candidate).
+- Product Hunt / BetaList / AlternativeTo when launch-ready.
+- LinkedIn as operator-behind-the-tool.
 
-## QUEUED STRATEGY SESSION
-- Feature gap analysis + formal ROADMAP.md document
-- Maps PresenceScanner's current feature inventory against verified competitor capabilities
-- Output: docs/ROADMAP.md committed alongside STATE.md and DECISIONS.md
-- Estimated 1-2 hour focused session
-- Built on top of the four locked strategic decisions
+TIER 4 (post-launch):
+- Microsoft Clarity (install when real traffic arrives, not before).
+- Confidence scoring on scans (high/med/low by data-gathering method).
+- Yelp Fusion scanning — GATE on confirming free-tool API access + repeated
+  real user demand. Nextdoor and other contractor marketplaces ruled out (no
+  public API).
+- Automatic Google OAuth GBP connection (heavy, deferred — manual path is the
+  lightweight stand-in).
+- Dedicated support email (help@presencescanner.ai).
+- G2 / Capterra listings once there are reviews to seed them.
 
-## NOT BUGS — DO NOT TRY TO FIX (real-world data issues)
-- Glitch #1 (Lundstrom not in candidates): Confirmed Lundstrom has a GBP, but autocomplete data gap. Not tool-wide (5-for-5 other businesses worked).
-- Glitch #3 (Michael's own businesses missing in autocomplete): entity-conflation, shared phone, weak local signals. Real-world data gap, not code.
-- Score variability (69 vs 71 on back-to-back scans): normal AI variance, not urgent.
+---
 
-## KNOWN ISSUES / PARKED
-- Entity conflation is real and confirmed: businesses with multiple GBPs often have inconsistent data across them. Michael is actively cleaning up the dormant VeniceFlHomeWatch GBP (3716 Beeber St North Port) that contributes to this in his own test scans — phone number edit submitted May 25, awaiting 48-72 hour cache propagation, then he plans to mark the business permanently closed.
-- Michael keeps a detailed glitch journal in Google Docs (working notes). This STATE.md is the official summary.
-- Anthropic API spend: $309.47 of $400 cap as of last check (heavy direct AI conversation usage on FHV chat). Balance was $3.41. Top up needed before more meaningful testing. Cost-per-scan TBD before beta volume.
+## KEY FACTS / CREDENTIALS (for continuity)
 
-## END-OF-SESSION NOTES (May 25, Monday afternoon)
-Decision 1 implementation now complete end-to-end. Headline + subhead + browser title + meta description + advisor intro + system prompt + advisor block heading + loading screen header and subhead all use the new "online footprint health check" positioning language. No remaining inconsistency between what the homepage promises and what the in-product advisor delivers. Tested in fresh incognito and verified. Two-day arc closed cleanly: four strategic decisions locked, two of the four (Decisions 1 and 4) fully expressed in shipped code, supporting fixes captured for the queued UX pass. Strong foundation for the next session, which will start in a fresh chat — see new-chat-opener.md for orientation instructions.
+- Formspree bug-report form ID: xpqnyrdq.
+- Upstash Redis DB: presencescanner-rate-limit (iad1). Owner-IP bypass via
+  OWNER_IPS env var (Michael's IPv6 may rotate).
+- Kill switch: SITE_DISABLED env var.
+- Google Analytics: GA4 G-WD4QS0XK2C (live).
+- Anthropic balance: ~$22 as of session end.
+- Repo: github.com/presenceiq/presencescanner. Host: Vercel.
+
+---
+
+## WORKING-STYLE NOTES (carry forward)
+
+Honest pushback over flattery. Plain English, no jargon. No horizontal divider
+lines (breaks his phone reader). Continuous prose when he's on mobile (voice-
+to-text / text-to-speech friendly) — he'll say when he wants it shorter.
+Propose plans before writing code. When he flags something visually off, audit
+the ACTUAL code values (font sizes, colors) before responding to a screenshot.
+Treat his real-time testing observations as focused signal, not scatter. He
+deploys; Claude stages files and gives clear click-by-click upload steps. He
+verifies deploys in incognito (busts cache). His own three businesses are
+atypically hard test cases (shared phone, weak local signals) — most users
+won't hit those edges.
+
+=== END STATE.md ===
