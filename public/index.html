@@ -622,9 +622,25 @@ function Chat({results,bizName}){
   const bottom=useRef(null);
   useEffect(()=>{bottom.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
 
+  // CHAT CAP: limit the advisor to MAX_TURNS user messages per session so a
+  // single visitor (or bot) can't run up API cost by chatting all day. One
+  // "turn" = one user message + its AI reply. The opening AI greeting does
+  // not count. After the limit, the input disables and a wrap-up shows.
+  const MAX_TURNS=7;
+  const userTurns=msgs.filter(m=>m.r==="user").length;
+  const limitReached=userTurns>=MAX_TURNS;
+
+  // MESSAGE SIZE CAP: a real question fits easily in a few hundred chars.
+  // Capping each message stops someone from pasting a huge blob (e.g. their
+  // whole scan) that would cost more to process. 600 is generous for any
+  // honest question but blocks expensive pasted payloads. Enforced both on
+  // the input (maxLength) and again here before sending, as a belt-and-
+  // suspenders guard in case anything bypasses the input limit.
+  const MAX_CHARS=600;
+
   async function send(){
-    if(!input.trim()||busy)return;
-    const txt=input.trim();setInput("");
+    if(!input.trim()||busy||limitReached)return;
+    const txt=input.trim().slice(0,MAX_CHARS);setInput("");
     const next=[...msgs,{r:"user",t:txt}];setMsgs(next);setBusy(true);
     try{
       const history=next.map(m=>({role:m.r==="ai"?"assistant":"user",content:m.t}));
@@ -644,12 +660,16 @@ function Chat({results,bizName}){
       <div className="msgs">
         {msgs.map((m,i)=><div key={i} className={`msg ${m.r}`}>{m.t}</div>)}
         {busy&&<div className="msg ai thinking">Thinking…</div>}
+        {limitReached&&!busy&&<div className="msg ai">We've covered a lot here — that's all this advisor session can cover. For more, run a fresh scan anytime. Good luck out there!</div>}
         <div ref={bottom}/>
       </div>
       <div className="chat-bottom">
         <input className="cinput" value={input} onChange={e=>setInput(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&send()} placeholder="Ask anything about your results…"/>
-        <button className="csend" onClick={send} disabled={!input.trim()||busy}>Send</button>
+          onKeyDown={e=>e.key==="Enter"&&send()}
+          disabled={limitReached}
+          maxLength={MAX_CHARS}
+          placeholder={limitReached?"Session limit reached — run a fresh scan for more":"Ask anything about your results…"}/>
+        <button className="csend" onClick={send} disabled={!input.trim()||busy||limitReached}>Send</button>
       </div>
     </div>
   );
