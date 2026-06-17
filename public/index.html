@@ -317,18 +317,42 @@ async function runScan(bizName, website, city, phone, gbp) {
 
   const site = await getSiteData(website);
   
+  const userProvided = !!(gbp && gbp.userProvided);
+  // Helper: render a GBP attribute honestly. On the manual path a blank/null
+  // means "the user didn't provide it" = could not verify, NOT "missing."
+  // On the API paths (autocomplete/phone) a real empty value genuinely means
+  // the field is empty on Google, so there we still say No/0.
+  const hoursLine = (gbp && gbp.hasHours===null)
+    ? (userProvided ? 'Not provided — could not verify' : 'No')
+    : (gbp && gbp.hasHours ? 'Yes' : 'No');
+  const photoLine = (gbp && (gbp.photoCount===null||gbp.photoCount===undefined))
+    ? (userProvided ? 'Not provided — could not verify' : '0')
+    : (gbp ? gbp.photoCount : '0');
+  const reviewLine = (gbp && (gbp.reviewCount===null||gbp.reviewCount===undefined))
+    ? (userProvided ? 'Not provided — could not verify' : '0')
+    : (gbp ? gbp.reviewCount : '0');
+  const ratingLine = (gbp && (gbp.rating===null||gbp.rating===undefined))
+    ? (userProvided ? 'Not provided — could not verify' : 'No rating yet')
+    : (gbp ? gbp.rating : 'No rating yet');
+
   const gbpContext = gbp ? `
 REAL GOOGLE BUSINESS PROFILE DATA (use this for GBP category — do not guess):
 - GBP Found: Yes
 - Business Name on Google: ${gbp.name}
-- Star Rating: ${gbp.rating || 'No rating yet'}
-- Total Reviews: ${gbp.reviewCount}
+- Star Rating: ${ratingLine}
+- Total Reviews: ${reviewLine}
 - Address: ${gbp.address || 'Not listed'}
 - Phone: ${gbp.phone || 'Not listed'}
 - Website on GBP: ${gbp.website || 'NOT SET'}
-- Has Business Hours Set: ${gbp.hasHours ? 'Yes' : 'No'}
-- Photo Count: ${gbp.photoCount}
-- Business Status: ${gbp.businessStatus || 'Unknown'}${websiteMissingFromGBP ? `
+- Has Business Hours Set: ${hoursLine}
+- Photo Count: ${photoLine}
+- Business Status: ${gbp.businessStatus || 'Unknown'}${userProvided ? `
+
+IMPORTANT — THIS PROFILE DATA WAS ENTERED BY HAND BY THE USER, NOT READ FROM GOOGLE:
+Any field marked "Not provided — could not verify" means the user simply did not enter it. It does NOT mean the business lacks that feature. For any such field:
+- Do NOT write a negative finding (never say "no hours", "zero photos", "no reviews", etc.).
+- Instead, if you mention it at all, say it could not be verified from the information supplied, and gently suggest the owner confirm it is set on their Google Business Profile.
+- Do NOT lower the score as a penalty for an unverified field. Only score down for things the data explicitly confirms are deficient.` : ''}${websiteMissingFromGBP ? `
 - IMPORTANT FIX OPPORTUNITY: The GBP website field is EMPTY but the business has a website (${formWebsite}). Customers searching Google cannot click through. This is a high-priority, free, 2-minute fix.` : ''}
 ` : `
 REAL GOOGLE BUSINESS PROFILE DATA: No GBP listing found for this business. Score GBP category very low.
@@ -1251,11 +1275,14 @@ function App(){
         address:fhAddress.trim()||null,
         phone:fhPhone.trim()||null,
         rating:(!isNaN(ratingNum)&&ratingNum>0)?ratingNum:null,
-        reviewCount:(!isNaN(reviewNum)&&reviewNum>=0)?reviewNum:0,
+        // Blank review/photo/hours fields mean "the user didn't tell us,"
+        // NOT "the business has none." Use null = unknown so the prompt can
+        // say "could not verify" instead of writing a false negative finding.
+        reviewCount:(!isNaN(reviewNum)&&reviewNum>=0)?reviewNum:null,
         website:realWebsite||null,
-        hasHours:!!fhHasHours,
+        hasHours:fhHasHours?true:null,
         isOpen:null,
-        photoCount:0,
+        photoCount:null,
         businessStatus:null,
         types:fhCategory.trim()?[fhCategory.trim()]:[],
         userProvided:true
@@ -1420,7 +1447,7 @@ function App(){
             <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
               <div style={{fontWeight:700,marginBottom:6}}>Copy from your Google Business Profile</div>
               <div style={{fontSize:"0.88rem",opacity:0.75,marginBottom:14,lineHeight:1.55}}>
-                Open your Google Business Profile dashboard in another tab, then copy each piece of info into the boxes below. Only the business name is required — the more you fill in, the more accurate your report.
+                Open your Google Business Profile dashboard in another tab, then copy each piece of info into the boxes below. Only the business name is required — the more you fill in, the more accurate your report. Anything you leave blank is treated as "not verified," not as missing from your profile, so fill in everything you can for the most accurate scan.
               </div>
               <div className="field"><label>Business Name *</label>
                 <input value={fhName} onChange={e=>setFhName(e.target.value)} placeholder="Exactly as it appears on Google"/></div>
