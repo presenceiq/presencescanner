@@ -1501,7 +1501,6 @@ function App(){
               don't compete with the score for attention. */}
           <div className="sjumps">
             <a className="sjump" onClick={()=>document.getElementById('jump-tools')?.scrollIntoView({behavior:'smooth'})}>See recommended tools</a>
-            <a className="sjump" onClick={()=>document.getElementById('jump-founding')?.scrollIntoView({behavior:'smooth'})}>Lock in founding pricing</a>
           </div>
           <Chat results={results} bizName={bizName}/>
           {/* AFFILIATE PLACEMENT PRINCIPLE (Decision 4, May 24 2026):
@@ -1515,7 +1514,6 @@ function App(){
           <div className="cats">{results.categories?.map((cat,i)=><CatCard key={i} cat={cat}/>)}</div>
           <AffCards results={results} bizName={bizName}/>
           <AlgorithmFeed bizType={results.categories?.[0]?.findings?.[0]?.title || bizName} city={city}/>
-          <FoundingWaitlist/>
           <SentimentStrip onTextFeedback={requestFeedback} voted={moodVoted} setVoted={setMoodVoted}/>
           <button className="rescan" onClick={reset}>← Scan Another Business</button>
         </div>
