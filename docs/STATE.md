@@ -9,10 +9,12 @@ DECISIONS.md. STATE.md is overwritten each session; DECISIONS.md is append-only.
 
 ## ONE-LINE STATUS
 
-Trickle-ready. All launch blockers for a quiet soft-share are cleared. One
-final code deploy pending (the unknown-fields fix), then the only remaining
-items are Michael's own Anthropic console tasks. A full Facebook announcement
-wants a balance top-up + spend alert + measured cost/scan first.
+Trickle-ready and in good honest shape. All launch blockers cleared and
+deployed. Today also shipped findings-consolidation, website-URL transparency,
+and the advisor chat scroll fix. Remaining items are Michael's own Anthropic
+console tasks. Next real BUILD = harden the fetcher (reads bot-protected sites
+poorly vs ChatGPT) — fresh session, not a bolt-on. A full Facebook announcement
+still wants a balance top-up + spend alert + measured cost/scan first.
 
 ---
 
@@ -66,31 +68,44 @@ Putnam. Contact: putnamm@comcast.net.
 - Legal: terms.html + privacy.html live; footer links on every page; results-
   page disclaimer.
 - Founding-member block REMOVED from results page (model was killed weeks ago).
+- FINDINGS CONSOLIDATION: reports now give 1-3 distinct findings per category
+  (was a forced 3, = 16 every time), no cross-category repetition, ~8-11 total.
+  News section trimmed to 2 non-repetitive items.
+- "Website analyzed: [url]" shown in report header so users see what was scanned.
+- Advisor chat scroll fixed (scrolls the inner message box, not the whole page).
 
 ---
 
-## DEPLOY-PENDING (staged, not yet live as of session end)
+## DEPLOY-PENDING
 
-THE UNKNOWN-FIELDS FIX (index.html at /mnt/user-data/outputs/). Manual-path
-blank fields now = "unknown / could not verify" instead of "no / zero", per
-scan path, with a prompt rule that unverified fields never produce negative
-findings or lower the score, plus a warning line above the manual form. This
-is the last code deploy of the session. NOTE: the staged index.html ALSO
-contains the model fix, chat caps, founding removal, footer, and disclaimer —
-deploying it carries everything. Test by re-scanning Venice FL Handyman via the
-manual path with hours unchecked + photos blank; report should say "could not
-verify", not "no", and not tank the score.
+Nothing pending — everything above is deployed and confirmed live (verified via
+incognito to bust cache). Michael confirmed all deploys.
 
 ---
 
 ## LEFT FOR MICHAEL (solo console tasks — none block a quiet trickle)
 
-1. Deploy the staged unknown-fields index.html.
-2. Top up Anthropic beyond $22 (currently ~150-200 scans of runway).
-3. Set an Anthropic spend alert.
-4. Measure REAL cost/scan: run 10 scans, check console.anthropic.com, divide
+1. Top up Anthropic beyond $22 (currently ~150-200 scans of runway).
+2. Set an Anthropic spend alert.
+3. Measure REAL cost/scan: run 10 scans, check console.anthropic.com, divide
    by 10. (Estimate is ~$0.06-0.15/scan but it's calculated, not measured.)
-5. Mark the Formspree sender "not Other" so beta bug reports aren't missed.
+4. Mark the Formspree sender "not Other" so beta bug reports aren't missed.
+5. Verify the handyman GBP isn't genuinely showing "Closed" (ChatGPT's map
+   showed it closed — may just have been after-hours).
+
+---
+
+## NEXT REAL BUILD (fresh focused session, NOT a bolt-on)
+
+HARDEN THE FETCHER. fetchsite.js fails on bot-protected sites that ChatGPT
+reads fine (e.g. Michael's own veniceflhandyman.com). Scope: browser-like
+headers, a real/proper user-agent, follow redirects, possibly handle
+JS-rendered pages (headless). GOAL: read the ordinary small-business site
+cleanly and stop losing to BASIC bot protection. Do NOT try to rival ChatGPT's
+full retrieval stack — parity is a money/time pit; aim for "easy 80%, handle
+the stubborn 20% honestly." Graceful-failure handling already shipped means a
+blocked site produces an HONEST report ("could not be scanned — usually a
+security setting"), so there's no active misleading in the meantime.
 
 ---
 
@@ -145,6 +160,24 @@ TIER 4 (post-launch):
 - Repo: github.com/presenceiq/presencescanner. Host: Vercel.
 
 ---
+
+## OPERATING PRINCIPLES (how to work on this project)
+
+Stress-test, don't just respond. On any feature or decision, proactively ask:
+where is this likely to break or embarrass Michael in front of a real user;
+what is it pretending to know that it doesn't; what would a competitor or
+skeptic call weak; given limited budget and solo time, is it worth building or
+is it gold-plating; what's most likely to make someone distrust it; is this the
+highest-value thing right now or just the most interesting; is it being tested
+the way a confused stranger would use it, not the way its builder would.
+
+Shipping fast and shipping fragile are different — ask if it's reliable enough,
+not just whether it runs. The value is the judgment (what to build, where it
+breaks, whether to trust it), not just working code. Done and live beats perfect
+and pending. Michael tests on REAL businesses — that's how the real bugs surface
+(the unknown-fields bug came from him scanning his own GBP). Claude can't see his
+GBP or live sites, so reality-testing stays his job; Claude's job is to hunt the
+weaknesses he can't see coming and warn him before he ships them.
 
 ## WORKING-STYLE NOTES (carry forward)
 
