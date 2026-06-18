@@ -392,7 +392,7 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
   function withIdentity(parsed){
     if(parsed && typeof parsed==='object'){
       parsed.gbp = gbp || null;
-      parsed.scannedInputs = { bizName, city };
+      parsed.scannedInputs = { bizName, city, website: knownWebsite || null };
       // Fix #3 — trust our deterministic state, not the AI's guess.
       parsed.hasWebsite = !noWebsiteAnywhere;
       parsed.websiteMissingFromGBP = websiteMissingFromGBP;
@@ -1511,11 +1511,14 @@ function App(){
                   {results.gbp.address && <span className="sident-row">{results.gbp.address}</span>}
                   {results.gbp.phone && <span className="sident-row">{results.gbp.phone}</span>}
                   {results.gbp.rating && <span className="sident-row"><span className="sident-stars">★★★★★</span> {results.gbp.rating} · {results.gbp.reviewCount || 0} reviews</span>}
+                  {results.scannedInputs?.website && <span className="sident-row"><b>Website analyzed:</b> {results.scannedInputs.website}</span>}
                 </div>
               ) : (
                 <div className="sident">
                   <span className="sident-row"><b>Scanned:</b> {results.scannedInputs?.bizName || bizName}{results.scannedInputs?.city ? ` · ${results.scannedInputs.city}` : ''}</span>
-                  <span className="sident-row sident-none">No Google Business Profile was matched for this scan</span>
+                  {results.scannedInputs?.website
+                    ? <span className="sident-row"><b>Website analyzed:</b> {results.scannedInputs.website}</span>
+                    : <span className="sident-row sident-none">No Google Business Profile was matched for this scan</span>}
                 </div>
               )}
               <p>{results.summary}</p>
