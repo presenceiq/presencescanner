@@ -644,7 +644,17 @@ function Chat({results,bizName}){
   const [input,setInput]=useState("");
   const [busy,setBusy]=useState(false);
   const bottom=useRef(null);
-  useEffect(()=>{bottom.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+  const msgsRef=useRef(null);
+  // Scroll the NEWEST message into view WITHIN the chat's own message box,
+  // not by scrolling the whole page. The old approach used
+  // scrollIntoView on a bottom marker, which scrolled the entire page so the
+  // input box landed in view and pushed the actual answer up above where the
+  // user was looking. Scrolling only the inner container keeps the latest
+  // reply visible in the chat window without yanking the page around.
+  useEffect(()=>{
+    const box=msgsRef.current;
+    if(box){ box.scrollTop = box.scrollHeight; }
+  },[msgs,busy]);
 
   // CHAT CAP: limit the advisor to MAX_TURNS user messages per session so a
   // single visitor (or bot) can't run up API cost by chatting all day. One
@@ -681,7 +691,7 @@ function Chat({results,bizName}){
         <h3>AI Footprint Advisor</h3>
         <span className="live"><span className="dot"/>Live</span>
       </div>
-      <div className="msgs">
+      <div className="msgs" ref={msgsRef}>
         {msgs.map((m,i)=><div key={i} className={`msg ${m.r}`}>{m.t}</div>)}
         {busy&&<div className="msg ai thinking">Thinking…</div>}
         {limitReached&&!busy&&<div className="msg ai">We've covered a lot here — that's all this advisor session can cover. For more, run a fresh scan anytime. Good luck out there!</div>}
