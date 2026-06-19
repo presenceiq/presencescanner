@@ -82,6 +82,9 @@
     .sident .sident-row:first-child{margin-top:0}
     .sident .sident-none{color:var(--amber);font-weight:500}
     .sident .sident-stars{color:#b08020;letter-spacing:1px;margin-right:3px}
+    .sident .sident-link{color:var(--cyan);font-weight:600;text-decoration:none}
+    .sident .sident-link:hover{text-decoration:underline}
+    .sident .sident-verify{color:var(--t2);font-size:0.82rem}
     .sjumps{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
     .sjump{font-size:0.92rem;color:var(--t2);background:var(--s1);border:1px solid var(--b1);border-radius:100px;padding:6px 13px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:border-color 0.2s,color 0.2s}
     .sjump:hover{border-color:rgba(43,142,176,0.35);color:var(--cyan)}
@@ -1543,6 +1546,16 @@ function App(){
                   {results.gbp.phone && <span className="sident-row">{results.gbp.phone}</span>}
                   {results.gbp.rating && <span className="sident-row"><span className="sident-stars">★★★★★</span> {results.gbp.rating} · {results.gbp.reviewCount || 0} reviews</span>}
                   {results.scannedInputs?.website && <span className="sident-row"><b>Website analyzed:</b> {results.scannedInputs.website}</span>}
+                  {results.gbp.placeId && (
+                    <span className="sident-row">
+                      <a className="sident-link"
+                         href={`https://www.google.com/maps/place/?q=place_id:${results.gbp.placeId}`}
+                         target="_blank" rel="noopener noreferrer">
+                        View this Google listing →
+                      </a>
+                      <span className="sident-verify"> (open it to confirm we scanned the right business)</span>
+                    </span>
+                  )}
                 </div>
               ) : (
                 <div className="sident">
