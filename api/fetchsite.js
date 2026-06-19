@@ -50,6 +50,14 @@ export default async function handler(req, res) {
         reason: 'Could not reach the website automatically',
         reasonForUser: 'We could not reach this website with our automated scanner. This is commonly caused by the site\'s security settings (firewall or bot protection) and does NOT necessarily mean anything is wrong with the website. Website analysis was skipped for this scan.',
         likelyAccessibleToHumans: true,
+        // We could not read the page, so EVERY website signal is unknown —
+        // not false, not zero. The report must treat these as "could not
+        // verify," never as confirmed deficiencies.
+        schemaStatus: 'unknown',
+        viewportStatus: 'unknown',
+        faqStatus: 'unknown',
+        facebookStatus: 'unknown',
+        instagramStatus: 'unknown',
       });
     }
     clearTimeout(timeout);
@@ -60,6 +68,12 @@ export default async function handler(req, res) {
         reason: 'Website returned status ' + pageRes.status,
         reasonForUser: 'Our automated scanner received an unexpected response (status ' + pageRes.status + ') from this website. This can be caused by security or server settings and does NOT necessarily mean the website is broken for visitors. Website analysis was skipped for this scan.',
         likelyAccessibleToHumans: true,
+        // Page not readable, so every website signal is unknown, not false.
+        schemaStatus: 'unknown',
+        viewportStatus: 'unknown',
+        faqStatus: 'unknown',
+        facebookStatus: 'unknown',
+        instagramStatus: 'unknown',
       });
     }
 
@@ -96,6 +110,18 @@ export default async function handler(req, res) {
     const hasFacebook = lower.includes('facebook.com');
     const hasInstagram = lower.includes('instagram.com');
 
+    // THREE-STATE SIGNALS — because we DID successfully read this homepage, a
+    // signal that's absent means "we looked on the scanned page and didn't find
+    // it" (not_found_on_scanned_page), NOT "the business doesn't have it." The
+    // business may well have a Facebook page, an FAQ, or schema elsewhere on the
+    // site or on another platform — we only checked this one homepage. The AI
+    // prompt is told to phrase these as "not found on the scanned page."
+    const schemaStatus    = hasSchema    ? 'found' : 'not_found_on_scanned_page';
+    const viewportStatus  = hasViewport  ? 'found' : 'not_found_on_scanned_page';
+    const faqStatus       = hasFAQ       ? 'found' : 'not_found_on_scanned_page';
+    const facebookStatus  = hasFacebook  ? 'found' : 'not_found_on_scanned_page';
+    const instagramStatus = hasInstagram ? 'found' : 'not_found_on_scanned_page';
+
     // Strip tags to estimate how much real text content the page has.
     const textOnly = html
       .replace(/<script[\s\S]*?<\/script>/gi, ' ')
@@ -120,6 +146,15 @@ export default async function handler(req, res) {
       hasFAQ,
       hasFacebook,
       hasInstagram,
+      // Three-state versions of the above signals. Prefer these in the report.
+      // 'found' = confirmed present on the scanned homepage.
+      // 'not_found_on_scanned_page' = we read the page and it wasn't there
+      //   (does NOT mean the business lacks it — may exist elsewhere).
+      schemaStatus,
+      viewportStatus,
+      faqStatus,
+      facebookStatus,
+      instagramStatus,
       wordCount,
       textSample,
     });
