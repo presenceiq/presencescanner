@@ -357,10 +357,13 @@ REAL GOOGLE BUSINESS PROFILE DATA (use this for GBP category — do not guess):
 - Business Status: ${gbp.businessStatus || 'Unknown'}${userProvided ? `
 
 IMPORTANT — THIS PROFILE DATA WAS ENTERED BY HAND BY THE USER, NOT READ FROM GOOGLE:
-Any field marked "Not provided — could not verify" means the user simply did not enter it. It does NOT mean the business lacks that feature. For any such field:
+This usually happens because our automated tool could not pull this business's full Google data — often because Google shows the listing publicly in Search and Maps but does not expose it cleanly through the data connection our scanner uses. This is a known Google limitation, NOT a sign the business is missing, weak, or unverified. The business may have plenty of reviews, photos, and complete hours that we simply could not read automatically.
+Any field marked "Not provided — could not verify" means we could not read it — NOT that the business lacks it. For any such field:
 - Do NOT write a negative finding (never say "no hours", "zero photos", "no reviews", etc.).
-- Instead, if you mention it at all, say it could not be verified from the information supplied, and gently suggest the owner confirm it is set on their Google Business Profile.
-- Do NOT lower the score as a penalty for an unverified field. Only score down for things the data explicitly confirms are deficient.` : ''}${websiteMissingFromGBP ? `
+- Frame it warmly and honestly: explain that we could not automatically pull their full Google listing data (a common Google limitation), so those specific details could not be confirmed in this scan — and reassure them this does not reflect badly on their business.
+- Gently suggest they can confirm those details look good on their own Google Business Profile dashboard.
+- Do NOT lower the score as a penalty for an unverified field. Only score down for things the data explicitly confirms are deficient.
+- LEAD WITH STRENGTHS: if the website scan or any entered field shows real positives (good website, schema, reviews they told us about, etc.), make those the focus of the report so the owner sees genuine value, not a list of things you couldn't check.` : ''}${websiteMissingFromGBP ? `
 - IMPORTANT FIX OPPORTUNITY: The GBP website field is EMPTY but the business has a website (${formWebsite}). Customers searching Google cannot click through. This is a high-priority, free, 2-minute fix.` : ''}
 ` : `
 REAL GOOGLE BUSINESS PROFILE DATA: No GBP listing found for this business. Score GBP category very low.
@@ -1541,10 +1544,33 @@ function App(){
                 Google API matching problem while giving the AI accurate
                 signal to score against. */}
             <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
-              <div style={{fontWeight:700,marginBottom:6}}>Copy from your Google Business Profile</div>
-              <div style={{fontSize:"0.88rem",opacity:0.75,marginBottom:14,lineHeight:1.55}}>
-                Open your Google Business Profile dashboard in another tab, then copy each piece of info into the boxes below. Only the business name is required — the more you fill in, the more accurate your report. Anything you leave blank is treated as "not verified," not as missing from your profile, so fill in everything you can for the most accurate scan.
+              <div style={{fontWeight:700,marginBottom:6}}>Copy from your Google listing</div>
+              <div style={{fontSize:"0.88rem",opacity:0.75,marginBottom:12,lineHeight:1.55}}>
+                Easiest way: tap Copy below, paste it into Google or Google Maps, and your listing will come up. Then copy your rating, reviews, hours, etc. into the boxes here. Only the business name is required — the more you add, the better your report. Anything left blank is treated as "not verified," never as missing.
               </div>
+              {(fhName.trim()||bizName||phone||city) && (
+                <div style={{background:"rgba(43,142,176,0.10)",border:"1px solid rgba(43,142,176,0.35)",borderRadius:10,padding:"11px 13px",marginBottom:14}}>
+                  <div style={{fontSize:"0.8rem",fontWeight:600,opacity:0.8,marginBottom:6}}>Paste this into Google to find your listing:</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                    <input readOnly
+                      value={[(fhName.trim()||bizName||""),(fhPhone.trim()||phone||""),(city||"")].filter(Boolean).join("  ")}
+                      style={{flex:"1 1 200px",minWidth:0,padding:"9px 11px",border:"1px solid var(--b1)",borderRadius:8,background:"var(--s2)",color:"var(--t1)",fontFamily:"var(--fb)",fontSize:"0.92rem"}}
+                      onFocusCapture={e=>e.target.select()}/>
+                    <button type="button"
+                      onClick={e=>{
+                        const txt=[(fhName.trim()||bizName||""),(fhPhone.trim()||phone||""),(city||"")].filter(Boolean).join("  ");
+                        try{navigator.clipboard.writeText(txt);}catch{}
+                        const b=e.currentTarget; const o=b.textContent; b.textContent="Copied!"; setTimeout(()=>{b.textContent=o;},1500);
+                      }}
+                      style={{padding:"9px 16px",background:"var(--cyan)",color:"#fff",border:"none",borderRadius:8,fontFamily:"var(--fb)",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+                      Copy
+                    </button>
+                  </div>
+                  <div style={{fontSize:"0.78rem",opacity:0.65,marginTop:7,lineHeight:1.5}}>
+                    On your phone, Google Maps is easiest — your rating, review count, hours, and photos all show on one screen, no login needed.
+                  </div>
+                </div>
+              )}
               <div className="field"><label>Business Name *</label>
                 <input value={fhName} onChange={e=>setFhName(e.target.value)} placeholder="Exactly as it appears on Google"/></div>
               <div className="field"><label>Business Address</label>
@@ -1554,9 +1580,9 @@ function App(){
               <div className="field"><label>Website URL on Google</label>
                 <input value={fhWebsite} onChange={e=>setFhWebsite(e.target.value)} placeholder="https://yourbusiness.com — leave blank if not set on Google"/></div>
               <div className="field"><label>Star Rating</label>
-                <input value={fhRating} onChange={e=>setFhRating(e.target.value)} placeholder="e.g. 4.8"/></div>
+                <input value={fhRating} onChange={e=>setFhRating(e.target.value)} placeholder="the big number at the top of your listing, e.g. 4.8"/></div>
               <div className="field"><label>Total Reviews</label>
-                <input value={fhReviewCount} onChange={e=>setFhReviewCount(e.target.value)} placeholder="e.g. 47"/></div>
+                <input value={fhReviewCount} onChange={e=>setFhReviewCount(e.target.value)} placeholder="the count next to your stars, e.g. 47"/></div>
               <div className="field"><label>Business Category on Google</label>
                 <input value={fhCategory} onChange={e=>setFhCategory(e.target.value)} placeholder="e.g. Flower Shop, Plumber, Salon"/></div>
               <label style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer",margin:"12px 0",fontSize:"0.92rem"}}>
