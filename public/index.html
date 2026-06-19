@@ -358,18 +358,32 @@ Any field marked "Not provided — could not verify" means the user simply did n
 REAL GOOGLE BUSINESS PROFILE DATA: No GBP listing found for this business. Score GBP category very low.
 `;
 
+  // Helper: turn a three-state website signal into honest prompt language.
+  // 'found' = confirmed on the page. 'not_found_on_scanned_page' = we read the
+  // homepage and it wasn't there (NOT proof the business lacks it). 'unknown'
+  // = we couldn't read the page at all. Falls back to the old boolean if the
+  // status field is missing (older fetcher responses).
+  const sig = (status, bool) => {
+    if (status === 'found') return 'Found on the scanned homepage';
+    if (status === 'not_found_on_scanned_page') return 'Not found on the scanned homepage (may exist elsewhere on the site or on another platform — not confirmed absent)';
+    if (status === 'unknown') return 'Unknown — could not verify';
+    return bool ? 'Found on the scanned homepage' : 'Not found on the scanned homepage (not confirmed absent)';
+  };
   const siteContext = (site && site.fetched) ? `
 REAL WEBSITE DATA (use this for Website Health, AI Search Visibility, and GEO Score — do not guess):
 - Website reachable: Yes
 - Page title: ${site.title || '(none found)'}
 - Meta description: ${site.metaDescription || '(none found)'}
-- Has structured data / schema markup: ${site.hasSchema ? 'Yes' : 'No'}
-- Mobile viewport tag present: ${site.hasViewport ? 'Yes' : 'No'}
+- Structured data / schema markup: ${sig(site.schemaStatus, site.hasSchema)}
+- Mobile viewport tag: ${sig(site.viewportStatus, site.hasViewport)}
 - H1 headings: ${site.h1Count}, H2 headings: ${site.h2Count}
-- Has FAQ content: ${site.hasFAQ ? 'Yes' : 'No'}
-- Links to Facebook: ${site.hasFacebook ? 'Yes' : 'No'}, Links to Instagram: ${site.hasInstagram ? 'Yes' : 'No'}
+- FAQ content: ${sig(site.faqStatus, site.hasFAQ)}
+- Facebook link: ${sig(site.facebookStatus, site.hasFacebook)}
+- Instagram link: ${sig(site.instagramStatus, site.hasInstagram)}
 - Approx word count on homepage: ${site.wordCount}
 - Text sample from homepage: ${site.textSample || '(none)'}
+
+WEBSITE SIGNAL RULE: For the website signals above, do NOT describe a feature as missing unless it is explicitly marked "Not found on the scanned homepage." Even then, phrase it as "not found on the scanned page," NOT "the business does not have it" — it may exist on another page or platform we did not check. If a signal is "Unknown — could not verify," treat it as unverified: do not write a negative finding about it and do not lower the score for it.
 ` : (site && site.likelyAccessibleToHumans) ? `
 REAL WEBSITE DATA: A website exists, but our automated scanner could not fetch it. ${site.reasonForUser || ''}
 IMPORTANT — handle this honestly:
