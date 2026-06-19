@@ -336,12 +336,16 @@ async function runScan(bizName, website, city, phone, gbp) {
   const photoLine = (gbp && (gbp.photoCount===null||gbp.photoCount===undefined))
     ? (userProvided ? 'Not provided — could not verify' : '0')
     : (gbp ? gbp.photoCount : '0');
+  // On the manual path, any rating/review the user DID enter is SELF-REPORTED,
+  // not verified by us. Tag it so the prompt never presents it as a confirmed
+  // finding — the user could be guessing, rounding up, or mistaken, and proud
+  // owners self-select into entering good numbers. Honesty protects credibility.
   const reviewLine = (gbp && (gbp.reviewCount===null||gbp.reviewCount===undefined))
     ? (userProvided ? 'Not provided — could not verify' : '0')
-    : (gbp ? gbp.reviewCount : '0');
+    : (gbp ? (userProvided ? gbp.reviewCount + ' (as reported by the user — NOT verified by us)' : gbp.reviewCount) : '0');
   const ratingLine = (gbp && (gbp.rating===null||gbp.rating===undefined))
     ? (userProvided ? 'Not provided — could not verify' : 'No rating yet')
-    : (gbp ? gbp.rating : 'No rating yet');
+    : (gbp ? (userProvided ? gbp.rating + ' (as reported by the user — NOT verified by us)' : gbp.rating) : 'No rating yet');
 
   const gbpContext = gbp ? `
 REAL GOOGLE BUSINESS PROFILE DATA (use this for GBP category — do not guess):
@@ -363,7 +367,8 @@ Any field marked "Not provided — could not verify" means we could not read it 
 - Frame it warmly and honestly: explain that we could not automatically pull their full Google listing data (a common Google limitation), so those specific details could not be confirmed in this scan — and reassure them this does not reflect badly on their business.
 - Gently suggest they can confirm those details look good on their own Google Business Profile dashboard.
 - Do NOT lower the score as a penalty for an unverified field. Only score down for things the data explicitly confirms are deficient.
-- LEAD WITH STRENGTHS: if the website scan or any entered field shows real positives (good website, schema, reviews they told us about, etc.), make those the focus of the report so the owner sees genuine value, not a list of things you couldn't check.` : ''}${websiteMissingFromGBP ? `
+- LEAD WITH STRENGTHS: if the website scan or any entered field shows real positives (good website, schema, reviews they told us about, etc.), make those the focus of the report so the owner sees genuine value, not a list of things you couldn't check.
+- SELF-REPORTED RATINGS/REVIEWS: any rating or review count marked "(as reported by the user — NOT verified by us)" was TYPED IN BY THE USER, not pulled from Google. You MUST attribute it to them and never present it as something the tool independently confirmed. Phrase it like "Based on the rating you entered (5.0, 21 reviews)..." or "the 5.0 rating you reported." Do NOT write "we found" or "your profile shows" for these numbers. You may still note that a strong self-reported rating is a good sign, but make crystal clear the number came from the user, not from our scan — so no one mistakes self-entered numbers for verified analysis.` : ''}${websiteMissingFromGBP ? `
 - IMPORTANT FIX OPPORTUNITY: The GBP website field is EMPTY but the business has a website (${formWebsite}). Customers searching Google cannot click through. This is a high-priority, free, 2-minute fix.` : ''}
 ` : `
 REAL GOOGLE BUSINESS PROFILE DATA: No GBP listing found for this business. Score GBP category very low.
