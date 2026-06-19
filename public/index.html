@@ -1321,23 +1321,55 @@ function App(){
     }
   }
 
-  // The user copied their GBP info into the manual form. Use what they
-  // provided as the basis for the scan, syncing the name to what they
-  // typed so the report consistently describes their business.
+  // The user copied their GBP info into the manual form. BUT FIRST — if they
+  // gave us a phone number, try the phone lookup to find their REAL Google
+  // listing (with the real reviews, rating, photos Google actually has),
+  // because the name-autocomplete missing a business does NOT mean the business
+  // has no findable GBP. Many real businesses (e.g. with a Knowledge-Graph entry
+  // but a lower-ranked Places result) are missed by name search but found
+  // cleanly by phone. Only if the phone lookup finds nothing do we fall back to
+  // the hand-typed manual fields.
   async function findHelpSubmit(){
     if(!fhName.trim())return;
     setView("loading");setStepIdx(0);
     try{
+      const typedName=fhName.trim();
+      const typedWebsite=fhWebsite.trim();
+      const typedPhone=fhPhone.trim();
+
+      // --- PHONE-LOOKUP FALLBACK: try to find the real GBP by phone first ---
+      if(typedPhone){
+        try{
+          const pRes=await fetch("/api/findplace",{
+            method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({phone:typedPhone})
+          });
+          const phoneMatch=await pRes.json();
+          if(phoneMatch&&phoneMatch.found){
+            // Found the real listing by phone — use Google's actual data, not
+            // the hand-typed fields. This is the REAL GBP, so userProvided is
+            // false and the report can use real reviews/rating/photos.
+            const realName=phoneMatch.name||typedName;
+            if(realName)setBizName(realName);
+            const realWebsite=phoneMatch.website||typedWebsite||website;
+            const data=await runScan(realName,realWebsite,city,typedPhone||phone,phoneMatch);
+            setResults(data);setView("results");
+            return;
+          }
+        }catch{ /* phone lookup failed — fall through to manual data below */ }
+      }
+
+      // --- FALLBACK: no phone match (or no phone given) — use typed fields ---
       // Parse the optional numeric fields softly — bad input becomes null
       // rather than crashing the scan.
       const ratingNum=parseFloat(fhRating);
       const reviewNum=parseInt(fhReviewCount,10);
-      const realName=fhName.trim();
-      const realWebsite=fhWebsite.trim();
+      const realName=typedName;
+      const realWebsite=typedWebsite;
       const manualGBP={
         name:realName,
         address:fhAddress.trim()||null,
-        phone:fhPhone.trim()||null,
+        phone:typedPhone||null,
         rating:(!isNaN(ratingNum)&&ratingNum>0)?ratingNum:null,
         // Blank review/photo/hours fields mean "the user didn't tell us,"
         // NOT "the business has none." Use null = unknown so the prompt can
@@ -1354,7 +1386,7 @@ function App(){
       // Sync the displayed business name so the report title, advisor,
       // and findings all describe the SAME business.
       if(realName)setBizName(realName);
-      const data=await runScan(realName,realWebsite||website,city,phone,manualGBP);
+      const data=await runScan(realName,realWebsite||website,city,typedPhone||phone,manualGBP);
       setResults(data);setView("results");
     }catch(e){setErrMsg(e.message);setView("error");}
   }
