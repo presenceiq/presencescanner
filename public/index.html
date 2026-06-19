@@ -1122,6 +1122,18 @@ function App(){
   const [fhReviewCount,setFhReviewCount]=useState("");
   const [fhHasHours,setFhHasHours]=useState(false);
   const [fhCategory,setFhCategory]=useState("");
+  // When the user lands on the manual "find your business" form, carry over what
+  // they already typed on the home form (name, website, phone) so they don't
+  // have to retype it. Only fills fields that are still empty, so it never
+  // overwrites anything the user has already entered on the manual form.
+  React.useEffect(()=>{
+    if(view==="findhelp"){
+      setFhName(prev=>prev||bizName||"");
+      setFhWebsite(prev=>prev||website||"");
+      setFhPhone(prev=>prev||phone||"");
+      setFhAddress(prev=>prev||city||"");
+    }
+  },[view]);
   // --- Feedback modal (controls BugReport from outside so SentimentStrip
   // can also open it with a mood context) ---
   const [bugOpen,setBugOpen]=useState(false);
@@ -1573,12 +1585,13 @@ function App(){
               )}
               <div className="field"><label>Business Name *</label>
                 <input value={fhName} onChange={e=>setFhName(e.target.value)} placeholder="Exactly as it appears on Google"/></div>
-              <div className="field"><label>Business Address</label>
-                <input value={fhAddress} onChange={e=>setFhAddress(e.target.value)} placeholder="Street, City, State"/></div>
+              <div className="field"><label>Business Address or City</label>
+                <input value={fhAddress} onChange={e=>setFhAddress(e.target.value)} placeholder="Street address, or at least City, State"/></div>
               <div className="field"><label>Business Phone</label>
                 <input value={fhPhone} onChange={e=>setFhPhone(e.target.value)} placeholder="e.g. (941) 662-9941"/></div>
-              <div className="field"><label>Website URL on Google</label>
-                <input value={fhWebsite} onChange={e=>setFhWebsite(e.target.value)} placeholder="https://yourbusiness.com — leave blank if not set on Google"/></div>
+              <div className="field"><label>Your Business Website</label>
+                <div style={{fontSize:"0.78rem",opacity:0.65,margin:"-2px 0 6px",lineHeight:1.45}}>Your real website address — NOT your Google listing or share link.</div>
+                <input value={fhWebsite} onChange={e=>setFhWebsite(e.target.value)} placeholder="e.g. yourbusiness.com — leave blank if you don't have one"/></div>
               <div className="field"><label>Star Rating</label>
                 <input value={fhRating} onChange={e=>setFhRating(e.target.value)} placeholder="the big number at the top of your listing, e.g. 4.8"/></div>
               <div className="field"><label>Total Reviews</label>
