@@ -222,6 +222,11 @@
     .mood-label{font-size:0.84rem;color:var(--t2);font-weight:500}
     .mood-btn:hover .mood-label{color:var(--t1)}
     .mood-thanks{font-family:var(--fh);font-size:1.02rem;font-weight:600;color:var(--green);padding:6px}
+    .good-box{width:100%;box-sizing:border-box;margin:10px 0;padding:11px 13px;border:1.5px solid var(--b1);border-radius:10px;font-family:var(--fb);font-size:0.95rem;color:var(--t1);background:var(--s2);resize:vertical}
+    .good-box:focus{outline:none;border-color:var(--cyan)}
+    .good-box-actions{display:flex;gap:10px;justify-content:center}
+    .good-send{padding:9px 20px;background:var(--cyan);color:#fff;border:none;border-radius:10px;font-family:var(--fb);font-weight:600;cursor:pointer}
+    .good-skip{padding:9px 18px;background:var(--s2);color:var(--t2);border:1.5px solid var(--b1);border-radius:10px;font-family:var(--fb);cursor:pointer}
     .bug-send{width:100%;margin-top:20px;padding:14px;background:linear-gradient(135deg,var(--cyan),#1f6c87);border:none;border-radius:8px;color:#fff;font-family:var(--fh);font-size:1rem;font-weight:700;cursor:pointer}
     .bug-send:disabled{opacity:0.5;cursor:not-allowed}
     .bug-close{position:absolute;top:10px;right:14px;background:transparent;border:none;color:var(--t3);font-size:28px;font-weight:300;cursor:pointer;line-height:1;padding:0;width:32px;height:32px}
@@ -1007,12 +1012,16 @@ function BugReport({open,setOpen,mood,setMood,onSubmitted}){
 // "How do I take a screenshot?" instructions — just with copy adjusted
 // to match the mood. One vote per scan session; resets on new scan.
 function SentimentStrip({onTextFeedback,voted,setVoted}){
-  async function quickVote(){
+  const [showGoodBox,setShowGoodBox]=React.useState(false);
+  const [goodText,setGoodText]=React.useState("");
+
+  async function submitGood(){
     setVoted(true);
     try{
       const fd=new FormData();
       fd.append("mood","good");
-      fd.append("message","[quick mood vote: 😀 Good]");
+      const note=(goodText||"").trim().slice(0,600);
+      fd.append("message", note ? ("[mood: 😀 Good] "+note) : "[quick mood vote: 😀 Good]");
       fd.append("page_url",window.location.href);
       await fetch("https://formspree.io/f/"+BUG_REPORT_FORMSPREE_ID,{
         method:"POST",body:fd,headers:{"Accept":"application/json"}
@@ -1022,8 +1031,9 @@ function SentimentStrip({onTextFeedback,voted,setVoted}){
 
   function chooseMood(m){
     if(m==="good"){
-      // The tap is the feedback — submit immediately and confirm.
-      quickVote();
+      // Reveal an optional one-line box so a happy tester can say WHY or drop
+      // a suggestion — captured in the moment. They can also just submit blank.
+      setShowGoodBox(true);
     }else{
       // For 😐 / 😞, opening the modal is NOT yet a vote. Strip stays
       // unchanged until the user actually submits. If they close the
@@ -1035,7 +1045,27 @@ function SentimentStrip({onTextFeedback,voted,setVoted}){
   if(voted){
     return (
       <div className="mood-strip">
-        <div className="mood-thanks">Thanks for the feedback!</div>
+        <div className="mood-thanks">Thanks — your feedback goes straight to Michael.</div>
+      </div>
+    );
+  }
+
+  if(showGoodBox){
+    return (
+      <div className="mood-strip">
+        <div className="mood-question">Glad it's helpful! Anything you'd add? (optional)</div>
+        <textarea
+          className="good-box"
+          value={goodText}
+          maxLength={600}
+          onChange={e=>setGoodText(e.target.value)}
+          placeholder="What worked, what was confusing, or any suggestion — totally optional."
+          rows={3}
+        />
+        <div className="good-box-actions">
+          <button className="good-send" onClick={submitGood}>Send feedback</button>
+          <button className="good-skip" onClick={submitGood}>Skip</button>
+        </div>
       </div>
     );
   }
