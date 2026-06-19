@@ -139,17 +139,14 @@ export default async function handler(req, res) {
       url: website,
       title,
       metaDescription,
-      hasSchema,
-      hasViewport,
       h1Count,
       h2Count,
-      hasFAQ,
-      hasFacebook,
-      hasInstagram,
-      // Three-state versions of the above signals. Prefer these in the report.
-      // 'found' = confirmed present on the scanned homepage.
-      // 'not_found_on_scanned_page' = we read the page and it wasn't there
-      //   (does NOT mean the business lacks it — may exist elsewhere).
+      // Three-state signals ONLY. The old boolean fields (hasSchema, hasFAQ,
+      // hasFacebook, hasInstagram, hasViewport) were removed on purpose: keeping
+      // both invited the report to read a bare false and reintroduce the
+      // "treated absent as confirmed-missing" bug. 'found' = confirmed on the
+      // scanned homepage; 'not_found_on_scanned_page' = read the page, wasn't
+      // there (NOT proof the business lacks it); 'unknown' = couldn't read page.
       schemaStatus,
       viewportStatus,
       faqStatus,
