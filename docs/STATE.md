@@ -1,5 +1,5 @@
 # PresenceScanner — STATE.md
-Last updated: June 16, 2026 (Monday evening session)
+Last updated: June 19, 2026 (late session)
 
 This is the current snapshot of where PresenceScanner is RIGHT NOW. For the
 full history and the reasoning behind decisions, see the Glitch Log and
@@ -9,12 +9,12 @@ DECISIONS.md. STATE.md is overwritten each session; DECISIONS.md is append-only.
 
 ## ONE-LINE STATUS
 
-Trickle-ready and in good honest shape. All launch blockers cleared and
-deployed. Today also shipped findings-consolidation, website-URL transparency,
-and the advisor chat scroll fix. Remaining items are Michael's own Anthropic
-console tasks. Next real BUILD = harden the fetcher (reads bot-protected sites
-poorly vs ChatGPT) — fresh session, not a bolt-on. A full Facebook announcement
-still wants a balance top-up + spend alert + measured cost/scan first.
+Tested on 5 real strangers' businesses tonight — tool is fundamentally SOUND
+(honest across no-website, thin, coming-soon, and iframe-blocked sites). Shipped
+the GBP verification link (confirmed working). Most "failures" in testing were
+incomplete inputs, not bugs. Next build = better input/confirmation handling +
+3 small refinements (see Next Session). This IS the let-real-users-beat-on-it
+phase, now guided by Michael's own findings.
 
 ---
 
@@ -73,6 +73,21 @@ Putnam. Contact: putnamm@comcast.net.
   News section trimmed to 2 non-repetitive items.
 - "Website analyzed: [url]" shown in report header so users see what was scanned.
 - Advisor chat scroll fixed (scrolls the inner message box, not the whole page).
+- THREE-STATE website signals (found / not_found_on_scanned_page / unknown);
+  failed fetch sets all signals to unknown. No more website false-negatives.
+- CONFIDENCE CALIBRATION: facts stated confidently, recommendations + AI-
+  visibility claims stated conservatively; banned overreaches ("AI can't cite
+  you", "highest-impact", invented stats); FACT->INTERPRETATION->RECOMMENDATION
+  structure; GEO reframed as opportunity not verdict.
+- "Top Priority" renamed "High-Impact Opportunity" (not a definitive ranking).
+- NO SUMMARY/SYNTHESIS findings (killed the repeated "limited structured
+  signals" finding).
+- "Why this score" per-category plain-language explanation (NO fake sub-points).
+- Deprecated booleans REMOVED from fetcher payload (only status fields remain) —
+  permanently closes the false-negative bug door.
+- GBP VERIFICATION LINK: "View this Google listing" in the results header, built
+  from placeId, opens the real Google listing in a new tab so users can confirm
+  the right business was scanned. Confirmed working on clean matches.
 
 ---
 
@@ -95,17 +110,41 @@ incognito to bust cache). Michael confirmed all deploys.
 
 ---
 
-## NEXT REAL BUILD (fresh focused session, NOT a bolt-on)
+## NEXT SESSION (driven by real-user testing — see Glitch Log for detail)
 
-HARDEN THE FETCHER. fetchsite.js fails on bot-protected sites that ChatGPT
-reads fine (e.g. Michael's own veniceflhandyman.com). Scope: browser-like
-headers, a real/proper user-agent, follow redirects, possibly handle
-JS-rendered pages (headless). GOAL: read the ordinary small-business site
-cleanly and stop losing to BASIC bot protection. Do NOT try to rival ChatGPT's
-full retrieval stack — parity is a money/time pit; aim for "easy 80%, handle
-the stubborn 20% honestly." Graceful-failure handling already shipped means a
-blocked site produces an HONEST report ("could not be scanned — usually a
-security setting"), so there's no active misleading in the meantime.
+Michael ran a skeptical testing session on 5 real strangers' businesses. Verdict:
+tool is fundamentally SOUND (stayed honest across no-website, thin-listing,
+coming-soon, and iframe-blocked sites; new GBP verification link works on clean
+matches). Most "failures" were INCOMPLETE INPUTS, not bugs. Real next-build items,
+in priority order:
+
+1. INPUT HANDLING + CONFIRMATION (biggest): phone-matching is input-dependent —
+   the tool scans the listing tied to whatever number is entered, even if it's a
+   thin/old/duplicate listing while the real business thrives under a different
+   number. Not a matching bug; correct behavior — but users WILL hit it. Extend
+   the existing name-mismatch confirmation screen to fire more often and help
+   users give better inputs.
+2. VERIFICATION LINK GAP: "View this Google listing" link shows on clean matches
+   but NOT on thin/no-website-GBP matches (placeId isn't reaching the header
+   there) — i.e. missing in exactly the sketchy cases where verification matters
+   most. Make it appear there too.
+3. IFRAME/BLOCK OVERCLAIM (calibration): when the scanner is blocked (iframe or
+   firewall), the report implies the SITE has a crawler/indexing problem. But the
+   tool only knows ITS OWN scanner was blocked — Google/AI may read it fine (cf.
+   handyman site). Soften to "our scanner couldn't read it; may or may not affect
+   Google/AI crawlers."
+4. "CONFIRMED GBP" wording overstates a thin/invisible listing — soften to "a
+   Google listing was found for this phone number."
+
+Now SHIPPED (was queued): GBP verification link (placeId -> new-tab Google Maps
+link in the results header). Confirmed working on Plumber941 and Ranch Realty.
+
+DEFERRED still: fetcher hardening (money/time pit, graceful handling already
+honest), multi-page fetch, phone-format display normalization, homepage trust-
+building, Yelp Fusion. Do NOT bolt these on.
+
+WATCH: recurring "Closed" on GBP maps is just after-hours (Michael tests late) —
+not a bug. "Loading algorithm updates" news section loads fine when given time.
 
 ---
 
