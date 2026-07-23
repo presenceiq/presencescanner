@@ -40,14 +40,30 @@ export default async function handler(req, res) {
       return String(n).toLowerCase().replace(/[^a-z0-9]/g, '');
     }
 
+    // Keep the search inside the United States so an ambiguous city like
+    // "Venice" resolves to Venice, FL and never Venice, Italy.
+    //  - If the user already typed a country (USA / United States), leave it.
+    //  - Otherwise append ", USA". Any state the user typed stays in the
+    //    string, so "Venice, FL" -> "Venice, FL, USA" and a bare "Venice"
+    //    -> "Venice, USA" (US-only instead of worldwide).
+    function normalizeLocation(loc) {
+      let c = String(loc || '').trim().replace(/,\s*$/, '');
+      const lower = c.toLowerCase();
+      const hasCountry = /\b(usa|u\.s\.a\.?|united states)\b/.test(lower);
+      if (!hasCountry) c = c + ', USA';
+      return c;
+    }
+
     const wantPhone = normalizePhone(phone);
     const wantSite = normalizeSite(website);
     const wantName = normalizeName(bizName);
 
     // --- search Google -------------------------------------------------
 
-    const searchQuery = encodeURIComponent(`${bizName} ${city}`);
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${apiKey}`;
+    const location = normalizeLocation(city);
+    const searchQuery = encodeURIComponent(`${bizName} ${location}`);
+    // region=us biases ambiguous results toward the United States.
+    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&region=us&key=${apiKey}`;
 
     const searchRes = await fetch(searchUrl);
     const searchData = await searchRes.json();
