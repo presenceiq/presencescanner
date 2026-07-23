@@ -17,7 +17,7 @@
        placeholder text — keep everything else exactly as is.
        ============================================================ -->
   <script async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAO8fNTowmk2VhQGNfUDLApUUJHJtALIjA&libraries=places">
+    src="https://maps.googleapis.com/maps/api/js?key=PASTE_YOUR_BROWSER_KEY_HERE&libraries=places">
   </script>
   <!-- End Google Analytics -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -1182,23 +1182,20 @@ function App(){
       fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.trim()})}).catch(()=>{});
     }
     try{
-      // STEP 1 (Carl's flow): phone-first lookup. Phone numbers are far
-      // more unique than business names, so try this before anything else.
-      if(phone&&phone.trim()){
-        const pRes=await fetch("/api/findplace",{
-          method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({phone:phone.trim()})
-        });
-        const pData=await pRes.json();
-        if(pData&&pData.found){
-          // Found a business by phone. Show it and let the owner confirm.
-          setPhoneMatch(pData);
-          setView("phoneconfirm");
-          return;
-        }
-      }
-      // No phone match (or no phone given) — fall through to the
-      // existing name-search flow (pick-a-list / findhelp).
+      // PRIMARY LOOKUP: name + city.
+      // These are the two REQUIRED fields the owner typed, so they are the
+      // most reliable identifiers we have. The phone is still passed through
+      // to /api/places, where it acts as a strong SCORING signal (+100 for an
+      // exact match) that floats the right business to the top of the list —
+      // but it never decides the match on its own.
+      //
+      // CHANGED 2026-07-22: the old flow ran a "phone-first" step that called
+      // /api/findplace with ONLY the phone number, no name. When a number is
+      // attached to a stale, closed or unrelated listing, that silently
+      // returned the WRONG business every single time, with nothing to
+      // disambiguate it. Name+city first, phone as tiebreak, is the reliable
+      // order. Verified live: Google returned exactly one (dead) listing for
+      // the owner's number, so phone-first could never have worked for him.
       const result=await getCandidates(bizName,city,phone,website);
       if(result&&result.found&&result.candidates&&result.candidates.length>0){
         setPendingMatch(result.candidates);
@@ -1367,15 +1364,25 @@ function App(){
       const typedWebsite=fhWebsite.trim();
       const typedPhone=fhPhone.trim();
 
-      // --- PHONE-LOOKUP FALLBACK: try to find the real GBP by phone first ---
+      // --- PHONE-LOOKUP FALLBACK: try to find the real GBP by phone ---
+      // NAME GUARD (added 2026-07-22): only accept the phone match if the
+      // business NAME it returns actually resembles the name the owner typed.
+      // A phone number can be attached to a stale, closed, or entirely
+      // unrelated listing, and silently scanning THAT as "your business" is
+      // the worst thing this tool can do — the owner gets a report about
+      // someone else. If the names share no meaningful words, we ignore the
+      // phone result and fall through to the owner's own typed details.
+      // We also send the typed name to /api/findplace so it can pick the
+      // right business itself when a number maps to several.
       if(typedPhone){
         try{
           const pRes=await fetch("/api/findplace",{
             method:"POST",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({phone:typedPhone})
+            body:JSON.stringify({phone:typedPhone,name:typedName})
           });
           const phoneMatch=await pRes.json();
-          if(phoneMatch&&phoneMatch.found){
+          const nameConflict=phoneMatch&&phoneMatch.found&&namesLookDifferent(typedName,phoneMatch.name);
+          if(phoneMatch&&phoneMatch.found&&!nameConflict){
             // Found the real listing by phone — use Google's actual data, not
             // the hand-typed fields. This is the REAL GBP, so userProvided is
             // false and the report can use real reviews/rating/photos.
