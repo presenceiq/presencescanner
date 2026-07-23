@@ -17,7 +17,7 @@
        placeholder text — keep everything else exactly as is.
        ============================================================ -->
   <script async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAO8fNTowmk2VhQGNfUDLApUUJHJtALIjA&libraries=places">
+    src="https://maps.googleapis.com/maps/api/js?key=PASTE_YOUR_BROWSER_KEY_HERE&libraries=places">
   </script>
   <!-- End Google Analytics -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -357,7 +357,7 @@ ${userProvided ? `UNCONFIRMED BUSINESS DETAILS — TYPED IN BY THE USER. NO GOOG
 - Total Reviews: ${reviewLine}
 - Address: ${gbp.address || 'Not listed'}
 - Phone: ${gbp.phone || 'Not listed'}
-- Website on GBP: ${gbp.website || 'NOT SET'}
+- Website on GBP: ${gbp.website || (userProvided ? 'Not provided — could not verify' : 'NOT SET')}
 - Has Business Hours Set: ${hoursLine}
 - Photo Count: ${photoLine}
 - Business Status: ${gbp.businessStatus || 'Unknown'}${userProvided ? `
@@ -630,61 +630,6 @@ function FoundingWaitlist(){
   );
 }
 
-
-function AlgorithmFeed({bizType, city}) {
-  const [news, setNews] = React.useState(null);
-  const [loading, setLoading] = React.useState(false);
-
-  React.useEffect(() => {
-    async function fetchNews() {
-      setLoading(true);
-      try {
-        const prompt = "You are a local SEO and AI search expert. List the 2 most important recent changes to Google local search and AI search visibility (ChatGPT, Perplexity, Google AI) affecting a " + bizType + " business in " + city + ". Focus on genuinely NEWS-style developments and trends — what has CHANGED recently in how local AI search works. Do NOT just repeat generic advice like 'add schema markup' or 'get more reviews' that a standard audit already covers; this section is about what's new, not a checklist. Plain English only. Format as JSON array: [{title, change, action}]. Return only valid JSON.";
-        const res = await fetch("/api/scan", {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({model:"claude-sonnet-4-6",max_tokens:600,messages:[{role:"user",content:prompt}]})
-        });
-        const data = await res.json();
-        if(!data || !Array.isArray(data.content)){ setNews(null); setLoading(false); return; }
-        const text = data.content.map(b => b.text || "").join("");
-        const clean = text.replace(/```json|```/g,"").trim();
-        setNews(JSON.parse(clean));
-      } catch(e) { setNews(null); }
-      setLoading(false);
-    }
-    fetchNews();
-  }, []);
-
-  if(loading) return (
-    <div style={{background:"var(--s1)",border:"1px solid var(--b1)",borderRadius:16,padding:20,marginBottom:16}}>
-      <div style={{fontSize:"0.95rem",color:"var(--t2)"}}>Loading algorithm updates...</div>
-    </div>
-  );
-  if(!news) return null;
-
-  return (
-    <div style={{background:"var(--s1)",border:"1px solid rgba(109,40,217,0.3)",borderRadius:16,overflow:"hidden",marginBottom:16}}>
-      <div style={{padding:"14px 20px",borderBottom:"1px solid var(--b1)",display:"flex",alignItems:"center",gap:10,background:"rgba(109,40,217,0.05)"}}>
-        <span style={{fontSize:16}}>{"\u26a1"}</span>
-        <div>
-          <div style={{fontFamily:"var(--fh)",fontSize:"1.05rem",fontWeight:700}}>What Changed This Month</div>
-          <div style={{fontSize:"0.88rem",color:"var(--t2)"}}>Latest algorithm updates affecting your business</div>
-        </div>
-        <span style={{marginLeft:"auto",fontSize:"0.78rem",color:"#7c3aed",background:"rgba(109,40,217,0.1)",border:"1px solid rgba(109,40,217,0.2)",borderRadius:100,padding:"3px 10px",fontWeight:700}}>LIVE</span>
-      </div>
-      <div style={{padding:"4px 20px 16px"}}>
-        {news.map((item,i) => (
-          <div key={i} style={{padding:"12px 0",borderBottom:i<news.length-1?"1px solid rgba(30,45,69,0.35)":"none"}}>
-            <div style={{fontFamily:"var(--fh)",fontSize:"1rem",fontWeight:700,marginBottom:4,color:"var(--cyan)"}}>{item.title}</div>
-            <div style={{fontSize:"0.92rem",color:"var(--t2)",lineHeight:1.65,marginBottom:6}}>{item.change}</div>
-            <div style={{fontSize:"0.9rem",color:"var(--green)",lineHeight:1.55}}>{"\u2192"} {item.action}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function Chat({results,bizName}){
   const [msgs,setMsgs]=useState([{r:"ai",t:"Hi! I just finished checking "+bizName+"'s online footprint. Your biggest opportunity right now: "+results.topPriority+" — want me to walk you through how to address that first?"}]);
@@ -1705,12 +1650,14 @@ function App(){
               before any recommendations to spend money. AffCards and the
               founding-member waitlist then sit AFTER the diagnosis, where
               they read as helpful next steps rather than salesy interruptions.
-              AlgorithmFeed (generic context) sits below recommendations so
-              the user sees their own specific results before any general
-              algorithm news (May 25 2026 placement fix). */}
+              (AlgorithmFeed / "What Changed This Month" was REMOVED 2026-07-22:
+              it presented 1-2 year old news under a "LIVE" badge because the
+              prompt had no date anchor and no web search, and bizType was
+              passing a finding title instead of a business category. It also
+              fired a second Anthropic call on every scan. Reports were already
+              too long; generic industry news was the least valuable section.) */}
           <div className="cats">{results.categories?.map((cat,i)=><CatCard key={i} cat={cat}/>)}</div>
           <AffCards results={results} bizName={bizName}/>
-          <AlgorithmFeed bizType={results.categories?.[0]?.findings?.[0]?.title || bizName} city={city}/>
           <SentimentStrip onTextFeedback={requestFeedback} voted={moodVoted} setVoted={setMoodVoted}/>
           <button className="rescan" onClick={reset}>← Scan Another Business</button>
           <p style={{fontSize:"0.8rem",opacity:0.6,textAlign:"center",lineHeight:1.6,maxWidth:560,margin:"22px auto 0",padding:"0 16px"}}>
