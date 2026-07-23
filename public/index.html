@@ -17,7 +17,7 @@
        placeholder text — keep everything else exactly as is.
        ============================================================ -->
   <script async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAO8fNTowmk2VhQGNfUDLApUUJHJtALIjA&libraries=places">
+    src="https://maps.googleapis.com/maps/api/js?key=PASTE_YOUR_BROWSER_KEY_HERE&libraries=places">
   </script>
   <!-- End Google Analytics -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -348,9 +348,11 @@ async function runScan(bizName, website, city, phone, gbp) {
     : (gbp ? (userProvided ? gbp.rating + ' (as reported by the user — NOT verified by us)' : gbp.rating) : 'No rating yet');
 
   const gbpContext = gbp ? `
-REAL GOOGLE BUSINESS PROFILE DATA (use this for GBP category — do not guess):
+${userProvided ? `UNCONFIRMED BUSINESS DETAILS — TYPED IN BY THE USER. NO GOOGLE LISTING WAS VERIFIED:
+- GBP Found: NOT CONFIRMED. Our automated lookup did not find or verify a Google Business Profile for this business.
+- Business Name (typed by the user, NOT read from Google): ${gbp.name}` : `REAL GOOGLE BUSINESS PROFILE DATA (use this for GBP category — do not guess):
 - GBP Found: Yes
-- Business Name on Google: ${gbp.name}
+- Business Name on Google: ${gbp.name}`}
 - Star Rating: ${ratingLine}
 - Total Reviews: ${reviewLine}
 - Address: ${gbp.address || 'Not listed'}
@@ -361,7 +363,15 @@ REAL GOOGLE BUSINESS PROFILE DATA (use this for GBP category — do not guess):
 - Business Status: ${gbp.businessStatus || 'Unknown'}${userProvided ? `
 
 IMPORTANT — THIS PROFILE DATA WAS ENTERED BY HAND BY THE USER, NOT READ FROM GOOGLE:
-This usually happens because our automated tool could not pull this business's full Google data — often because Google shows the listing publicly in Search and Maps but does not expose it cleanly through the data connection our scanner uses. This is a known Google limitation, NOT a sign the business is missing, weak, or unverified. The business may have plenty of reviews, photos, and complete hours that we simply could not read automatically.
+We could NOT confirm that a Google Business Profile exists for this business. There are two honest possibilities and you must NOT pick one: (a) our automated lookup failed to find a listing that really does exist — this genuinely happens, even to businesses that rank at the top of Google — or (b) this business does not have a Google listing. You have no way to tell which, and neither does the user typing a name into a box.
+ABSOLUTE RULES — breaking any of these produces a false report:
+- NEVER state or imply the listing was confirmed. Do not write \"verified Google Business Profile\", \"confirmed GBP listing\", \"has a verified listing\", \"Google listing confirmed\", or anything equivalent.
+- NEVER present having a listing as a POSITIVE finding, and never award score for it. You did not confirm one exists.
+- NEVER claim the business has NO listing either. You did not confirm that.
+- Score the Google Business Profile category NEUTRALLY (around 50): no credit for a listing you did not confirm, no penalty for one you did not confirm is missing. Say plainly in scoreReason that the listing could not be confirmed either way.
+- Correct phrasing to use: \"We couldn't confirm a Google Business Profile for this business in our automated scan \u2014 that may mean the listing exists but our lookup missed it, or that there isn't one yet. Checking your Google Business Profile dashboard is the fastest way to know.\"
+- The name, address, phone and other details below are simply WHAT THE USER TYPED. Refer to them as \"the details you provided\", never as something we found on Google.
+The rest of this data was also typed by hand, so the same care applies:
 Any field marked "Not provided — could not verify" means we could not read it — NOT that the business lacks it. For any such field:
 - Do NOT write a negative finding (never say "no hours", "zero photos", "no reviews", etc.).
 - Frame it warmly and honestly: explain that we could not automatically pull their full Google listing data (a common Google limitation), so those specific details could not be confirmed in this scan — and reassure them this does not reflect badly on their business.
