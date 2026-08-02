@@ -17,7 +17,7 @@
        placeholder text — keep everything else exactly as is.
        ============================================================ -->
   <script async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAO8fNTowmk2VhQGNfUDLApUUJHJtALIjA&libraries=places">
+    src="https://maps.googleapis.com/maps/api/js?key=PASTE_YOUR_BROWSER_KEY_HERE=places">
   </script>
   <!-- End Google Analytics -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -92,6 +92,11 @@
     .sinfo p{color:var(--t2);font-size:1rem;line-height:1.7}
     .priority{margin-top:14px;padding:12px 15px;background:rgba(43,142,176,0.05);border:1px solid rgba(43,142,176,0.15);border-radius:8px;font-size:0.95rem;color:var(--cyan);line-height:1.6}
     .priority strong{display:block;font-size:0.78rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;opacity:0.7}
+    .scorecta{margin-top:14px;padding:16px 18px;background:linear-gradient(135deg,rgba(43,142,176,0.07),rgba(109,40,217,0.07));border:1px solid rgba(109,40,217,0.18);border-radius:10px;text-align:center}
+    .scorecta-h{font-family:var(--fh);font-size:1.02rem;font-weight:700;color:var(--t1);margin:0 0 3px}
+    .scorecta-s{font-size:0.85rem;color:var(--t2);opacity:0.65;margin:0 0 12px;line-height:1.5}
+    .scorecta-btn{display:inline-block;padding:12px 26px;background:linear-gradient(135deg,var(--cyan),var(--purple));border:none;border-radius:8px;color:#fff;font-family:var(--fh);font-size:0.98rem;font-weight:700;text-decoration:none;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s}
+    .scorecta-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(109,40,217,0.25)}
     .cats{display:grid;gap:12px;margin-bottom:16px}
     .cat{background:var(--s1);border:1px solid var(--b1);border-radius:16px;overflow:hidden}
     .chead{padding:16px 20px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
@@ -1635,6 +1640,11 @@ function App(){
               )}
               <p>{results.summary}</p>
               <div className="priority"><strong>High-Impact Opportunity</strong>{results.topPriority}</div>
+              <div className="scorecta">
+                <p className="scorecta-h">Want to try to score higher?</p>
+                <p className="scorecta-s">Get a free page in the local business directory, built to help more customers and AI search tools find you.</p>
+                <a className="scorecta-btn" href="https://forms.gle/9yzjCMDn3gUoxBNf7" target="_blank" rel="noopener noreferrer">Get My Free Page →</a>
+              </div>
             </div>
           </div>
           {/* Small jump-link teasers so curious users can skip ahead to the
