@@ -12,7 +12,7 @@
   </script>
   <!-- ============================================================
        GOOGLE MAPS — powers the "find your business" autocomplete.
-       PASTE YOUR BROWSER KEY: replace  PASTE_YOUR_BROWSER_KEY_HERE
+       BROWSER KEY: referrer-restricted, safe to be public
        below with your "PresenceScanner Browser Key". Only swap that
        placeholder text — keep everything else exactly as is.
        ============================================================ -->
@@ -1679,6 +1679,7 @@ function App(){
         onSubmitted={(m)=>{if(m==="okay"||m==="frustrating")setMoodVoted(true);}}/>
       <footer style={{marginTop:48,padding:"24px 16px 36px",borderTop:"1px solid rgba(0,0,0,0.08)",textAlign:"center",fontSize:"0.82rem",opacity:0.65,lineHeight:1.7}}>
         <div style={{marginBottom:6}}>
+          <a href="/directory" style={{color:"inherit",textDecoration:"underline",margin:"0 10px"}}>Directory</a>
           <a href="/terms.html" style={{color:"inherit",textDecoration:"underline",margin:"0 10px"}}>Terms of Service</a>
           <a href="/privacy.html" style={{color:"inherit",textDecoration:"underline",margin:"0 10px"}}>Privacy Policy</a>
         </div>
