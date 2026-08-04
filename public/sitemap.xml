@@ -90,6 +90,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://presencescanner.ai/venice/venice-fl-handyman</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://presencescanner.ai/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
