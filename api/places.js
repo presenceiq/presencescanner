@@ -68,6 +68,20 @@ export default async function handler(req, res) {
     const searchRes = await fetch(searchUrl);
     const searchData = await searchRes.json();
 
+    // Google Places (legacy) returns HTTP 200 with a status field. ZERO_RESULTS
+    // is the only non-OK value that genuinely means "no such business" — every
+    // other status (REQUEST_DENIED, INVALID_REQUEST, OVER_QUERY_LIMIT,
+    // UNKNOWN_ERROR) is a Google-side failure we MUST NOT report as "not found."
+    if (searchData.status && searchData.status !== 'OK' && searchData.status !== 'ZERO_RESULTS') {
+      return res.status(502).json({
+        error: true,
+        upstream: 'google-places-textsearch',
+        googleStatus: searchData.status,
+        googleErrorMessage: searchData.error_message || null,
+        message: `Google Places search returned ${searchData.status}`,
+      });
+    }
+
     if (!searchData.results || searchData.results.length === 0) {
       return res.status(200).json({ found: false, candidates: [], message: 'No Google Business Profile found' });
     }
@@ -79,16 +93,33 @@ export default async function handler(req, res) {
 
     // Pull full details for each candidate.
     const detailed = [];
+    // Track the LAST non-OK Google status seen from details. If every candidate
+    // errors, we surface this as a real upstream failure instead of silently
+    // returning "not found."
+    let lastDetailError = null;
     for (const c of top) {
       try {
         const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${c.place_id}&fields=${fields}&key=${apiKey}`;
         const dRes = await fetch(detailUrl);
         const dData = await dRes.json();
+        if (dData.status && dData.status !== 'OK') {
+          lastDetailError = { googleStatus: dData.status, googleErrorMessage: dData.error_message || null };
+          continue;
+        }
         if (dData.result) detailed.push({ placeId: c.place_id, detail: dData.result });
       } catch (e) { /* skip a candidate that fails to load */ }
     }
 
     if (detailed.length === 0) {
+      if (lastDetailError) {
+        return res.status(502).json({
+          error: true,
+          upstream: 'google-places-details',
+          googleStatus: lastDetailError.googleStatus,
+          googleErrorMessage: lastDetailError.googleErrorMessage,
+          message: `Google Places details returned ${lastDetailError.googleStatus} for all candidates`,
+        });
+      }
       return res.status(200).json({ found: false, candidates: [], message: 'No Google Business Profile found' });
     }
 

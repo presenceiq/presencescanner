@@ -22,6 +22,18 @@ export default async function handler(req, res) {
       const dUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${pid}&fields=${fields}&key=${apiKey}`;
       const dRes = await fetch(dUrl);
       const dData = await dRes.json();
+      // Google returns HTTP 200 with a status field. NOT_FOUND is the only
+      // status that legitimately means "no such place"; anything else non-OK
+      // is a Google-side error and must not be shown as "couldn't load."
+      if (dData.status && dData.status !== 'OK' && dData.status !== 'NOT_FOUND') {
+        return res.status(502).json({
+          error: true,
+          upstream: 'google-places-details',
+          googleStatus: dData.status,
+          googleErrorMessage: dData.error_message || null,
+          message: `Google Places details returned ${dData.status}`,
+        });
+      }
       if (!dData.result) {
         return res.status(200).json({ found: false, message: "We couldn't load that business's details. Please try again." });
       }
@@ -65,6 +77,18 @@ export default async function handler(req, res) {
     const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${apiKey}`;
     const dRes = await fetch(detailUrl);
     const dData = await dRes.json();
+
+    // NOT_FOUND = the extracted Place ID is genuinely bad. Any other non-OK
+    // status is a Google-side error and must be surfaced as such.
+    if (dData.status && dData.status !== 'OK' && dData.status !== 'NOT_FOUND') {
+      return res.status(502).json({
+        error: true,
+        upstream: 'google-places-details',
+        googleStatus: dData.status,
+        googleErrorMessage: dData.error_message || null,
+        message: `Google Places details returned ${dData.status}`,
+      });
+    }
 
     if (!dData.result) {
       return res.status(200).json({

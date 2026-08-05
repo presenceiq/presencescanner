@@ -32,7 +32,8 @@ function nameMatchScore(candidateName, wantedName) {
   return hits * 10;
 }
 
-// Fetch full details for one place_id. Returns the raw Google result or null.
+// Fetch full details for one place_id. Returns { result, status, errorMessage }
+// so the caller can distinguish a genuine miss from a Google-side failure.
 async function fetchDetails(placeId, apiKey) {
   const url =
     'https://maps.googleapis.com/maps/api/place/details/json' +
@@ -41,7 +42,7 @@ async function fetchDetails(placeId, apiKey) {
     '&key=' + apiKey;
   const r = await fetch(url);
   const j = await r.json();
-  return j.result || null;
+  return { result: j.result || null, status: j.status || null, errorMessage: j.error_message || null };
 }
 
 // Shape a Google details result into the object the rest of the app expects.
@@ -109,6 +110,18 @@ export default async function handler(req, res) {
     const findRes = await fetch(findUrl);
     const findData = await findRes.json();
 
+    // Only ZERO_RESULTS means "no business with that phone." Any other non-OK
+    // status is an upstream failure and must not be reported as "not found."
+    if (findData.status && findData.status !== 'OK' && findData.status !== 'ZERO_RESULTS') {
+      return res.status(502).json({
+        error: true,
+        upstream: 'google-places-findplacefromtext',
+        googleStatus: findData.status,
+        googleErrorMessage: findData.error_message || null,
+        message: `Google findplacefromtext returned ${findData.status}`,
+      });
+    }
+
     if (!findData.candidates || findData.candidates.length === 0) {
       return res.status(200).json({ found: false, message: 'No Google business found for that phone number' });
     }
@@ -123,12 +136,26 @@ export default async function handler(req, res) {
       .slice(0, MAX_CANDIDATES);
 
     const detailed = [];
+    let lastDetailError = null;
     for (const id of ids) {
-      const d = await fetchDetails(id, apiKey);
-      if (d) detailed.push({ placeId: id, d });
+      const { result, status, errorMessage } = await fetchDetails(id, apiKey);
+      if (status && status !== 'OK') {
+        lastDetailError = { googleStatus: status, googleErrorMessage: errorMessage };
+        continue;
+      }
+      if (result) detailed.push({ placeId: id, d: result });
     }
 
     if (detailed.length === 0) {
+      if (lastDetailError) {
+        return res.status(502).json({
+          error: true,
+          upstream: 'google-places-details',
+          googleStatus: lastDetailError.googleStatus,
+          googleErrorMessage: lastDetailError.googleErrorMessage,
+          message: `Google Places details returned ${lastDetailError.googleStatus} for all candidates`,
+        });
+      }
       return res.status(200).json({ found: false, message: 'Found a match but could not load its details' });
     }
 
