@@ -368,13 +368,14 @@ ${userProvided ? `UNCONFIRMED BUSINESS DETAILS — TYPED IN BY THE USER. NO GOOG
 - Business Status: ${gbp.businessStatus || 'Unknown'}${userProvided ? `
 
 IMPORTANT — THIS PROFILE DATA WAS ENTERED BY HAND BY THE USER, NOT READ FROM GOOGLE:
-We could NOT confirm that a Google Business Profile exists for this business. There are two honest possibilities and you must NOT pick one: (a) our automated lookup failed to find a listing that really does exist — this genuinely happens, even to businesses that rank at the top of Google — or (b) this business does not have a Google listing. You have no way to tell which, and neither does the user typing a name into a box.
+We could NOT confirm that a Google Business Profile exists for this business. There are two honest possibilities and you must NOT pick one: (a) our automated lookup failed to find a listing that really does exist — this genuinely happens, even to businesses that rank well on Google, and it is especially common for SERVICE-AREA BUSINESSES that hide their street address from their listing (Places API cannot match those cleanly by name or phone) — or (b) this business does not have a Google listing. You have no way to tell which, and neither does the user typing a name into a box.
 ABSOLUTE RULES — breaking any of these produces a false report:
 - NEVER state or imply the listing was confirmed. Do not write \"verified Google Business Profile\", \"confirmed GBP listing\", \"has a verified listing\", \"Google listing confirmed\", or anything equivalent.
 - NEVER present having a listing as a POSITIVE finding, and never award score for it. You did not confirm one exists.
 - NEVER claim the business has NO listing either. You did not confirm that.
+- NEVER use language like \"you're invisible online\", \"you have no web presence\", \"customers can't find you\", or \"your business is missing from the internet\". Failing to confirm a listing automatically is NOT the same as being absent from it, and this is especially untrue for service-area businesses that are simply hard to auto-match.
 - Score the Google Business Profile category NEUTRALLY (around 50): no credit for a listing you did not confirm, no penalty for one you did not confirm is missing. Say plainly in scoreReason that the listing could not be confirmed either way.
-- Correct phrasing to use: \"We couldn't confirm a Google Business Profile for this business in our automated scan \u2014 that may mean the listing exists but our lookup missed it, or that there isn't one yet. Checking your Google Business Profile dashboard is the fastest way to know.\"
+- Correct phrasing to use: \"We couldn't automatically confirm a Google Business Profile for this business in our scan. This is especially common for service-area businesses that hide their street address \u2014 Google's lookup APIs have a hard time matching those. It does NOT mean the business is missing from Google. Checking your Google Business Profile dashboard is the fastest way to know for sure.\"
 - The name, address, phone and other details below are simply WHAT THE USER TYPED. Refer to them as \"the details you provided\", never as something we found on Google.
 The rest of this data was also typed by hand, so the same care applies:
 Any field marked "Not provided — could not verify" means we could not read it — NOT that the business lacks it. For any such field:
@@ -421,7 +422,14 @@ IMPORTANT — handle this honestly:
 - For Website Health, AI Search Visibility, and GEO Score: do NOT score these low as a penalty. Treat them as NOT MEASURED for this scan. Give each a neutral score of 50 and ONE finding explaining honestly that the website could not be scanned automatically (often due to security settings) so analysis was skipped — status 'warn', a gentle action like 'Website analysis was skipped — this is usually a security setting, not a problem'.
 - The overall score must not be dragged down just because our scanner was blocked.
 ` : noWebsiteAnywhere ? `
-REAL WEBSITE DATA: No website was provided by the user and none is listed on the Google Business Profile. Be honest about the ambiguity in your findings: we cannot tell from this data whether (a) the business has no website at all, or (b) the business has one but it isn't on their Google listing and wasn't given to us. Either way, customers searching online can't easily find a website for this business, which genuinely limits visibility. For Website Health, AI Search Visibility, and GEO Score, score honestly low. In the findings say "no website was found anywhere we checked" rather than "this business has no website."
+REAL WEBSITE DATA: Our automated scan could not confirm a website for this business. This is very often a limitation of automatic lookup, NOT evidence the business lacks a website. In particular, service-area businesses that hide their street address from their Google Business Profile are commonly missed by automated name/phone lookup, so their website (if any) never reaches this scan.
+
+Handle this honestly:
+- Do NOT write findings that state or imply the business is "invisible online," has "no web presence," is "missing from the internet," or that "customers can't find a website" — you have NOT confirmed any of that.
+- Do NOT write "no website was found anywhere" or similar — that phrasing implies we confirmed an absence, which we did not.
+- Frame this honestly and warmly: we could not automatically confirm a website in this scan, this is common (especially for service-area businesses whose listings are hard to match automatically), and it does NOT mean the business is missing or lacks a website.
+- Score Website Health, AI Search Visibility, and GEO Score NEUTRALLY (around 50). Do NOT penalize the business for signals we could not verify. Give each ONE finding that honestly explains we could not automatically confirm a website in this scan — status 'warn', gentle action wording.
+- LEAD WITH REASSURANCE, not deficit: the owner is not being told they are invisible; they are being told our automated lookup could not reach their site this time.
 ` : `
 REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automated scanner could not fetch it. Treat Website Health, AI Search Visibility, and GEO Score as NOT MEASURED — give each a neutral score of 50 with ONE finding explaining honestly that the website could not be scanned automatically (often a security setting), so analysis was skipped. Do NOT claim the website is broken. Do NOT penalize the overall score.
 `;
