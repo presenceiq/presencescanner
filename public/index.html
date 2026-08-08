@@ -1691,20 +1691,25 @@ function App(){
           </p>
         </div>
       )}
-      <BugReport open={bugOpen} setOpen={setBugOpen} mood={bugMood} setMood={setBugMood}
+    <BugReport open={bugOpen} setOpen={setBugOpen} mood={bugMood} setMood={setBugMood}
         onSubmitted={(m)=>{if(m==="okay"||m==="frustrating")setMoodVoted(true);}}/>
       <footer style={{marginTop:48,padding:"24px 16px 36px",borderTop:"1px solid rgba(0,0,0,0.08)",textAlign:"center",fontSize:"0.82rem",opacity:0.65,lineHeight:1.7}}>
         <div style={{marginBottom:6}}>
-          <a href="/directory" style={{color:"inherit",textDecoration:"underline",margin:"0 10px"}}>Directory</a>
-          <a href="/terms.html" style={{color:"inherit",textDecoration:"underline",margin:"0 10px"}}>Terms of Service</a>
-          <a href="/privacy.html" style={{color:"inherit",textDecoration:"underline",margin:"0 10px"}}>Privacy Policy</a>
+          <a href="/directory" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Directory</a>
+          <a href="/how-it-works" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>How It Works</a>
+          <a href="/reviews" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Reviews</a>
+          <a href="/about" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Our Story</a>
+          <a href="/get-found" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Get Found in AI</a>
+        </div>
+        <div style={{marginBottom:6}}>
+          <a href="/terms.html" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Terms of Service</a>
+          <a href="/privacy.html" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Privacy Policy</a>
         </div>
         <div>PresenceScanner is a free beta tool by Putnam Enterprises LLC. Built by Michael Putnam.</div>
       </footer>
     </div>
   );
 }
-
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
