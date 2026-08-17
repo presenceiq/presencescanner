@@ -164,6 +164,9 @@
   .share-box .sh-fb{display:inline-flex;align-items:center;background:var(--surface);border:1.5px solid var(--cyan);color:var(--cyan);font-family:'Manrope',sans-serif;font-weight:700;font-size:1rem;text-decoration:none;padding:11px 22px;border-radius:60px;}
   .share-box .sh-fb:hover{background:var(--cyan);color:#fff;}
   .share-box .sh-done{font-size:.9rem;color:var(--cyan);font-weight:600;margin-top:10px;min-height:16px;}
+  .share-box .sh-lbl{font-family:'Manrope',sans-serif;font-weight:700;font-size:1.02rem;color:var(--ink);margin-bottom:4px}
+  .share-box .sh-note{font-size:.98rem;color:var(--med);margin-bottom:10px}
+  .share-box .sh-why{font-size:.9rem;color:var(--light);margin-top:14px;padding-top:12px;border-top:1px solid var(--line);}
   .online-links{display:flex;flex-wrap:wrap;gap:10px;}
   .online-links a{display:inline-block;font-family:'Manrope',sans-serif;font-weight:600;font-size:.98rem;color:var(--cyan);text-decoration:none;background:var(--bg);border:1px solid var(--line);border-radius:100px;padding:9px 18px;}
   .online-links a:hover{background:var(--cyan);color:#fff;border-color:var(--cyan);}
@@ -269,6 +272,28 @@ Found through PresenceScanner, a free local business directory.</textarea>
     <div class="sh-done" id="shDone"></div>
   </div>
 
+  <div class="share-box">
+    <div class="sh-h">Add your listing to your website</div>
+    <div class="sh-s">Two minutes of work, and it helps you get found by Google and AI tools like ChatGPT. <strong>If someone else manages your website, forward this to them.</strong></div>
+
+    <p class="sh-lbl">Option 1. Send this to whoever edits your website</p>
+    <p class="sh-note">This is the finished code. They paste it in, nothing to build.</p>
+    <textarea class="sh-msg" id="webCode" readonly>Zephyr Air is listed in the PresenceScanner local business directory. &lt;a href="https://presencescanner.ai/venice/zephyr-air"&gt;See our listing here&lt;/a&gt;.</textarea>
+    <button class="sh-copy" onclick="copyCode()">Copy the code</button>
+
+    <p class="sh-lbl" style="margin-top:26px">Option 2. If you edit your own website</p>
+    <p class="sh-note">Paste this sentence onto your homepage or About page. Then highlight the words <em>See our listing here</em> and use your editor's link button to make a clickable link using the address underneath.</p>
+    <textarea class="sh-msg" id="webMsg" readonly>Zephyr Air is listed in the PresenceScanner local business directory. See our listing here.</textarea>
+    <textarea class="sh-msg" id="webUrl" readonly style="min-height:48px;margin-top:10px">https://presencescanner.ai/venice/zephyr-air</textarea>
+    <div class="sh-btns">
+      <button class="sh-copy" onclick="copyMsg()">Copy the sentence</button>
+      <button class="sh-copy" onclick="copyUrl()">Copy the link</button>
+    </div>
+
+    <div class="sh-done" id="webDone"></div>
+    <p class="sh-why">One thing to get right either way: leave the word PresenceScanner as plain text and never make it part of the link. Search engines and AI tools pick up business names written in ordinary sentences, and a plain mention is worth more to you than the link itself. Making the name into the link is a pattern search engines treat with suspicion.</p>
+  </div>
+
   <footer>
     <nav style="margin:0 auto 14px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;font-family:'Manrope',sans-serif;font-weight:600;font-size:.92rem;">
     <a href="https://presencescanner.ai/directory" style="color:var(--cyan);text-decoration:none;">Directory</a>
@@ -276,6 +301,8 @@ Found through PresenceScanner, a free local business directory.</textarea>
     <a href="https://presencescanner.ai/reviews" style="color:var(--cyan);text-decoration:none;">Reviews</a>
     <a href="https://presencescanner.ai/about" style="color:var(--cyan);text-decoration:none;">Our Story</a>
     <a href="https://presencescanner.ai/get-found" style="color:var(--cyan);text-decoration:none;">Get Found in AI</a>
+    <a href="https://presencescanner.ai/blog" style="color:var(--cyan);text-decoration:none;">Blog</a>
+    <a href="https://presencescanner.ai/updates" style="color:var(--cyan);text-decoration:none;">Updates</a>
     <a href="https://presencescanner.ai" style="color:var(--cyan);text-decoration:none;">Scanner</a>
   </nav>
     <a href="https://presencescanner.ai/directory" style="color:var(--cyan);text-decoration:none;font-family:'Manrope',sans-serif;font-weight:700;">&larr; Browse more local businesses</a><br><br>
@@ -285,6 +312,15 @@ Found through PresenceScanner, a free local business directory.</textarea>
   </footer>
 </div>
 <script>
+function copyBox(id,msg){
+  var t=document.getElementById(id);
+  t.select(); t.setSelectionRange(0,99999);
+  try{ navigator.clipboard.writeText(t.value); }catch(e){ document.execCommand('copy'); }
+  document.getElementById('webDone').textContent=msg;
+}
+function copyCode(){ copyBox('webCode','Code copied. Send it to whoever edits your website.'); }
+function copyMsg(){ copyBox('webMsg','Sentence copied. Paste it on your homepage or About page.'); }
+function copyUrl(){ copyBox('webUrl','Link copied.'); }
 function copyShare(){
   var t=document.getElementById('shareMsg');
   t.select(); t.setSelectionRange(0,99999);
