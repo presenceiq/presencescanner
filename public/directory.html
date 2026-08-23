@@ -88,22 +88,20 @@
     opacity:0;visibility:hidden;transition:opacity .18s,transform .18s,visibility .18s}
   .backtop.on{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
   .backtop svg{width:15px;height:15px}
-  .jump{position:sticky;top:0;z-index:40;margin:0 -22px 24px;padding:12px 0 12px;
-    background:rgba(247,248,250,.97);backdrop-filter:saturate(180%) blur(8px);
-    border-bottom:1px solid var(--line)}
+  .jump{margin:0 0 26px;padding:0}
   .jump-lbl{display:block;font-family:'Manrope',sans-serif;font-weight:700;font-size:.72rem;
-    letter-spacing:.06em;text-transform:uppercase;color:var(--light);margin:0 22px 8px}
-  .jump-row{display:flex;flex-wrap:wrap;gap:8px;padding:0 22px}
+    letter-spacing:.06em;text-transform:uppercase;color:var(--light);margin:0 0 9px}
+  .jump-row{display:flex;flex-wrap:wrap;gap:8px}
   .jump-row a{flex:0 0 auto;white-space:nowrap;font-family:'Manrope',sans-serif;font-weight:600;
     font-size:.9rem;color:var(--cyan);text-decoration:none;background:#fff;border:1px solid var(--line);
     border-radius:100px;padding:7px 14px;transition:background .12s,color .12s,border-color .12s}
   .jump-row a:hover,.jump-row a:focus{background:var(--cyan);color:#fff;border-color:var(--cyan)}
-  h2[id]{scroll-margin-top:150px}
+  h2[id]{scroll-margin-top:20px}
   @media (max-width:640px){
-    .jump{position:static;margin:0 -22px 22px;background:transparent;backdrop-filter:none;border-bottom:0}
-    .jump-row{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .jump{margin:0 -22px 22px}
+    .jump-row{flex-wrap:nowrap;overflow-x:auto;padding:0 22px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
     .jump-row::-webkit-scrollbar{display:none}
-    h2[id]{scroll-margin-top:16px}
+    .jump-lbl{margin:0 22px 9px}
   }
   footer{margin-top:40px;padding:24px 0 40px;border-top:1px solid var(--line);text-align:center;font-size:.9rem;color:var(--light);}
   footer a{color:var(--cyan);text-decoration:none}
@@ -349,7 +347,7 @@
 (function(){
   var b=document.getElementById('backtop'), bar=document.querySelector('.jump');
   if(!b||!bar) return;
-  function check(){ b.classList.toggle('on', bar.getBoundingClientRect().bottom < 0); }
+  function check(){ b.classList.toggle('on', window.scrollY > 380); }
   window.addEventListener('scroll', check, {passive:true});
   window.addEventListener('resize', check, {passive:true});
   b.addEventListener('click', function(e){ e.preventDefault(); window.scrollTo({top:0, behavior:'smooth'}); });
