@@ -81,6 +81,15 @@
   ul.std{margin:0 0 16px 20px}
   ul.std li{font-size:1.06rem;color:var(--ink);margin-bottom:10px}
   ul.std li b{color:var(--ink)}
+  .backtop{position:fixed;right:18px;bottom:18px;z-index:50;display:flex;align-items:center;gap:7px;
+    background:#fff;border:1px solid var(--line);box-shadow:0 6px 22px rgba(26,32,44,.16);
+    color:var(--cyan);font-family:'Manrope',sans-serif;font-weight:700;font-size:.92rem;
+    text-decoration:none;padding:11px 17px;border-radius:100px;
+    opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .18s,transform .18s,visibility .18s}
+  .backtop.on{opacity:1;visibility:visible;transform:translateY(0)}
+  .backtop:hover,.backtop:focus{background:var(--cyan);color:#fff;border-color:var(--cyan)}
+  .backtop svg{width:14px;height:14px}
+  @media (max-width:640px){.backtop{right:14px;bottom:14px;padding:10px 15px;font-size:.88rem}}
   .jump{margin:0 0 26px}
   .jump-lbl{display:block;font-family:'Manrope',sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.05em;text-transform:uppercase;color:var(--light);margin-bottom:10px}
   .jump-row{display:flex;flex-wrap:wrap;gap:8px}
@@ -323,5 +332,27 @@
     Listed local businesses. Built by Michael Putnam.
   </footer>
 </div>
+<a class="backtop" id="backtop" href="#top" aria-label="Back to the list of trades">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+  Back to trades
+</a>
+<script>
+(function(){
+  var btn=document.getElementById('backtop');
+  var bar=document.querySelector('.jump');
+  if(!btn||!bar) return;
+  function check(){
+    var past = bar.getBoundingClientRect().bottom < 0;
+    btn.classList.toggle('on', past);
+  }
+  window.addEventListener('scroll', check, {passive:true});
+  window.addEventListener('resize', check, {passive:true});
+  btn.addEventListener('click', function(e){
+    e.preventDefault();
+    bar.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+  check();
+})();
+</script>
 </body>
 </html>
