@@ -81,6 +81,12 @@
   ul.std{margin:0 0 16px 20px}
   ul.std li{font-size:1.06rem;color:var(--ink);margin-bottom:10px}
   ul.std li b{color:var(--ink)}
+  .jump{margin:0 0 26px}
+  .jump-lbl{display:block;font-family:'Manrope',sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.05em;text-transform:uppercase;color:var(--light);margin-bottom:10px}
+  .jump-row{display:flex;flex-wrap:wrap;gap:8px}
+  .jump-row a{display:inline-block;font-family:'Manrope',sans-serif;font-weight:600;font-size:.92rem;color:var(--cyan);text-decoration:none;background:#fff;border:1px solid var(--line);border-radius:100px;padding:8px 15px;transition:background .12s,color .12s,border-color .12s}
+  .jump-row a:hover,.jump-row a:focus{background:var(--cyan);color:#fff;border-color:var(--cyan)}
+  h2[id]{scroll-margin-top:18px}
   footer{margin-top:40px;padding:24px 0 40px;border-top:1px solid var(--line);text-align:center;font-size:.9rem;color:var(--light);}
   footer a{color:var(--cyan);text-decoration:none}
   @media (max-width:640px){h1{font-size:1.8rem}.join a{display:block;text-align:center}}
@@ -118,112 +124,136 @@
   <p class="lead">Sixteen local businesses across Venice, North Port, Sarasota, and Southwest Florida.</p>
   <p class="sub">Real local businesses, hand-listed. Built to help neighbors find good local service.</p>
 
-  <h2>Roofing</h2>
+  <nav class="jump" aria-label="Jump to a trade">
+    <span class="jump-lbl">Jump to a trade</span>
+    <div class="jump-row">
+    <a href="#roofing">Roofing</a>
+    <a href="#home-inspection">Home Inspection</a>
+    <a href="#house-cleaning">House Cleaning</a>
+    <a href="#cabinet-refinishing">Cabinet Refinishing</a>
+    <a href="#concrete-and-masonry">Concrete &amp; Masonry</a>
+    <a href="#painting">Painting</a>
+    <a href="#mortgage-and-home-financing">Mortgage &amp; Home Financing</a>
+    <a href="#handyman-and-home-repairs">Handyman &amp; Home Repairs</a>
+    <a href="#real-estate">Real Estate</a>
+    <a href="#bookkeeping-and-accounting">Bookkeeping &amp; Accounting</a>
+    <a href="#hvac-and-air-conditioning">HVAC &amp; Air Conditioning</a>
+    <a href="#windows-and-doors">Windows &amp; Doors</a>
+    <a href="#armed-security">Armed Security</a>
+    <a href="#pool-service">Pool Service</a>
+    <a href="#window-treatments">Window Treatments</a>
+    <a href="#gutters">Gutters</a>
+    </div>
+  </nav>
+
+
+
+  <h2 id="roofing">Roofing</h2>
   <a class="listing" href="https://presencescanner.ai/venice/as-star-roofing">
     <div class="bn">A's Star Roofing, Inc.</div>
     <div class="bd">Family roofing contractor &mdash; shingle, tile, metal &amp; flat roofs, repairs to full replacement, plus emergency leaks.</div>
     <div class="ba">Serving Venice, Sarasota &amp; Southwest Florida &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Home Inspection</h2>
+  <h2 id="home-inspection">Home Inspection</h2>
   <a class="listing" href="https://presencescanner.ai/venice/lundstrom-home-inspections">
     <div class="bn">Lundstrom Home Inspections LLC</div>
     <div class="bd">Home inspections from a 15-year tradesman &mdash; 4-point, wind mitigation, thermal imaging, mold, water &amp; radon testing.</div>
     <div class="ba">Serving North Port, Venice, Sarasota, Port Charlotte &amp; Englewood &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>House Cleaning</h2>
+  <h2 id="house-cleaning">House Cleaning</h2>
   <a class="listing" href="https://presencescanner.ai/venice/cmpcleaning-venice">
     <div class="bn">CMPCleaning Venice</div>
     <div class="bd">Family-run house cleaning &amp; vacation rental turnovers &mdash; VRBO/Airbnb specialists, deep cleans, move-in/move-out.</div>
     <div class="ba">Serving Venice, Nokomis, Osprey &amp; nearby &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Cabinet Refinishing</h2>
+  <h2 id="cabinet-refinishing">Cabinet Refinishing</h2>
   <a class="listing" href="https://presencescanner.ai/venice/kc-cabinet-refinishing">
     <div class="bn">K&amp;C Cabinet Refinishing &amp; Painting</div>
     <div class="bd">Family-run cabinet refinishing &mdash; kitchen &amp; bath cabinets made new in any color, on wood, laminate, or thermafoil.</div>
     <div class="ba">Serving North Port, Venice, Sarasota &amp; Southwest Florida &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Concrete &amp; Masonry</h2>
+  <h2 id="concrete-and-masonry">Concrete &amp; Masonry</h2>
   <a class="listing" href="https://presencescanner.ai/venice/usa-concrete-services">
     <div class="bn">USA Concrete Services</div>
     <div class="bd">Concrete &amp; masonry &mdash; driveways, patios, pool decks, slabs, sidewalks, block, stucco &amp; stone. 21 years' experience.</div>
     <div class="ba">Serving Charlotte, Sarasota, DeSoto &amp; Manatee Counties &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Painting</h2>
+  <h2 id="painting">Painting</h2>
   <a class="listing" href="https://presencescanner.ai/venice/legacy-paintworks">
     <div class="bn">Legacy Paintworks LLC</div>
     <div class="bd">Interior &amp; exterior painting, cabinets, drywall, trim, pressure washing, staining &amp; custom finishes. Free estimates.</div>
     <div class="ba">Serving Charlotte County &amp; surrounding SW Florida &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Mortgage &amp; Home Financing</h2>
+  <h2 id="mortgage-and-home-financing">Mortgage &amp; Home Financing</h2>
   <a class="listing" href="https://presencescanner.ai/venice/leolends-mortgage">
     <div class="bn">Leo Namiot &mdash; LeoLends</div>
     <div class="bd">Mortgage loan officer with 23 years' experience &mdash; first-time homebuyers to seasoned investors, purchases &amp; refinancing.</div>
     <div class="ba">Serving all of Florida &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Handyman &amp; Home Repairs</h2>
+  <h2 id="handyman-and-home-repairs">Handyman &amp; Home Repairs</h2>
   <a class="listing" href="https://presencescanner.ai/venice/venice-fl-handyman">
     <div class="bn">Venice FL Handyman</div>
     <div class="bd">Home repairs, painting, drywall, flooring, tiling, ceiling fans, TV mounts &amp; punch-list work. 45 years' experience.</div>
     <div class="ba">Serving Venice, Nokomis, Sarasota, North Port &amp; Port Charlotte &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Real Estate</h2>
+  <h2 id="real-estate">Real Estate</h2>
   <a class="listing" href="https://presencescanner.ai/venice/putnam-realty-group">
     <div class="bn">Putnam Realty Group</div>
     <div class="bd">Home selling with full-service &amp; flat-fee MLS listing options. 25 years of real-world real estate experience.</div>
     <div class="ba">Serving Venice, Nokomis, North Port, Sarasota &amp; Charlotte County &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Bookkeeping &amp; Accounting</h2>
+  <h2 id="bookkeeping-and-accounting">Bookkeeping &amp; Accounting</h2>
   <a class="listing" href="https://presencescanner.ai/venice/simple-books-bookkeeping">
     <div class="bn">Simple Books Bookkeeping</div>
     <div class="bd">QuickBooks-certified bookkeeping, payroll support &amp; QuickBooks setup for small businesses. 5 years' experience.</div>
     <div class="ba">Serving Sarasota, Venice, North Port, Port Charlotte, Punta Gorda &amp; Tampa &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>HVAC &amp; Air Conditioning</h2>
+  <h2 id="hvac-and-air-conditioning">HVAC &amp; Air Conditioning</h2>
   <a class="listing" href="https://presencescanner.ai/venice/zephyr-air">
     <div class="bn">Zephyr Air</div>
     <div class="bd">Owner-operated residential &amp; commercial HVAC &mdash; repair, installation, maintenance agreements, duct &amp; vent work, thermostats.</div>
     <div class="ba">Serving Venice, North Port, Nokomis, Sarasota &amp; Port Charlotte &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Windows &amp; Doors</h2>
+  <h2 id="windows-and-doors">Windows &amp; Doors</h2>
   <a class="listing" href="https://presencescanner.ai/venice/window-team-usa">
     <div class="bn">Window Team USA of Fort Myers</div>
     <div class="bd">Family owned impact &amp; non-impact windows and doors, plus Bahama, accordion and roll down shutters, storm panels, lanai enclosures &amp; carports.</div>
     <div class="ba">Serving Punta Gorda, Port Charlotte, North Port, Cape Coral &amp; SW Florida &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Armed Security</h2>
+  <h2 id="armed-security">Armed Security</h2>
   <a class="listing" href="https://presencescanner.ai/venice/code-blue-security">
     <div class="bn">Code Blue Security</div>
     <div class="bd">Owner-operated armed security &mdash; special events &amp; venues, residential and property protection, high-risk situations, armed drivers &amp; escorts. Florida licensed.</div>
     <div class="ba">Serving Englewood, Venice, Sarasota, North Port &amp; Port Charlotte &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Pool Service</h2>
+  <h2 id="pool-service">Pool Service</h2>
   <a class="listing" href="https://presencescanner.ai/venice/ultramarine-pools">
     <div class="bn">Ultramarine Pools</div>
     <div class="bd">Pool service, cleaning, green pool clean up, equipment installs, pump and heater repair. Roughly 15 stops a day instead of 30, with time-stamped after photos.</div>
     <div class="ba">Serving Punta Gorda, Port Charlotte, North Port, Venice &amp; Sarasota &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Window Treatments</h2>
+  <h2 id="window-treatments">Window Treatments</h2>
   <a class="listing" href="https://presencescanner.ai/venice/plantation-shutters">
     <div class="bn">Plantation Shutters</div>
     <div class="bd">Interior plantation shutters, wood blinds and roller shades. Owner-measured and owner-fitted, 36 years in window treatments.</div>
     <div class="ba">Serving Venice, Sarasota &amp; Bradenton &middot; <span class="arrow">View page &rarr;</span></div>
   </a>
 
-  <h2>Gutters</h2>
+  <h2 id="gutters">Gutters</h2>
   <a class="listing" href="https://presencescanner.ai/venice/gutter-crafters">
     <div class="bn">Gutter Crafters LLC</div>
     <div class="bd">Seamless gutter installation, replacement, cleaning and repair. Downspouts, gutter guards, soffit and fascia, and screen repair.</div>
