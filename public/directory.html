@@ -78,6 +78,12 @@
   .what{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin-bottom:20px;}
   .what h2{margin-top:0;color:var(--ink);text-transform:none;letter-spacing:0;font-size:1.2rem;}
   .what p{font-size:1.05rem;color:var(--med);margin-bottom:0;}
+  .towns{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px 26px;margin-bottom:18px}
+  .towns h2{margin-bottom:8px}
+  .towns p{font-size:1.05rem;color:var(--med);margin-bottom:14px}
+  .towns .tl{display:flex;flex-wrap:wrap;gap:10px}
+  .towns .tl a{display:inline-block;font-family:'Manrope',sans-serif;font-weight:600;font-size:.98rem;color:var(--cyan);text-decoration:none;background:var(--bg);border:1px solid var(--line);border-radius:100px;padding:9px 18px}
+  .towns .tl a:hover{background:var(--cyan);color:#fff;border-color:var(--cyan)}
   ul.std{margin:0 0 16px 20px}
   ul.std li{font-size:1.06rem;color:var(--ink);margin-bottom:10px}
   ul.std li b{color:var(--ink)}
@@ -283,7 +289,17 @@
   </div>
 
   <div class="what" style="margin-top:10px">
-    <h2>What gets listed here</h2>
+    <div class="towns">
+    <h2>How local businesses show up in each town</h2>
+    <p>Two guides to what Google and AI search actually know about a business in your area, and what makes the difference.</p>
+    <div class="tl">
+      <a href="https://www.presencescanner.ai/venice-fl">Venice businesses &rarr;</a>
+      <a href="https://www.presencescanner.ai/sarasota">Sarasota businesses &rarr;</a>
+      <a href="https://www.presencescanner.ai/ai-search-study-southwest-florida">The 81-business study &rarr;</a>
+    </div>
+  </div>
+
+  <h2>What gets listed here</h2>
   <div class="card">
     <p>Every listing is read and built by hand. Nothing is added automatically, and not everything that applies gets in.</p>
     <ul class="std">
