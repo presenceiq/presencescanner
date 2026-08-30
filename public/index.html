@@ -1148,6 +1148,11 @@ function App(){
     if(email.trim()){
       fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.trim()})}).catch(()=>{});
     }
+    // LEAD CAPTURE: email the entered business info to Michael on submit, so
+    // every scan becomes a lead even if the visitor leaves before results.
+    // keepalive lets it finish if they navigate away. Fires once per submit.
+    fetch("/api/lead",{method:"POST",keepalive:true,headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({bizName:bizName.trim(),website:website.trim(),phone:phone.trim(),city:city.trim(),email:email.trim()})}).catch(()=>{});
     try{
       // PRIMARY LOOKUP: name + city.
       // These are the two REQUIRED fields the owner typed, so they are the
