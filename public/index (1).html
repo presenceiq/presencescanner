@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="trustpilot-one-time-domain-verification-id" content="9d04f922-1671-4eae-a4fc-fa9b9f64b7db"/><meta property="og:type" content="website">
+<meta property="og:title" content="PresenceScanner — Free Local Business Directory">
+<meta property="og:description" content="Get found on Google and AI search. A free local business directory for Southwest Florida.">
+<meta property="og:image" content="https://www.presencescanner.ai/og-default.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://www.presencescanner.ai">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://www.presencescanner.ai/og-default.png">
+  <meta charset="utf-8" />
+  <!-- Google Analytics (GA4) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-WD4QS0XK2C"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-WD4QS0XK2C');
+  </script>
+  <!-- ============================================================
+       GOOGLE MAPS — powers the "find your business" autocomplete.
+       BROWSER KEY: referrer-restricted, safe to be public
+       below with your "PresenceScanner Browser Key". Only swap that
+       placeholder text — keep everything else exactly as is.
+       ============================================================ -->
+  <script async
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAO8fNTowmk2VhQGNfUDLApUUJHJtALIjA&libraries=places">
+  </script>
+  <!-- End Google Analytics -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="PresenceScanner — free online footprint health check for small businesses. See how Google, AI search, and customers find you, with plain-English fixes in 30 seconds." />
+  <title>PresenceScanner — Free Online Footprint Health Check</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f7f8fa;--s1:#ffffff;--s2:#f1f3f6;--b1:#e2e6ec;--b2:#cbd2dc;
+      --cyan:#2b8eb0;--purple:#6d28d9;--green:#0a8a5f;--amber:#b06b1c;--red:#b91c1c;
+      --t1:#1a202c;--t2:#4a5568;--t3:#718096;
+      --fh:'Syne',sans-serif;--fb:'DM Sans',sans-serif;
+    }
+    body{background:var(--bg);color:var(--t1);font-family:var(--fb);min-height:100vh}
+    .wrap{min-height:100vh;display:flex;flex-direction:column}
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid rgba(30,45,69,0.12)}
+    .logo{font-family:var(--fh);font-size:1.25rem;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .badge{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--cyan);background:rgba(43,142,176,0.08);border:1px solid rgba(43,142,176,0.2);border-radius:100px;padding:3px 10px}
+    .hero{padding:56px 24px 40px;text-align:center;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(43,142,176,0.08) 0%,transparent 65%)}
+    .eyebrow{display:inline-flex;align-items:center;gap:7px;margin-bottom:20px;background:rgba(10,138,95,0.08);border:1px solid rgba(10,138,95,0.2);border-radius:100px;padding:5px 14px;font-size:12px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--green)}
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite;display:inline-block}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+    h1{font-family:var(--fh);font-size:clamp(1.8rem,3.6vw,2.5rem);font-weight:600;line-height:1.25;letter-spacing:-0.5px;margin-bottom:18px}
+    .grad{background:linear-gradient(135deg,var(--cyan) 0%,var(--purple) 55%,var(--green) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .sub{font-size:1.05rem;color:var(--t2);max-width:500px;margin:0 auto 40px;line-height:1.75;font-weight:300}
+    .card{background:var(--s1);border:1px solid var(--b1);border-radius:20px;padding:32px;max-width:560px;margin:0 auto;position:relative;overflow:hidden}
+    .card::before{content:'';position:absolute;top:-1px;left:20%;right:20%;height:2px;background:linear-gradient(90deg,transparent,rgba(43,142,176,0.5),rgba(109,40,217,0.5),transparent)}
+    .field{margin-bottom:14px}
+    .field label{display:block;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t2);margin-bottom:7px}
+    .field input{width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:13px 15px;color:var(--t1);font-family:var(--fb);font-size:1rem;outline:none;transition:border-color 0.2s,box-shadow 0.2s}
+    .field input:focus{border-color:rgba(43,142,176,0.4);box-shadow:0 0 0 3px rgba(43,142,176,0.07)}
+    .field input::placeholder{color:var(--t3)}
+    .enote{font-size:0.82rem;color:var(--t3);margin-top:5px}
+    .sbtn{width:100%;margin-top:6px;padding:16px;background:linear-gradient(135deg,var(--cyan),#1f6c87);border:none;border-radius:8px;color:#fff;font-family:var(--fh);font-size:1.05rem;font-weight:700;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s,opacity 0.2s}
+    .sbtn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 28px rgba(43,142,176,0.22)}
+    .sbtn:disabled{opacity:0.45;cursor:not-allowed}
+    .sbtn small{display:block;font-size:0.82rem;opacity:0.65;font-weight:400;margin-top:3px}
+    .loading{max-width:440px;margin:64px auto;text-align:center;padding:0 24px}
+    .spinner{width:56px;height:56px;border:3px solid var(--b2);border-top-color:var(--cyan);border-radius:50%;animation:spin 0.75s linear infinite;margin:0 auto 22px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loading h3{font-family:var(--fh);font-size:1.15rem;font-weight:700;margin-bottom:6px}
+    .loading p{color:var(--t2);font-size:0.95rem;margin-bottom:24px}
+    .steps{list-style:none;text-align:left;display:inline-block}
+    .steps li{padding:7px 0;font-size:0.95rem;color:var(--t3);display:flex;align-items:center;gap:9px;transition:color 0.3s}
+    .steps li.on{color:var(--cyan)}.steps li.ok{color:var(--green)}
+    .results{max-width:820px;margin:0 auto;padding:28px 20px 80px}
+    .shero{background:var(--s1);border:1px solid var(--b1);border-radius:20px;padding:32px;margin-bottom:16px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;position:relative;overflow:hidden}
+    .ring{width:120px;height:120px;position:relative;flex-shrink:0}
+    .ring svg{transform:rotate(-90deg)}
+    .rnum{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--fh);font-size:2.2rem;font-weight:800;line-height:1}
+    .rlbl{font-size:0.72rem;color:var(--t2);letter-spacing:1.5px;text-transform:uppercase;margin-top:3px}
+    .sinfo{flex:1;min-width:180px}
+    .gpill{display:inline-block;padding:5px 14px;border-radius:100px;font-family:var(--fh);font-size:0.78rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:9px}
+    .sinfo h2{font-family:var(--fh);font-size:1.45rem;font-weight:700;margin-bottom:7px;line-height:1.25}
+    .sident{margin:6px 0 12px;padding:11px 13px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;font-size:0.95rem;color:var(--t2);line-height:1.55}
+    .sident b{color:var(--t1);font-weight:600}
+    .sident .sident-row{display:block;margin-top:3px}
+    .sident .sident-row:first-child{margin-top:0}
+    .sident .sident-none{color:var(--amber);font-weight:500}
+    .sident .sident-stars{color:#b08020;letter-spacing:1px;margin-right:3px}
+    .sident .sident-link{color:var(--cyan);font-weight:600;text-decoration:none}
+    .sident .sident-link:hover{text-decoration:underline}
+    .sident .sident-verify{color:var(--t2);font-size:0.82rem}
+    .sjumps{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+    .sjump{font-size:0.92rem;color:var(--t2);background:var(--s1);border:1px solid var(--b1);border-radius:100px;padding:6px 13px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:border-color 0.2s,color 0.2s}
+    .sjump:hover{border-color:rgba(43,142,176,0.35);color:var(--cyan)}
+    .sjump::after{content:'↓';font-size:0.7rem;opacity:0.5}
+    .sinfo p{color:var(--t2);font-size:1rem;line-height:1.7}
+    .priority{margin-top:14px;padding:12px 15px;background:rgba(43,142,176,0.05);border:1px solid rgba(43,142,176,0.15);border-radius:8px;font-size:0.95rem;color:var(--cyan);line-height:1.6}
+    .priority strong{display:block;font-size:0.78rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;opacity:0.7}
+    .scorecta{margin-top:14px;padding:16px 18px;background:linear-gradient(135deg,rgba(43,142,176,0.07),rgba(109,40,217,0.07));border:1px solid rgba(109,40,217,0.18);border-radius:10px;text-align:center}
+    .scorecta-h{font-family:var(--fh);font-size:1.02rem;font-weight:700;color:var(--t1);margin:0 0 3px}
+    .scorecta-s{font-size:0.85rem;color:var(--t2);opacity:0.65;margin:0 0 12px;line-height:1.5}
+    .scorecta-btn{display:inline-block;padding:12px 26px;background:linear-gradient(135deg,var(--cyan),var(--purple));border:none;border-radius:8px;color:#fff;font-family:var(--fh);font-size:0.98rem;font-weight:700;text-decoration:none;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s}
+    .scorecta-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(109,40,217,0.25)}
+    .cats{display:grid;gap:12px;margin-bottom:16px}
+    .cat{background:var(--s1);border:1px solid var(--b1);border-radius:16px;overflow:hidden}
+    .chead{padding:16px 20px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+    .cico{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .cmeta{flex:1}
+    .cmeta h3{font-family:var(--fh);font-size:1.05rem;font-weight:700;margin-bottom:2px}
+    .cmeta span{font-size:0.88rem;color:var(--t2)}
+    .cright{display:flex;align-items:center;gap:9px;flex-shrink:0}
+    .bw{width:68px;height:5px;background:var(--b1);border-radius:3px;overflow:hidden}
+    .bf{height:100%;border-radius:3px}
+    .cpct{font-family:var(--fh);font-size:0.95rem;font-weight:700;min-width:30px;text-align:right}
+    .chev{color:var(--t3);font-size:10px;transition:transform 0.2s}
+    .chev.open{transform:rotate(180deg)}
+    .cbody{border-top:1px solid var(--b1);padding:2px 20px 16px}
+    .cbody.shut{display:none}
+    .finding{padding:12px 0;border-bottom:1px solid rgba(30,45,69,0.35);display:grid;grid-template-columns:10px 1fr;gap:13px;align-items:start}
+    .finding:last-child{border-bottom:none}
+    .fd{width:7px;height:7px;border-radius:50%;margin-top:5px}
+    .ft h4{font-size:1rem;font-weight:500;margin-bottom:3px}
+    .ft p{font-size:0.95rem;color:var(--t2);line-height:1.65}
+    .faction{margin-top:8px;padding:9px 12px;background:rgba(43,142,176,0.05);border:1px solid rgba(43,142,176,0.12);border-radius:7px;font-size:0.92rem;color:var(--cyan);line-height:1.55}
+    .faction::before{content:'→ ';font-weight:700}
+    .aff-wrap{margin-bottom:16px}
+    .section-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t2);margin-bottom:11px;padding-left:2px}
+    .aff-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:11px}
+    .aff{background:var(--s1);border:1px solid var(--b1);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:9px;transition:border-color 0.2s,transform 0.15s}
+    .aff:hover{border-color:rgba(43,142,176,0.2);transform:translateY(-2px)}
+    .aff-ico{font-size:20px}
+    .aff h4{font-family:var(--fh);font-size:1rem;font-weight:700}
+    .aff p{font-size:0.92rem;color:var(--t2);line-height:1.6;flex:1}
+    .aff a{display:block;padding:10px 13px;background:rgba(43,142,176,0.07);border:1px solid rgba(43,142,176,0.18);border-radius:7px;color:var(--cyan);font-size:0.9rem;font-weight:600;text-decoration:none;text-align:center}
+    .aff-note{font-size:0.8rem;color:var(--t3)}
+    .fw{background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:22px;margin-bottom:16px;position:relative;overflow:hidden}
+    .fw::before{content:'';position:absolute;top:-1px;left:25%;right:25%;height:2px;background:linear-gradient(90deg,transparent,rgba(109,40,217,0.5),rgba(43,142,176,0.5),transparent)}
+    .fw-beta{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);background:rgba(176,107,28,0.08);border:1px solid rgba(176,107,28,0.2);border-radius:100px;padding:4px 11px;margin-bottom:13px}
+    .fw h3{font-family:var(--fb);font-size:1.45rem;font-weight:700;margin-bottom:9px;line-height:1.35}
+    .fw .fw-lead{font-size:1.05rem;color:var(--t1);line-height:1.7;margin-bottom:14px}
+    .fw-offer{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .fw-tag{font-size:0.92rem;font-weight:600;color:var(--t1);background:var(--s2);border:1px solid var(--b2);border-radius:7px;padding:7px 12px}
+    .fw-tag b{color:var(--cyan);font-family:var(--fb);font-weight:700}
+    .fw-count{font-size:1rem;color:var(--t2);margin-bottom:14px}
+    .fw-count b{color:var(--green);font-family:var(--fb);font-weight:700}
+    .fw-row{display:flex;gap:8px;flex-wrap:wrap}
+    .fw-row input{flex:1;min-width:180px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:13px 15px;color:var(--t1);font-family:var(--fb);font-size:1rem;outline:none;transition:border-color 0.2s,box-shadow 0.2s}
+    .fw-row input:focus{border-color:rgba(43,142,176,0.4);box-shadow:0 0 0 3px rgba(43,142,176,0.07)}
+    .fw-row input::placeholder{color:var(--t3)}
+    .fw-row button{padding:13px 22px;background:linear-gradient(135deg,var(--cyan),#1f6c87);border:none;border-radius:8px;color:#fff;font-family:var(--fh);font-size:0.98rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:transform 0.15s,box-shadow 0.15s,opacity 0.2s}
+    .fw-row button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 22px rgba(43,142,176,0.2)}
+    .fw-row button:disabled{opacity:0.45;cursor:not-allowed}
+    .fw-fine{font-size:0.92rem;color:var(--t2);margin-top:9px;line-height:1.6}
+    .fw-msg{font-size:1.05rem;font-weight:500;line-height:1.65;padding:15px 17px;border-radius:9px}
+    .fw-msg.ok{color:#0a6b48;background:rgba(10,138,95,0.1);border:1px solid rgba(10,138,95,0.35)}
+    .fw-msg.bad{color:#b91c1c;background:rgba(185,28,28,0.1);border:1px solid rgba(185,28,28,0.35)}
+    .chat{background:var(--s1);border:1px solid var(--b1);border-radius:16px;overflow:hidden;margin-bottom:16px}
+    .chat-top{padding:16px 20px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:11px}
+    .chat-ico{width:34px;height:34px;border-radius:8px;background:rgba(43,142,176,0.1);display:flex;align-items:center;justify-content:center;font-size:15px}
+    .chat-top h3{font-family:var(--fh);font-size:1.05rem;font-weight:700}
+    .live{font-size:0.85rem;color:var(--green);display:flex;align-items:center;gap:5px;margin-left:auto}
+    .msgs{height:260px;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:11px}
+    .msg{max-width:86%;font-size:0.97rem;line-height:1.65;padding:9px 13px;border-radius:11px}
+    .msg.ai{background:var(--s2);align-self:flex-start;border-bottom-left-radius:3px}
+    .msg.user{background:rgba(43,142,176,0.09);border:1px solid rgba(43,142,176,0.15);align-self:flex-end;border-bottom-right-radius:3px}
+    .msg.thinking{color:var(--t2);font-style:italic}
+    .chat-bottom{padding:12px 20px;border-top:1px solid var(--b1);display:flex;gap:9px}
+    .cinput{flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:7px;padding:11px 14px;color:var(--t1);font-family:var(--fb);font-size:0.97rem;outline:none}
+    .cinput:focus{border-color:rgba(43,142,176,0.3)}
+    .cinput::placeholder{color:var(--t3)}
+    .csend{padding:11px 18px;background:var(--cyan);border:none;border-radius:7px;color:#fff;font-weight:700;font-size:0.95rem;cursor:pointer}
+    .csend:disabled{opacity:0.35;cursor:not-allowed}
+    .gate{background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:28px;text-align:center;margin-bottom:16px}
+    .gate h3{font-family:var(--fh);font-size:1.25rem;font-weight:700;margin-bottom:7px}
+    .gate p{color:var(--t2);font-size:1rem;line-height:1.7;margin-bottom:18px;max-width:380px;margin-left:auto;margin-right:auto}
+    .gbtn{padding:14px 28px;background:linear-gradient(135deg,var(--cyan),#1f6c87);border:none;border-radius:8px;color:#fff;font-family:var(--fh);font-size:1.02rem;font-weight:700;cursor:pointer}
+    .gprice{font-size:0.88rem;color:var(--t3);margin-top:9px}
+    .good{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}
+    .good-bg{background:rgba(10,138,95,0.1)}.warn-bg{background:rgba(176,107,28,0.1)}.bad-bg{background:rgba(185,28,28,0.1)}
+    .good-d{background:var(--green)}.warn-d{background:var(--amber)}.bad-d{background:var(--red)}
+    .good-b{background:var(--green)}.warn-b{background:var(--amber)}.bad-b{background:var(--red)}
+    .good-g{background:rgba(10,138,95,0.1);color:var(--green);border:1px solid rgba(10,138,95,0.25)}
+    .warn-g{background:rgba(176,107,28,0.1);color:var(--amber);border:1px solid rgba(176,107,28,0.25)}
+    .bad-g{background:rgba(185,28,28,0.1);color:var(--red);border:1px solid rgba(185,28,28,0.25)}
+    .rescan{display:block;margin:24px auto 0;padding:12px 28px;background:transparent;border:1px solid var(--b1);border-radius:8px;color:var(--t2);font-family:var(--fb);font-size:1rem;cursor:pointer}
+    .rescan:hover{border-color:var(--cyan);color:var(--cyan)}
+    .err{max-width:520px;margin:40px auto;padding:20px 24px;background:rgba(185,28,28,0.07);border:1px solid rgba(185,28,28,0.2);border-radius:12px;color:#b91c1c;font-size:1rem;line-height:1.65;text-align:center}
+    .pad{padding:0 20px}
+    @media(max-width:500px){.nav{padding:14px 18px}.hero{padding:36px 18px 28px}.card,.shero{padding:22px 18px}.results{padding:20px 14px 60px}}
+    /* Bug report widget (Fix #5) — persistent "Something off?" link + modal */
+    .bug-link{position:fixed;top:50%;left:calc(75% + 140px);transform:translate(-50%,-50%);z-index:100;background:var(--s1);color:var(--cyan);border:1.5px solid var(--cyan);border-radius:100px;padding:10px 16px;font-family:var(--fb);font-size:0.88rem;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(43,142,176,0.18);transition:all 0.2s;display:inline-flex;align-items:center;gap:9px}
+    .bug-link:hover{background:var(--cyan);color:#fff;transform:translate(-50%,-50%) translateX(3px);box-shadow:0 6px 18px rgba(43,142,176,0.28)}
+    .bug-link-beta{font-size:0.62rem;font-weight:700;letter-spacing:1.5px;background:var(--cyan);color:#fff;padding:2px 7px;border-radius:100px;line-height:1.3}
+    .bug-link:hover .bug-link-beta{background:rgba(255,255,255,0.25)}
+    @media(max-width:768px){.bug-link{top:auto;left:auto;bottom:14px;right:14px;transform:none;padding:8px 13px;font-size:0.8rem;gap:7px}.bug-link:hover{transform:translateY(-1px)}.bug-link-beta{font-size:0.58rem;padding:1px 6px}}
+    .bug-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;animation:bug-fade 0.2s ease}
+    @keyframes bug-fade{from{opacity:0}to{opacity:1}}
+    .bug-modal{background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:28px 26px;max-width:500px;width:100%;position:relative;max-height:90vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.15)}
+    .bug-modal h3{font-family:var(--fh);font-size:1.3rem;font-weight:700;margin-bottom:10px;color:var(--t1)}
+    .bug-modal p{font-size:0.98rem;color:var(--t2);line-height:1.6;margin-bottom:16px}
+    .bug-modal label{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--t2);margin-bottom:6px;margin-top:14px}
+    .bug-modal textarea,.bug-modal input[type="email"]{width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:12px 14px;color:var(--t1);font-family:var(--fb);font-size:1rem;outline:none;box-sizing:border-box}
+    .bug-modal textarea{min-height:100px;resize:vertical}
+    .bug-modal textarea:focus,.bug-modal input[type="email"]:focus{border-color:var(--cyan)}
+    .bug-modal input[type="file"]{width:100%;padding:8px 0;color:var(--t2);font-size:0.9rem;font-family:var(--fb)}
+    .bug-help{font-size:0.92rem;color:var(--t2);margin:-4px 0 10px;line-height:1.55}
+    .bug-file-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:2px}
+    .bug-file-wrap input[type="file"]{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+    .bug-file-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;background:var(--s2);border:1.5px dashed var(--b1);border-radius:8px;color:var(--t2);font-size:0.95rem;cursor:pointer;font-weight:500;transition:all 0.15s;text-transform:none;letter-spacing:0;margin:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .bug-file-btn:hover{border-color:var(--cyan);color:var(--t1);background:rgba(43,142,176,0.05)}
+    .bug-file-clear{padding:6px 12px;background:transparent;border:1px solid var(--b1);border-radius:6px;color:var(--t3);font-family:var(--fb);font-size:0.85rem;cursor:pointer}
+    .bug-file-clear:hover{color:var(--red);border-color:var(--red)}
+    .bug-tip{font-size:0.84rem;color:var(--t3);margin-top:8px;line-height:1.55}
+    .bug-howto-btn{margin-top:10px;padding:8px 14px;background:transparent;border:1px solid var(--b1);border-radius:6px;color:var(--cyan);font-family:var(--fb);font-size:0.88rem;font-weight:500;cursor:pointer}
+    .bug-howto-btn:hover{border-color:var(--cyan);background:rgba(43,142,176,0.05)}
+    .bug-howto-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;animation:bug-fade 0.2s ease}
+    .bug-howto-modal{background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:28px 26px;max-width:500px;width:100%;position:relative;max-height:90vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.2)}
+    .bug-howto-modal h3{font-family:var(--fh);font-size:1.25rem;font-weight:700;margin-bottom:16px;color:var(--t1)}
+    .bug-howto-section{margin-bottom:12px;padding:12px 14px;background:var(--s2);border:1px solid var(--b1);border-radius:10px}
+    .bug-howto-platform{font-family:var(--fh);font-size:0.95rem;font-weight:700;color:var(--t1);margin-bottom:4px}
+    .bug-howto-steps{font-size:0.94rem;color:var(--t2);line-height:1.55}
+    .bug-howto-steps b{color:var(--t1);font-weight:700}
+    .bug-howto-tip{font-size:0.88rem;color:var(--t3);margin-top:14px;line-height:1.55;font-style:italic}
+    /* Sentiment pulse strip (Fix #6) — bottom of results page */
+    .mood-strip{background:var(--s1);border:1px solid var(--b1);border-radius:14px;padding:18px 22px;margin-bottom:16px;text-align:center}
+    .mood-question{font-family:var(--fh);font-size:1.02rem;font-weight:700;color:var(--t1);margin-bottom:12px}
+    .mood-buttons{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+    .mood-btn{display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:10px 18px;background:var(--s2);border:1.5px solid var(--b1);border-radius:12px;color:var(--t1);font-family:var(--fb);cursor:pointer;transition:all 0.15s;min-width:96px}
+    .mood-btn:hover{border-color:var(--cyan);background:rgba(43,142,176,0.06);transform:translateY(-1px)}
+    .mood-emoji{font-size:28px;line-height:1}
+    .mood-label{font-size:0.84rem;color:var(--t2);font-weight:500}
+    .mood-btn:hover .mood-label{color:var(--t1)}
+    .mood-thanks{font-family:var(--fh);font-size:1.02rem;font-weight:600;color:var(--green);padding:6px}
+    .good-box{width:100%;box-sizing:border-box;margin:10px 0;padding:11px 13px;border:1.5px solid var(--b1);border-radius:10px;font-family:var(--fb);font-size:0.95rem;color:var(--t1);background:var(--s2);resize:vertical}
+    .good-box:focus{outline:none;border-color:var(--cyan)}
+    .good-box-actions{display:flex;gap:10px;justify-content:center}
+    .good-send{padding:9px 20px;background:var(--cyan);color:#fff;border:none;border-radius:10px;font-family:var(--fb);font-weight:600;cursor:pointer}
+    .good-skip{padding:9px 18px;background:var(--s2);color:var(--t2);border:1.5px solid var(--b1);border-radius:10px;font-family:var(--fb);cursor:pointer}
+    .bug-send{width:100%;margin-top:20px;padding:14px;background:linear-gradient(135deg,var(--cyan),#1f6c87);border:none;border-radius:8px;color:#fff;font-family:var(--fh);font-size:1rem;font-weight:700;cursor:pointer}
+    .bug-send:disabled{opacity:0.5;cursor:not-allowed}
+    .bug-close{position:absolute;top:10px;right:14px;background:transparent;border:none;color:var(--t3);font-size:28px;font-weight:300;cursor:pointer;line-height:1;padding:0;width:32px;height:32px}
+    .bug-close:hover{color:var(--t1)}
+    .bug-err{background:rgba(185,28,28,0.1);border:1px solid rgba(185,28,28,0.3);border-radius:8px;padding:10px 12px;color:var(--red);font-size:0.92rem;margin-top:14px}
+    .bug-thanks{text-align:center;padding:24px 10px}
+    .bug-thanks-mark{font-size:48px;color:var(--green);margin-bottom:12px;font-weight:700;line-height:1}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+const HEADERS = {
+  "Content-Type": "application/json"
+};
+
+const AFF = {
+  domain: (n) => `https://www.godaddy.com/domainsearch/find?checkAvail=1&domainToCheck=${encodeURIComponent(n.toLowerCase().replace(/\s+/g,""))}&utm_source=presenceiq&utm_medium=referral`,
+  hosting: () => `https://www.godaddy.com/hosting/web-hosting?utm_source=presenceiq&utm_medium=referral`,
+  workspace: () => `https://workspace.google.com/?utm_source=presenceiq&utm_medium=referral`,
+  gbp: () => `https://business.google.com/create?utm_source=presenceiq`,
+};
+
+// ── FOUNDING-MEMBER WAITLIST ──────────────────────────────────────────
+// Honest scarcity: this number is the REAL count of claimed founding spots.
+// When a real spot is claimed, hand-edit FOUNDING_SPOTS_CLAIMED upward and
+// re-commit. Do NOT inflate it — fake urgency was explicitly rejected.
+const FOUNDING_SPOTS_CLAIMED = 0;
+const FOUNDING_SPOTS_TOTAL = 50;
+
+// ── BUG REPORT FORMSPREE FORM ID ──────────────────────────────────────
+// Where "Something off?" submissions go. To set up: log into Formspree,
+// create a new form named "PresenceScanner Bug Reports", copy its form
+// ID (the random characters at the end of the form URL), and paste it
+// below. Until this is set, the modal will still open but submissions
+// will fail with an error message.
+const BUG_REPORT_FORMSPREE_ID = "xpqnyrdq";
+
+async function callClaude(messages, maxTokens=3000) {
+  const res = await fetch("/api/scan", {
+    method:"POST", headers:HEADERS,
+    body:JSON.stringify({model:"claude-sonnet-4-6", max_tokens:maxTokens, messages})
+  });
+  if(!res.ok){const t=await res.text();throw new Error("API "+res.status+": "+t.slice(0,200));}
+  const d=await res.json();
+  // Safety guard: if the response doesn't have a content array (e.g. the
+  // API returned an error object instead of a normal message), fail with a
+  // clear message instead of crashing on undefined.map.
+  if(!d || !Array.isArray(d.content)){
+    throw new Error("The scan service returned an unexpected response. Please try again in a moment.");
+  }
+  return d.content.map(b=>b.text||"").join("");
+}
+
+async function getCandidates(bizName, city, phone, website) {
+  try {
+    const res = await fetch("/api/places", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({bizName, city, phone, website})
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+async function getSiteData(website) {
+  try {
+    const res = await fetch("/api/fetchsite", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ website })
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+async function runScan(bizName, website, city, phone, gbp) {
+  // gbp is the business the user picked (an object), or null if they
+  // said their business isn't on Google. runScan never fetches it itself.
+
+  // Fix #3 — figure out the website situation deterministically up front,
+  // instead of letting the AI guess from incomplete signals. Three real cases:
+  //   (A) business has a website AND it's listed on their Google profile
+  //   (B) business has a website but Google's profile doesn't show it
+  //   (C) we genuinely can't tell — no website anywhere we looked
+  const formWebsite = (website||'').trim();
+  const realGBP = !!(gbp && !gbp.userProvided);
+  const gbpWebsite = realGBP ? ((gbp.website||'').trim()) : '';
+  const knownWebsite = gbpWebsite || formWebsite;
+  const websiteMissingFromGBP = realGBP && !!formWebsite && !gbpWebsite;
+  const noWebsiteAnywhere = !knownWebsite;
+
+  const site = await getSiteData(website);
+  
+  const userProvided = !!(gbp && gbp.userProvided);
+  // Helper: render a GBP attribute honestly. On the manual path a blank/null
+  // means "the user didn't provide it" = could not verify, NOT "missing."
+  // On the API paths (autocomplete/phone) a real empty value genuinely means
+  // the field is empty on Google, so there we still say No/0.
+  const hoursLine = (gbp && gbp.hasHours===null)
+    ? (userProvided ? 'Not provided — could not verify' : 'No')
+    : (gbp && gbp.hasHours ? 'Yes' : 'No');
+  const photoLine = (gbp && (gbp.photoCount===null||gbp.photoCount===undefined))
+    ? (userProvided ? 'Not provided — could not verify' : '0')
+    : (gbp ? gbp.photoCount : '0');
+  // On the manual path, any rating/review the user DID enter is SELF-REPORTED,
+  // not verified by us. Tag it so the prompt never presents it as a confirmed
+  // finding — the user could be guessing, rounding up, or mistaken, and proud
+  // owners self-select into entering good numbers. Honesty protects credibility.
+  const reviewLine = (gbp && (gbp.reviewCount===null||gbp.reviewCount===undefined))
+    ? (userProvided ? 'Not provided — could not verify' : '0')
+    : (gbp ? (userProvided ? gbp.reviewCount + ' (as reported by the user — NOT verified by us)' : gbp.reviewCount) : '0');
+  const ratingLine = (gbp && (gbp.rating===null||gbp.rating===undefined))
+    ? (userProvided ? 'Not provided — could not verify' : 'No rating yet')
+    : (gbp ? (userProvided ? gbp.rating + ' (as reported by the user — NOT verified by us)' : gbp.rating) : 'No rating yet');
+
+  const gbpContext = gbp ? `
+${userProvided ? `UNCONFIRMED BUSINESS DETAILS — TYPED IN BY THE USER. NO GOOGLE LISTING WAS VERIFIED:
+- GBP Found: NOT CONFIRMED. Our automated lookup did not find or verify a Google Business Profile for this business.
+- Business Name (typed by the user, NOT read from Google): ${gbp.name}` : `REAL GOOGLE BUSINESS PROFILE DATA (use this for GBP category — do not guess):
+- GBP Found: Yes
+- Business Name on Google: ${gbp.name}`}
+- Star Rating: ${ratingLine}
+- Total Reviews: ${reviewLine}
+- Address: ${gbp.address || 'Not listed'}
+- Phone: ${gbp.phone || 'Not listed'}
+- Website on GBP: ${gbp.website || (userProvided ? 'Not provided — could not verify' : 'NOT SET')}
+- Has Business Hours Set: ${hoursLine}
+- Photo Count: ${photoLine}
+- Business Status: ${gbp.businessStatus || 'Unknown'}${userProvided ? `
+
+IMPORTANT — THIS PROFILE DATA WAS ENTERED BY HAND BY THE USER, NOT READ FROM GOOGLE:
+We could NOT confirm that a Google Business Profile exists for this business. There are two honest possibilities and you must NOT pick one: (a) our automated lookup failed to find a listing that really does exist — this genuinely happens, even to businesses that rank well on Google, and it is especially common for SERVICE-AREA BUSINESSES that hide their street address from their listing (Places API cannot match those cleanly by name or phone) — or (b) this business does not have a Google listing. You have no way to tell which, and neither does the user typing a name into a box.
+ABSOLUTE RULES — breaking any of these produces a false report:
+- NEVER state or imply the listing was confirmed. Do not write \"verified Google Business Profile\", \"confirmed GBP listing\", \"has a verified listing\", \"Google listing confirmed\", or anything equivalent.
+- NEVER present having a listing as a POSITIVE finding, and never award score for it. You did not confirm one exists.
+- NEVER claim the business has NO listing either. You did not confirm that.
+- NEVER use language like \"you're invisible online\", \"you have no web presence\", \"customers can't find you\", or \"your business is missing from the internet\". Failing to confirm a listing automatically is NOT the same as being absent from it, and this is especially untrue for service-area businesses that are simply hard to auto-match.
+- Score the Google Business Profile category NEUTRALLY (around 50): no credit for a listing you did not confirm, no penalty for one you did not confirm is missing. Say plainly in scoreReason that the listing could not be confirmed either way.
+- Correct phrasing to use: \"We couldn't automatically confirm a Google Business Profile for this business in our scan. This is especially common for service-area businesses that hide their street address \u2014 Google's lookup APIs have a hard time matching those. It does NOT mean the business is missing from Google. Checking your Google Business Profile dashboard is the fastest way to know for sure.\"
+- The name, address, phone and other details below are simply WHAT THE USER TYPED. Refer to them as \"the details you provided\", never as something we found on Google.
+The rest of this data was also typed by hand, so the same care applies:
+Any field marked "Not provided — could not verify" means we could not read it — NOT that the business lacks it. For any such field:
+- Do NOT write a negative finding (never say "no hours", "zero photos", "no reviews", etc.).
+- Frame it warmly and honestly: explain that we could not automatically pull their full Google listing data (a common Google limitation), so those specific details could not be confirmed in this scan — and reassure them this does not reflect badly on their business.
+- Gently suggest they can confirm those details look good on their own Google Business Profile dashboard.
+- Do NOT lower the score as a penalty for an unverified field. Only score down for things the data explicitly confirms are deficient.
+- LEAD WITH STRENGTHS: if the website scan or any entered field shows real positives (good website, schema, reviews they told us about, etc.), make those the focus of the report so the owner sees genuine value, not a list of things you couldn't check.
+- SELF-REPORTED RATINGS/REVIEWS: any rating or review count marked "(as reported by the user — NOT verified by us)" was TYPED IN BY THE USER, not pulled from Google. You MUST attribute it to them and never present it as something the tool independently confirmed. Phrase it like "Based on the rating you entered (5.0, 21 reviews)..." or "the 5.0 rating you reported." Do NOT write "we found" or "your profile shows" for these numbers. You may still note that a strong self-reported rating is a good sign, but make crystal clear the number came from the user, not from our scan — so no one mistakes self-entered numbers for verified analysis.` : ''}${websiteMissingFromGBP ? `
+- IMPORTANT FIX OPPORTUNITY: The GBP website field is EMPTY but the business has a website (${formWebsite}). Customers searching Google cannot click through. This is a high-priority, free, 2-minute fix.` : ''}
+` : `
+REAL GOOGLE BUSINESS PROFILE DATA: No GBP listing found for this business. Score GBP category very low.
+`;
+
+  // Helper: turn a three-state website signal into honest prompt language.
+  // 'found' = confirmed on the page. 'not_found_on_scanned_page' = we read the
+  // homepage and it wasn't there (NOT proof the business lacks it). 'unknown'
+  // = we couldn't read the page at all.
+  const sig = (status) => {
+    if (status === 'found') return 'Found on the scanned homepage';
+    if (status === 'not_found_on_scanned_page') return 'Not found on the scanned homepage (may exist elsewhere on the site or on another platform — not confirmed absent)';
+    return 'Unknown — could not verify';
+  };
+  const siteContext = (site && site.fetched) ? `
+REAL WEBSITE DATA (use this for Website Health, AI Search Visibility, and GEO Score — do not guess):
+- Website reachable: Yes
+- Page title: ${site.title || '(none found)'}
+- Meta description: ${site.metaDescription || '(none found)'}
+- Structured data / schema markup: ${sig(site.schemaStatus)}
+- Mobile viewport tag: ${sig(site.viewportStatus)}
+- H1 headings: ${site.h1Count}, H2 headings: ${site.h2Count}
+- FAQ content: ${sig(site.faqStatus)}
+- Facebook link: ${sig(site.facebookStatus)}
+- Instagram link: ${sig(site.instagramStatus)}
+- Approx word count on homepage: ${site.wordCount}
+- Text sample from homepage: ${site.textSample || '(none)'}
+
+WEBSITE SIGNAL RULE: For the website signals above, do NOT describe a feature as missing unless it is explicitly marked "Not found on the scanned homepage." Even then, phrase it as "not found on the scanned page," NOT "the business does not have it" — it may exist on another page or platform we did not check. If a signal is "Unknown — could not verify," treat it as unverified: do not write a negative finding about it and do not lower the score for it.
+` : (site && site.likelyAccessibleToHumans) ? `
+REAL WEBSITE DATA: A website exists, but our automated scanner could not fetch it. ${site.reasonForUser || ''}
+IMPORTANT — handle this honestly:
+- This is very likely just the website's security/firewall settings blocking our scanner. It does NOT mean the website is broken, and it likely works fine for human visitors and for Google.
+- Do NOT claim the website has "technical issues", "server configuration problems", or is "broken" or "inaccessible to customers". You do not know that — it is not true based on this data.
+- For Website Health, AI Search Visibility, and GEO Score: do NOT score these low as a penalty. Treat them as NOT MEASURED for this scan. Give each a neutral score of 50 and ONE finding explaining honestly that the website could not be scanned automatically (often due to security settings) so analysis was skipped — status 'warn', a gentle action like 'Website analysis was skipped — this is usually a security setting, not a problem'.
+- The overall score must not be dragged down just because our scanner was blocked.
+` : noWebsiteAnywhere ? `
+REAL WEBSITE DATA: Our automated scan could not confirm a website for this business. This is very often a limitation of automatic lookup, NOT evidence the business lacks a website. In particular, service-area businesses that hide their street address from their Google Business Profile are commonly missed by automated name/phone lookup, so their website (if any) never reaches this scan.
+
+CRITICAL — AVOID THE WEBSITE CONTRADICTION: because no website was confirmed, you do NOT know whether this business has one. Therefore you MUST NOT tell them to "add your website URL to your Google Business Profile" as if they have a website sitting unused — that instruction is confusing and often wrong for a business that has no website at all. Do NOT make "add a website URL" the topPriority. Do NOT produce a finding titled "Website missing from your Google listing." Instead, give ONE coherent message: we could not confirm a website; if they have one, they can make sure it is linked on their Google profile; if they do not, a simple web page (such as a free directory page) would give customers and AI something to reference. Keep it to that single, non-contradictory point — never both "we could not find a website" and "add your existing website" in the same report.
+
+Handle this honestly:
+- Do NOT write findings that state or imply the business is "invisible online," has "no web presence," is "missing from the internet," or that "customers can't find a website" — you have NOT confirmed any of that.
+- Do NOT write "no website was found anywhere" or similar — that phrasing implies we confirmed an absence, which we did not.
+- Frame this honestly and warmly: we could not automatically confirm a website in this scan, this is common (especially for service-area businesses whose listings are hard to match automatically), and it does NOT mean the business is missing or lacks a website.
+- Score Website Health, AI Search Visibility, and GEO Score NEUTRALLY (around 50). Do NOT penalize the business for signals we could not verify. Give each ONE finding that honestly explains we could not automatically confirm a website in this scan — status 'warn', gentle action wording.
+- LEAD WITH REASSURANCE, not deficit: the owner is not being told they are invisible; they are being told our automated lookup could not reach their site this time.
+` : `
+REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automated scanner could not fetch it. Treat Website Health, AI Search Visibility, and GEO Score as NOT MEASURED — give each a neutral score of 50 with ONE finding explaining honestly that the website could not be scanned automatically (often a security setting), so analysis was skipped. Do NOT claim the website is broken. Do NOT penalize the overall score.
+`;
+
+  const prompt = "You are auditing a local business's online presence. Use ONLY the real data provided below. Do NOT invent facts. Return ONLY valid JSON, no other text.\n\nBusiness: "+bizName+"\nWebsite: "+(website||"none")+"\nCity: "+city+"\n\n"+gbpContext+"\n"+siteContext+"\n\nReturn this JSON:\n{\"overallScore\":50,\"overallGrade\":\"Needs Work\",\"summary\":\"2 sentence summary\",\"topPriority\":\"top action\",\"hasWebsite\":false,\"categories\":[{\"name\":\"Website Health\",\"subtitle\":\"SEO and mobile\",\"icon\":\"🌐\",\"score\":50,\"findings\":[{\"title\":\"finding\",\"detail\":\"detail\",\"status\":\"warn\",\"action\":\"action\"}]},{\"name\":\"Google Business Profile\",\"subtitle\":\"Local ranking power\",\"icon\":\"📍\",\"score\":50,\"findings\":[]},{\"name\":\"AI Search Visibility\",\"subtitle\":\"ChatGPT and Google AI\",\"icon\":\"🤖\",\"score\":50,\"findings\":[]},{\"name\":\"Citation Consistency\",\"subtitle\":\"NAP across the web\",\"icon\":\"📋\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Social Presence\",\"subtitle\":\"Facebook and Instagram\",\"icon\":\"📱\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Review Authority\",\"subtitle\":\"Volume and recency\",\"icon\":\"⭐\",\"score\":50,\"findings\":[]},{\"name\":\"GEO Score\",\"subtitle\":\"AI search trust and authority\",\"icon\":\"🧠\",\"score\":50,\"findings\":[]}]}\n\nSCORING RULES:\n- CONFIDENCE CALIBRATION (most important rule): State verified facts confidently. State recommendations cautiously, as suggestions. State AI-visibility and search-ranking claims conservatively. No one — not Google, OpenAI, Perplexity, or Anthropic — publishes a proven formula for what makes AI or search recommend a business, so never claim certainty about it.\\n- SCORE REASON: For each of the FIVE scored categories, add a field \\\"scoreReason\\\" — ONE short plain-English sentence explaining what helped the score and what held it back, so the number is not a mystery. Name the actual things observed. Example: 'Scored well for the 5-star rating and 58 reviews, held back by the low photo count.' Do NOT invent sub-point breakdowns or exact point values (no '27 out of 30') — describe the reasoning in words only, since precise sub-scores would be made up. For the two coming-soon categories, omit scoreReason.\n- The scanner only knows what was on the SCANNED PAGE. NEVER claim 'AI tools cannot cite this business', 'Google has no understanding of this business', 'AI models can't find you', or that something does not exist anywhere — you only checked one page. NEVER call any change 'the highest-impact' or 'the most important' change; you cannot prove ranking of impact. NEVER cite a statistic you cannot source (e.g. 'businesses with 100+ photos get more engagement', 'pages need 500+ words to rank') — no invented numbers or thresholds presented as fact.\n- FACT to INTERPRETATION to RECOMMENDATION: every finding's detail should connect an observed fact to its reasoning to the suggestion, not jump from fact straight to a command. Example of the right shape: 'No FAQ content was detected on the scanned homepage. FAQ sections can help answer common customer questions and give search engines and AI systems more to work with. Consider adding a short FAQ section.' Observed fact, then why it may matter (softly), then a suggestion. Do not skip the middle step.\n- Soften AI/SEO cause-and-effect: prefer 'can help', 'may improve', 'is commonly recommended because', 'often' over 'will', 'needs', 'must', 'has no'. Recommendations are suggestions the owner may consider, not laws.\n- Score these FIVE categories with real numbers 0-100 based strictly on the real data above: Website Health, Google Business Profile, AI Search Visibility, Review Authority, GEO Score. Vary the scores honestly — a business with schema, FAQ, good word count and strong reviews should score well; one missing those should score low. Do NOT give every category a similar number.\n- For Citation Consistency and Social Presence: these are NOT measured yet. Keep score as -1 and comingSoon as true exactly as shown. Give each ONE finding with title 'Coming soon', a short detail explaining full citation/social analysis is being added, status 'warn', and no action. Do not invent a score for these two.\n- overallScore must be the average of ONLY the five real scored categories (ignore the two coming-soon ones).\n- Use the REAL GBP DATA for the Google Business Profile category. Use the REAL WEBSITE DATA for Website Health, AI Search Visibility and GEO Score.\n- FINDINGS COUNT: Give each scored category between 1 and 3 findings — ONLY as many as there are genuinely distinct things to say. Quality over quantity. If a category has only one real thing worth noting, give ONE finding. Do NOT pad a category up to three by rewording the same point or inventing minor filler. A short, sharp report is better than a long repetitive one. Be concrete — reference actual things found or missing.\n- NO REPETITION ACROSS THE WHOLE REPORT: Each finding must raise a DISTINCT issue. If you have already made a point in one category (e.g. 'thin website content' or 'needs more reviews' or 'no schema'), do NOT restate that same point in another category under a different heading. Every finding across all categories must be about a different thing. Before adding a finding, check you have not already said it elsewhere.\n- NO SUMMARY/SYNTHESIS FINDINGS: Do NOT create a finding whose job is to re-explain or combine issues already covered in their own findings (for example, after a schema finding and an FAQ finding, do NOT add a third 'limited structured signals' finding that re-explains schema and FAQ again). Each issue gets ONE finding, explained once.\n- TOP PRIORITY framing: the topPriority field is ONE important opportunity identified from what was actually checked (the homepage and the GBP), NOT a definitive ranking of everything the business should do. The scanner does not check competitors, citations, backlinks, Bing, social, or service pages, so do not phrase it as 'the single most important thing' or imply it outranks everything. Frame it as a high-impact opportunity worth considering.\n- AIM for roughly 8-11 total findings across the five scored categories for a typical business — not 15. Fewer is fine. More than 12 means you are repeating yourself; cut the repeats.\n- EXCEPTION when the website was NOT scannable (REAL WEBSITE DATA section says scanner was blocked or analysis was skipped): Website Health gets exactly 1 finding (the honest 'analysis was skipped' explanation). For AI Search Visibility and GEO Score, AT MOST 1 finding per category may be about the blocked scan; any additional findings MUST draw on real signals you actually have — GBP completeness, rating, review volume, photo count, business category, location — not repeated rewordings of 'we couldn't see the website.' Give fewer findings rather than padding with repetition.\n- For GEO Score: assess how easily ChatGPT or Perplexity could find citable information about this business, based on whether the real website data shows schema markup and FAQ content. Most small businesses score low here because they lack these signals — score honestly, and frame it as an opportunity, not a verdict, since no one can prove exactly how AI tools choose what to cite.\n- PHOTO ADVICE MUST SAY WHERE: whenever you suggest adding or uploading photos, ALWAYS tell the owner exactly where to do it — their Google Business Profile (via the Google Maps app: open your business listing, tap Photos, then Add). Never just say 'upload more photos' without naming the location; business owners get confused about where photos go.\n- If 'IMPORTANT FIX OPPORTUNITY' is mentioned in the GBP data above, you MUST surface it as one of the findings in the Google Business Profile category. Title it 'Website missing from your Google listing', detail it in one short sentence, status 'bad', action: 'Add your website URL to your Google Business Profile dashboard — a free 2-minute fix.'";
+  const raw = await callClaude([{role:"user",content:prompt}], 3000);
+  const clean = raw.replace(/```json|```/g,"").trim();
+  // Helper: attach the matched-business context to the parsed result so the
+  // results page can show the user "here is the business we actually scanned"
+  // (Glitch #2). gbp may be null when the user said they have no listing.
+  function withIdentity(parsed){
+    if(parsed && typeof parsed==='object'){
+      parsed.gbp = gbp || null;
+      parsed.scannedInputs = { bizName, city, website: knownWebsite || null };
+      // Fix #3 — trust our deterministic state, not the AI's guess.
+      parsed.hasWebsite = !noWebsiteAnywhere;
+      parsed.websiteMissingFromGBP = websiteMissingFromGBP;
+    }
+    return parsed;
+  }
+  try { return withIdentity(JSON.parse(clean)); }
+  catch {
+    const s=clean.indexOf("{"), e=clean.lastIndexOf("}");
+    if(s!==-1&&e!==-1){try{return withIdentity(JSON.parse(clean.slice(s,e+1)));}catch(e2){}}
+    throw new Error("Please try again — the scan occasionally needs a second attempt.");
+  }
+}
+
+async function chatReply(history, results, bizName) {
+  const sys = "You are the PresenceScanner AI Advisor, helping "+bizName+" understand and improve their online footprint — how customers and AI search engines find them. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+". Write like talking to a busy small business owner. Plain English only, no jargon. 2-3 short paragraphs max. End with one clear next action.";
+  const msgs = [{role:"user",content:sys+"\n\nConversation:"},{role:"assistant",content:"Ready to help."},...history];
+  return await callClaude(msgs, 500);
+}
+
+const STEPS=["Fetching website signals…","Analyzing SEO structure…","Checking Google Business Profile…","Scoring AI search visibility…","Scanning citation consistency…","Reviewing social presence…","Assessing review authority…","Building your action plan…"];
+
+function Ring({score,c}){
+  const r=52,circ=2*Math.PI*r;
+  const col=c==="good"?"#0a8a5f":c==="warn"?"#b06b1c":"#b91c1c";
+  return(
+    <div className="ring">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r={r} fill="none" stroke="#1e2d45" strokeWidth="9"/>
+        <circle cx="60" cy="60" r={r} fill="none" stroke={col} strokeWidth="9"
+          strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ-(score/100)*circ}
+          style={{filter:`drop-shadow(0 0 7px ${col}55)`,transition:"stroke-dashoffset 1.4s"}}/>
+      </svg>
+      <div className="rnum" style={{color:col}}>{score}<div className="rlbl">/ 100</div></div>
+    </div>
+  );
+}
+
+function CatCard({cat}){
+  const [open,setOpen]=useState(true);
+  const soon=cat.comingSoon||cat.score<0;
+  const c=soon?"warn":(cat.score>=70?"good":cat.score>=40?"warn":"bad");
+  return(
+    <div className="cat">
+      <div className="chead" onClick={()=>setOpen(o=>!o)}>
+        <div className={`cico ${c}-bg`}>{cat.icon}</div>
+        <div className="cmeta"><h3>{cat.name}</h3><span>{cat.subtitle}</span></div>
+        <div className="cright">
+          {soon?(
+            <span className={`cpct warn`} style={{fontSize:"0.7rem",fontWeight:700}}>Coming soon</span>
+          ):(
+            <>
+              <div className="bw"><div className={`bf ${c}-b`} style={{width:cat.score+"%"}}/></div>
+              <span className={`cpct ${c}`}>{cat.score}%</span>
+            </>
+          )}
+          <span className={`chev ${open?"open":""}`}>▼</span>
+        </div>
+      </div>
+      <div className={`cbody ${open?"":"shut"}`}>
+        {!soon && cat.scoreReason && (
+          <div className="finding" style={{opacity:0.85}}>
+            <div className="fd warn-d" style={{background:"var(--t2)"}}/>
+            <div className="ft">
+              <h4 style={{color:"var(--t2)"}}>Why this score</h4>
+              <p>{cat.scoreReason}</p>
+            </div>
+          </div>
+        )}
+        {cat.findings.map((f,i)=>{
+          const fc=f.status==="good"?"good":f.status==="warn"?"warn":"bad";
+          return(
+            <div key={i} className="finding">
+              <div className={`fd ${fc}-d`}/>
+              <div className="ft">
+                <h4 className={fc}>{f.title}</h4>
+                <p>{f.detail}</p>
+                {f.action&&<div className="faction">{f.action}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AffCards({results,bizName}){
+  const cards=[];
+  if(!results.hasWebsite){
+    // We found no website anywhere — the business may genuinely not have one yet.
+    cards.push({ico:"🌐",title:"Claim Your Domain",desc:"If you don't have a website yet, every business needs a web address. Search for yours before someone else takes it.",label:"Search Domains →",href:AFF.domain(bizName),note:"From ~$12/yr via GoDaddy"});
+    cards.push({ico:"🖥️",title:"Get Web Hosting",desc:"Once you have a domain you need a home for your website.",label:"View Hosting →",href:AFF.hosting(),note:"From ~$6/mo"});
+  } else if(results.websiteMissingFromGBP){
+    // Business has a website — it's just not listed on their Google profile.
+    cards.push({ico:"🔗",title:"Add Your Website to Google",desc:"Your website isn't on your Google Business Profile, so customers searching Google can't click through. Free 2-minute fix in your Google dashboard.",label:"Open Google Business Profile →",href:"https://business.google.com/",note:"Free — about 2 minutes"});
+  }
+  const gbp=results.categories?.find(c=>c.name==="Google Business Profile");
+  if(gbp&&gbp.score<65)cards.push({ico:"📍",title:"Claim Google Listing",desc:"Your Google Business Profile is your most powerful free marketing tool.",label:"Claim Free →",href:AFF.gbp(),note:"Free — takes about 10 minutes"});
+  cards.push({ico:"📧",title:"Professional Email",desc:"joe@gmail.com loses customers. joe@joesplumbing.com wins them.",label:"Get Business Email →",href:AFF.workspace(),note:"Google Workspace from $6/user/mo"});
+  return(
+    <div className="aff-wrap" id="jump-tools">
+      <div className="section-label">Recommended Next Steps</div>
+      <div style={{fontSize:"0.8rem",color:"var(--t3)",lineHeight:1.5,marginBottom:"11px",paddingLeft:"2px"}}>Some of these are affiliate links. If you sign up, I may earn a small commission, at no extra cost to you.</div>
+      <div className="aff-grid">
+        {cards.map((card,i)=>(
+          <div key={i} className="aff">
+            <div className="aff-ico">{card.ico}</div>
+            <h4>{card.title}</h4>
+            <p>{card.desc}</p>
+            <a href={card.href} target="_blank" rel="noopener noreferrer">{card.label}</a>
+            <div className="aff-note">{card.note}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+function FoundingWaitlist(){
+  const [email,setEmail]=useState("");
+  const [state,setState]=useState("idle"); // idle | sending | done | error
+  const [errMsg,setErrMsg]=useState("");
+  const spotsLeft=FOUNDING_SPOTS_TOTAL-FOUNDING_SPOTS_CLAIMED;
+
+  async function claim(){
+    const e=email.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){
+      setState("error");setErrMsg("Please enter a valid email address.");return;
+    }
+    setState("sending");
+    try{
+      const res=await fetch("/api/subscribe",{
+        method:"POST",headers:HEADERS,
+        body:JSON.stringify({email:e,tag:"founding-member-waitlist"})
+      });
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok){
+        setState("error");
+        setErrMsg(data.error||"Something went wrong. Please try again in a moment.");
+        return;
+      }
+      setState("done");
+    }catch(err){
+      setState("error");
+      setErrMsg("We couldn't reach the server. Please try again in a moment.");
+    }
+  }
+
+  return(
+    <div className="fw" id="jump-founding">
+      <span className="fw-beta">● Beta — Help Shape It</span>
+      <h3>Become a PresenceScanner Founding Member</h3>
+      <p className="fw-lead">
+        PresenceScanner is in beta. We're looking for a small group of business
+        owners to test it and tell us what works. As a thank-you for getting in
+        early, founding members lock in our lowest price — for as long as they
+        stay subscribed.
+      </p>
+      <div className="fw-offer">
+        <span className="fw-tag"><b>$19/mo</b> — locked forever</span>
+        <span className="fw-tag"><b>{FOUNDING_SPOTS_TOTAL}</b> founding-member spots</span>
+      </div>
+      <div className="fw-count">
+        <b>{FOUNDING_SPOTS_CLAIMED} of {FOUNDING_SPOTS_TOTAL}</b> spots claimed
+        {spotsLeft>0 ? ` — ${spotsLeft} still open` : " — full"}
+      </div>
+
+      {state==="done" ? (
+        <div className="fw-msg ok">
+          Almost there — check your email and click the confirmation link to
+          reserve your founding-member spot.
+        </div>
+      ) : (
+        <React.Fragment>
+          <div className="fw-row">
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={e=>{setEmail(e.target.value);if(state==="error")setState("idle");}}
+              onKeyDown={e=>e.key==="Enter"&&state!=="sending"&&claim()}
+              disabled={state==="sending"}
+            />
+            <button onClick={claim} disabled={state==="sending"||!email.trim()}>
+              {state==="sending"?"Reserving…":"Reserve My Spot"}
+            </button>
+          </div>
+          {state==="error"&&<div className="fw-msg bad" style={{marginTop:"9px"}}>{errMsg}</div>}
+          <div className="fw-fine">
+            No payment and no card today — you're just reserving a spot. We'll
+            email you when founding membership opens.
+          </div>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+
+function Chat({results,bizName}){
+  const [msgs,setMsgs]=useState([{r:"ai",t:"Hi! I just finished checking "+bizName+"'s online footprint. Your biggest opportunity right now: "+results.topPriority+" — want me to walk you through how to address that first?"}]);
+  const [input,setInput]=useState("");
+  const [busy,setBusy]=useState(false);
+  const bottom=useRef(null);
+  const msgsRef=useRef(null);
+  // Scroll the NEWEST message into view WITHIN the chat's own message box,
+  // not by scrolling the whole page. The old approach used
+  // scrollIntoView on a bottom marker, which scrolled the entire page so the
+  // input box landed in view and pushed the actual answer up above where the
+  // user was looking. Scrolling only the inner container keeps the latest
+  // reply visible in the chat window without yanking the page around.
+  useEffect(()=>{
+    const box=msgsRef.current;
+    if(box){ box.scrollTop = box.scrollHeight; }
+  },[msgs,busy]);
+
+  // CHAT CAP: limit the advisor to MAX_TURNS user messages per session so a
+  // single visitor (or bot) can't run up API cost by chatting all day. One
+  // "turn" = one user message + its AI reply. The opening AI greeting does
+  // not count. After the limit, the input disables and a wrap-up shows.
+  const MAX_TURNS=7;
+  const userTurns=msgs.filter(m=>m.r==="user").length;
+  const limitReached=userTurns>=MAX_TURNS;
+
+  // MESSAGE SIZE CAP: a real question fits easily in a few hundred chars.
+  // Capping each message stops someone from pasting a huge blob (e.g. their
+  // whole scan) that would cost more to process. 600 is generous for any
+  // honest question but blocks expensive pasted payloads. Enforced both on
+  // the input (maxLength) and again here before sending, as a belt-and-
+  // suspenders guard in case anything bypasses the input limit.
+  const MAX_CHARS=600;
+
+  async function send(){
+    if(!input.trim()||busy||limitReached)return;
+    const txt=input.trim().slice(0,MAX_CHARS);setInput("");
+    const next=[...msgs,{r:"user",t:txt}];setMsgs(next);setBusy(true);
+    try{
+      const history=next.map(m=>({role:m.r==="ai"?"assistant":"user",content:m.t}));
+      const reply=await chatReply(history,results,bizName);
+      setMsgs(m=>[...m,{r:"ai",t:reply}]);
+    }catch{setMsgs(m=>[...m,{r:"ai",t:"Sorry, I hit a snag. Please try again."}]);}
+    setBusy(false);
+  }
+
+  return(
+    <div className="chat">
+      <div className="chat-top">
+        <div className="chat-ico">🤖</div>
+        <h3>AI Footprint Advisor</h3>
+        <span className="live"><span className="dot"/>Live</span>
+      </div>
+      <div className="msgs" ref={msgsRef}>
+        {msgs.map((m,i)=><div key={i} className={`msg ${m.r}`}>{m.t}</div>)}
+        {busy&&<div className="msg ai thinking">Thinking…</div>}
+        {limitReached&&!busy&&<div className="msg ai">We've covered a lot here — that's all this advisor session can cover. For more, run a fresh scan anytime. Good luck out there!</div>}
+        <div ref={bottom}/>
+      </div>
+      <div className="chat-bottom">
+        <input className="cinput" value={input} onChange={e=>setInput(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&send()}
+          disabled={limitReached}
+          maxLength={MAX_CHARS}
+          placeholder={limitReached?"Session limit reached — run a fresh scan for more":"Ask anything about your results…"}/>
+        <button className="csend" onClick={send} disabled={!input.trim()||busy||limitReached}>Send</button>
+      </div>
+    </div>
+  );
+}
+
+// --- Name-mismatch detector (Fix #8) ---
+// Returns true when the business name the owner TYPED has no meaningful
+// words in common with the name on the Google listing we matched. Used
+// to warn the owner before they confirm the wrong listing — common when
+// two businesses share a phone number (entity conflation).
+function namesLookDifferent(typed, matched){
+  if(!typed||!matched)return false;
+  const stop=new Set(["the","of","and","for","llc","inc","co","corp","company","ltd","group","services","service","fl","florida","usa","us"]);
+  const toks=s=>s.toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>=3&&!stop.has(w));
+  const t=new Set(toks(typed));
+  const m=new Set(toks(matched));
+  if(t.size===0||m.size===0)return false;
+  for(const w of t){if(m.has(w))return false;}
+  return true;
+}
+
+// --- Google URL identifier extractor (Venice-Italy bug fix) ---
+// Pulls a real Place ID out of a pasted Google URL when one is present.
+// Most Google share links DO NOT include a Place ID (they use Knowledge
+// Graph IDs or data IDs instead, which can't be deterministically converted
+// to a Place ID). When no Place ID is found we refuse to scan that URL
+// and route the user to the manual paste path instead — that's what
+// prevents the tool from falling back to a text search and returning the
+// wrong country / wrong business.
+function extractGoogleUrlIds(url){
+  if(!url)return{placeId:null,bizName:null};
+  let d=url;
+  try{d=decodeURIComponent(url);}catch{}
+  const placeId =
+    d.match(/place_id:([A-Za-z0-9_-]+)/)?.[1] ||
+    d.match(/[?&]query_place_id=([^&]+)/)?.[1] ||
+    d.match(/[?&]placeid=([A-Za-z0-9_-]+)/)?.[1] ||
+    null;
+  // Try to recover the business name from the URL so we can pre-fill the
+  // manual paste form when the link itself isn't usable. Two common spots:
+  // ?q=Business+Name  and  /maps/place/Business+Name/...
+  let bizName = null;
+  const q = d.match(/[?&]q=([^&]+)/)?.[1];
+  if(q){
+    bizName = q.replace(/\+/g," ").trim();
+  } else {
+    const pm = d.match(/\/maps\/place\/([^\/\?]+)/);
+    if(pm) bizName = pm[1].replace(/\+/g," ").replace(/-/g," ").trim();
+  }
+  return {placeId, bizName};
+}
+
+// --- Google Place Autocomplete widget, wrapped as a React component ---
+// Mounts Google's autocomplete on an input. When the user picks a
+// business from the dropdown, calls onPick with {placeId, name, address}.
+function BusinessAutocomplete({ onPick }) {
+  const inputRef = useRef(null);
+  const mountedRef = useRef(false);
+  const [status, setStatus] = useState("loading"); // loading | ready | failed
+
+  useEffect(() => {
+    // Wait for Google's library to be available, then mount once.
+    let tries = 0;
+    const tryMount = () => {
+      if (mountedRef.current) return;
+      if (window.google && window.google.maps && window.google.maps.places && inputRef.current) {
+        mountedRef.current = true;
+        const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
+          types: ["establishment"],
+          fields: ["place_id", "name", "formatted_address"],
+          // Fix #4 — bias predictions toward Florida so local businesses
+          // rank higher and stop dropping off the list as the owner types.
+          // Soft bias (strictBounds:false by default) — businesses outside
+          // Florida still appear if the owner types them clearly.
+          bounds: new window.google.maps.LatLngBounds(
+            new window.google.maps.LatLng(24.396308, -87.634938),
+            new window.google.maps.LatLng(31.000888, -79.974306)
+          ),
+        });
+        ac.addListener("place_changed", () => {
+          const place = ac.getPlace();
+          if (place && place.place_id) {
+            onPick({
+              placeId: place.place_id,
+              name: place.name || "",
+              address: place.formatted_address || "",
+            });
+          }
+        });
+        setStatus("ready");
+        return;
+      }
+      tries++;
+      if (tries > 40) { setStatus("failed"); return; } // ~10s of waiting
+      setTimeout(tryMount, 250);
+    };
+    tryMount();
+  }, []);
+
+  return (
+    <div>
+      <input ref={inputRef} type="text"
+        placeholder="Start typing your business name..."
+        style={{width:"100%",padding:"12px 14px",fontSize:"1rem",
+          border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,
+          background:"rgba(0,0,0,0.04)",color:"inherit",boxSizing:"border-box"}} />
+      {status==="failed" && (
+        <div className="err" style={{marginTop:8,fontSize:"0.85rem"}}>
+          The business search could not load. Please use one of the options below instead.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Bug report widget (Fix #5) + sentiment-pulse handler (Fix #6) ---
+// Renders the persistent "Something off?" button AND the feedback modal.
+// The modal is now controlled from App so the sentiment-pulse strip can
+// also open it. When `mood` is non-null the modal copy adjusts to match
+// the user's emotional state (😐 okay / 😞 frustrating).
+function BugReport({open,setOpen,mood,setMood,onSubmitted}){
+  const [showHowto,setShowHowto]=useState(false);
+  const [text,setText]=useState("");
+  const [file,setFile]=useState(null);
+  const [email,setEmail]=useState("");
+  const [state,setState]=useState("idle"); // idle | sending | sent | error
+  const [errMsg,setErrMsg]=useState("");
+
+  // Copy varies depending on what triggered the modal.
+  const copy = mood==="frustrating" ? {
+    title:"Sorry that was frustrating",
+    intro:"I want to fix this. Tell me what felt frustrating and I'll work on it — quick and casual is fine.",
+    msgLabel:"What's frustrating?",
+    placeholder:"Tell me what felt wrong or annoying…"
+  } : mood==="okay" ? {
+    title:"Tell me what's missing",
+    intro:"You're testing this with me — that's the help I need. What felt incomplete, off, or could be better? Quick and casual is fine.",
+    msgLabel:"What's missing or could be better?",
+    placeholder:"Tell me what felt incomplete or could be improved…"
+  } : {
+    title:"Spotted something off?",
+    intro:"You're testing this with me — that's the help I need. Tell me what looked wrong, weird, or confusing, and I'll fix it. Quick and casual is fine.",
+    msgLabel:"What happened?",
+    placeholder:"Just describe it in your own words…"
+  };
+
+  function close(){
+    setOpen(false);
+    // Clear the form state shortly after the modal closes so it's fresh
+    // next time the link is clicked.
+    setTimeout(()=>{
+      setText("");setFile(null);setEmail("");
+      setState("idle");setErrMsg("");
+      if(setMood)setMood(null);
+    },200);
+  }
+
+  async function submit(){
+    if(!text.trim()){
+      setErrMsg("Please tell me a little about it.");
+      setState("error");
+      return;
+    }
+    setState("sending");setErrMsg("");
+    try{
+      const fd=new FormData();
+      fd.append("message",text.trim());
+      fd.append("mood",mood||"bug-report");
+      if(email.trim())fd.append("email",email.trim());
+      if(file)fd.append("screenshot",file);
+      fd.append("page_url",window.location.href);
+      fd.append("user_agent",navigator.userAgent);
+      const res=await fetch("https://formspree.io/f/"+BUG_REPORT_FORMSPREE_ID,{
+        method:"POST",body:fd,headers:{"Accept":"application/json"}
+      });
+      if(res.ok){
+        setState("sent");
+        if(onSubmitted)onSubmitted(mood);
+        setTimeout(close,2500);
+      }else{
+        const d=await res.json().catch(()=>({}));
+        setErrMsg((d&&d.error)||"Couldn't send. Please try again.");
+        setState("error");
+      }
+    }catch(e){
+      setErrMsg("Couldn't send. Check your internet and try again.");
+      setState("error");
+    }
+  }
+
+  return (
+    <>
+      <button className="bug-link" onClick={()=>{if(setMood)setMood(null);setOpen(true);}} title="Report something off">
+        Something off?
+        <span className="bug-link-beta">BETA</span>
+      </button>
+      {open && (
+        <div className="bug-backdrop" onClick={close}>
+          <div className="bug-modal" onClick={e=>e.stopPropagation()}>
+            {state==="sent" ? (
+              <div className="bug-thanks">
+                <div className="bug-thanks-mark">✓</div>
+                <h3>Thanks — got it.</h3>
+                <p>I'll take a look.</p>
+              </div>
+            ) : (
+              <>
+                <button className="bug-close" onClick={close} aria-label="Close">×</button>
+                <h3>{copy.title}</h3>
+                <p>{copy.intro}</p>
+                <label>{copy.msgLabel}</label>
+                <textarea value={text} onChange={e=>setText(e.target.value)}
+                  placeholder={copy.placeholder}
+                  disabled={state==="sending"} />
+                <label>Screenshot (optional but encouraged)</label>
+                <div className="bug-file-wrap">
+                  <input type="file" accept="image/*" id="bug-file"
+                    onChange={e=>setFile(e.target.files[0]||null)}
+                    disabled={state==="sending"} />
+                  <label htmlFor="bug-file" className="bug-file-btn">
+                    {file ? `📎 ${file.name}` : "📸 Choose a screenshot…"}
+                  </label>
+                  {file && <button type="button" className="bug-file-clear" onClick={()=>setFile(null)}>Remove</button>}
+                </div>
+                <button type="button" className="bug-howto-btn" onClick={()=>setShowHowto(true)}>
+                  How do I take a screenshot?
+                </button>
+                <label>Your email (optional, only if you want a reply)</label>
+                <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  disabled={state==="sending"} />
+                {state==="error" && <div className="bug-err">{errMsg}</div>}
+                <button className="bug-send" onClick={submit}
+                  disabled={state==="sending"||!text.trim()}>
+                  {state==="sending" ? "Sending…" : "Send it"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {showHowto && (
+        <div className="bug-howto-backdrop" onClick={()=>setShowHowto(false)}>
+          <div className="bug-howto-modal" onClick={e=>e.stopPropagation()}>
+            <button className="bug-close" onClick={()=>setShowHowto(false)} aria-label="Close">×</button>
+            <h3>How to take a screenshot</h3>
+            <div className="bug-howto-section">
+              <div className="bug-howto-platform">📱 iPhone</div>
+              <div className="bug-howto-steps">Press the <b>Side button</b> + <b>Volume Up</b> at the same time. The screenshot saves to your Photos.</div>
+            </div>
+            <div className="bug-howto-section">
+              <div className="bug-howto-platform">📱 Android phone</div>
+              <div className="bug-howto-steps">Press the <b>Power button</b> + <b>Volume Down</b> at the same time. The screenshot saves to your Gallery.</div>
+            </div>
+            <div className="bug-howto-section">
+              <div className="bug-howto-platform">🖥️ Windows computer</div>
+              <div className="bug-howto-steps">Press <b>Windows key + Shift + S</b>, drag to select what to capture. The screenshot copies to your clipboard — paste it into a Word doc or email to save it.</div>
+            </div>
+            <div className="bug-howto-section">
+              <div className="bug-howto-platform">🖥️ Mac computer</div>
+              <div className="bug-howto-steps">Press <b>⌘ + Shift + 4</b>, drag to select what to capture. The screenshot saves to your Desktop.</div>
+            </div>
+            <p className="bug-howto-tip">Once you have the screenshot saved, close this and tap "Choose a screenshot…" to find it.</p>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// --- Sentiment pulse strip (Fix #6) ---
+// Three-emoji mood read at the bottom of the results page.
+//   😀 Good        → silent quick vote to Formspree, strip becomes "Thanks!"
+//   😐 Okay        → opens the bug-report modal with mood="okay"
+//   😞 Frustrating → opens the bug-report modal with mood="frustrating"
+// Both negative paths use the same modal — same screenshot field, same
+// "How do I take a screenshot?" instructions — just with copy adjusted
+// to match the mood. One vote per scan session; resets on new scan.
+function SentimentStrip({onTextFeedback,voted,setVoted}){
+  const [showGoodBox,setShowGoodBox]=React.useState(false);
+  const [goodText,setGoodText]=React.useState("");
+
+  async function submitGood(){
+    setVoted(true);
+    try{
+      const fd=new FormData();
+      fd.append("mood","good");
+      const note=(goodText||"").trim().slice(0,600);
+      fd.append("message", note ? ("[mood: 😀 Good] "+note) : "[quick mood vote: 😀 Good]");
+      fd.append("page_url",window.location.href);
+      await fetch("https://formspree.io/f/"+BUG_REPORT_FORMSPREE_ID,{
+        method:"POST",body:fd,headers:{"Accept":"application/json"}
+      });
+    }catch{}
+  }
+
+  function chooseMood(m){
+    if(m==="good"){
+      // Reveal an optional one-line box so a happy tester can say WHY or drop
+      // a suggestion — captured in the moment. They can also just submit blank.
+      setShowGoodBox(true);
+    }else{
+      // For 😐 / 😞, opening the modal is NOT yet a vote. Strip stays
+      // unchanged until the user actually submits. If they close the
+      // modal without submitting, they can vote again.
+      onTextFeedback(m);
+    }
+  }
+
+  if(voted){
+    return (
+      <div className="mood-strip">
+        <div className="mood-thanks">Thanks — your feedback goes straight to Michael.</div>
+      </div>
+    );
+  }
+
+  if(showGoodBox){
+    return (
+      <div className="mood-strip">
+        <div className="mood-question">Glad it's helpful! Anything you'd add? (optional)</div>
+        <textarea
+          className="good-box"
+          value={goodText}
+          maxLength={600}
+          onChange={e=>setGoodText(e.target.value)}
+          placeholder="What worked, what was confusing, or any suggestion — totally optional."
+          rows={3}
+        />
+        <div className="good-box-actions">
+          <button className="good-send" onClick={submitGood}>Send feedback</button>
+          <button className="good-skip" onClick={submitGood}>Skip</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mood-strip">
+      <div className="mood-question">How are you finding PresenceScanner so far?</div>
+      <div className="mood-buttons">
+        <button className="mood-btn" onClick={()=>chooseMood("good")} title="Good">
+          <span className="mood-emoji">😀</span>
+          <span className="mood-label">Good</span>
+        </button>
+        <button className="mood-btn" onClick={()=>chooseMood("okay")} title="Okay">
+          <span className="mood-emoji">😐</span>
+          <span className="mood-label">Okay</span>
+        </button>
+        <button className="mood-btn" onClick={()=>chooseMood("frustrating")} title="Frustrating">
+          <span className="mood-emoji">😞</span>
+          <span className="mood-label">Frustrating</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const [view,setView]=useState("form");
+  const [bizName,setBizName]=useState("");
+  const [website,setWebsite]=useState("");
+  const [city,setCity]=useState("");
+  const [phone,setPhone]=useState("");
+  const [email,setEmail]=useState("");
+  const [stepIdx,setStepIdx]=useState(0);
+  const [results,setResults]=useState(null);
+  const [pendingMatch,setPendingMatch]=useState(null);
+  const [errMsg,setErrMsg]=useState("");
+  // --- Phone-first match confirmation (self-contained) ---
+  const [phoneMatch,setPhoneMatch]=useState(null);
+  // --- "Help us find your business" step (self-contained) ---
+  const [fhName,setFhName]=useState("");
+  const [fhAddress,setFhAddress]=useState("");
+  const [fhPhone,setFhPhone]=useState("");
+  const [fhMapsUrl,setFhMapsUrl]=useState("");
+  const [fhErr,setFhErr]=useState("");
+  // --- Expanded "Copy from your Google Business Profile" fields ---
+  // Optional copy/paste fields the user can fill in from their GBP
+  // dashboard so the scan has real data to score against. Only Name is
+  // required; the rest sharpen the report when provided.
+  const [fhWebsite,setFhWebsite]=useState("");
+  const [fhRating,setFhRating]=useState("");
+  const [fhReviewCount,setFhReviewCount]=useState("");
+  const [fhHasHours,setFhHasHours]=useState(false);
+  const [fhCategory,setFhCategory]=useState("");
+  // When the user lands on the manual "find your business" form, carry over what
+  // they already typed on the home form (name, website, phone) so they don't
+  // have to retype it. Only fills fields that are still empty, so it never
+  // overwrites anything the user has already entered on the manual form.
+  React.useEffect(()=>{
+    if(view==="findhelp"){
+      setFhName(prev=>prev||bizName||"");
+      setFhWebsite(prev=>prev||website||"");
+      setFhPhone(prev=>prev||phone||"");
+      setFhAddress(prev=>prev||city||"");
+    }
+  },[view]);
+  // --- Feedback modal (controls BugReport from outside so SentimentStrip
+  // can also open it with a mood context) ---
+  const [bugOpen,setBugOpen]=useState(false);
+  const [bugMood,setBugMood]=useState(null);
+  // --- Sentiment pulse vote (one per scan session, resets on new scan) ---
+  const [moodVoted,setMoodVoted]=useState(false);
+
+  // Triggered when the sentiment strip's 😐 or 😞 is clicked.
+  function requestFeedback(mood){
+    setBugMood(mood);
+    setBugOpen(true);
+  }
+
+  useEffect(()=>{
+    if(view!=="loading")return;
+    let i=0;
+    const iv=setInterval(()=>{i++;setStepIdx(i);if(i>=STEPS.length)clearInterval(iv);},750);
+    return()=>clearInterval(iv);
+  },[view]);
+
+  // When results load, jump to the top so the user sees the score first
+  // (not partway down the page at the AI advisor). Finding #2 fix.
+  useEffect(()=>{
+    if(view==="results"){window.scrollTo(0,0);}
+  },[view]);
+
+  async function handleScan(){
+    if(!bizName.trim()||!city.trim())return;
+    setView("loading");setStepIdx(0);
+    if(email.trim()){
+      fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.trim()})}).catch(()=>{});
+    }
+    // LEAD CAPTURE: email the entered business info to Michael on submit, so
+    // every scan becomes a lead even if the visitor leaves before results.
+    // keepalive lets it finish if they navigate away. Fires once per submit.
+    fetch("/api/lead",{method:"POST",keepalive:true,headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({bizName:bizName.trim(),website:website.trim(),phone:phone.trim(),city:city.trim(),email:email.trim()})}).catch(()=>{});
+    try{
+      // PRIMARY LOOKUP: name + city.
+      // These are the two REQUIRED fields the owner typed, so they are the
+      // most reliable identifiers we have. The phone is still passed through
+      // to /api/places, where it acts as a strong SCORING signal (+100 for an
+      // exact match) that floats the right business to the top of the list —
+      // but it never decides the match on its own.
+      //
+      // CHANGED 2026-07-22: the old flow ran a "phone-first" step that called
+      // /api/findplace with ONLY the phone number, no name. When a number is
+      // attached to a stale, closed or unrelated listing, that silently
+      // returned the WRONG business every single time, with nothing to
+      // disambiguate it. Name+city first, phone as tiebreak, is the reliable
+      // order. Verified live: Google returned exactly one (dead) listing for
+      // the owner's number, so phone-first could never have worked for him.
+      const result=await getCandidates(bizName,city,phone,website);
+      if(result&&result.found&&result.candidates&&result.candidates.length>0){
+        setPendingMatch(result.candidates);
+        setView("pick");
+        return;
+      }
+      // Google's search found nothing. Don't scan blind — send the user
+      // to the "help us find your business" screen.
+      pickNone();
+      return;
+    }catch(e){setErrMsg(e.message);setView("error");}
+  }
+
+  // --- Phone-match confirmation handlers (self-contained) ---
+  // Owner confirmed the phone-matched business is theirs — scan it.
+  async function phoneConfirmYes(){
+    setView("loading");setStepIdx(0);
+    try{
+      // Use the listing's name so the report title, advisor, and findings
+      // all describe the SAME business (instead of the typed name on the
+      // title and the listing's name in the findings).
+      const realName=phoneMatch.name||bizName;
+      if(realName)setBizName(realName);
+      // Use the website from the phone-matched Google listing. The form
+      // field may be blank; the matched listing is the real business.
+      const data=await runScan(realName,phoneMatch.website||website,city,phone,phoneMatch);
+      setResults(data);setView("results");
+    }catch(e){setErrMsg(e.message);setView("error");}
+  }
+
+  // Owner said the phone-matched business is NOT theirs — fall through
+  // to the existing name-search flow so they can find the right one.
+  async function phoneConfirmNo(){
+    setView("loading");setStepIdx(0);
+    try{
+      const result=await getCandidates(bizName,city,phone,website);
+      if(result&&result.found&&result.candidates&&result.candidates.length>0){
+        setPendingMatch(result.candidates);
+        setView("pick");
+        return;
+      }
+      pickNone();
+    }catch(e){setErrMsg(e.message);setView("error");}
+  }
+
+  // User picked a business from the list — scan that one.
+  async function pickBusiness(chosen){
+    setView("loading");setStepIdx(0);
+    try{
+      // Use the chosen listing's name and website (not the typed form
+      // values) so the report consistently describes that business.
+      const realName=chosen.name||bizName;
+      const realWebsite=chosen.website||website;
+      if(realName)setBizName(realName);
+      const data=await runScan(realName,realWebsite,city,phone,chosen);
+      setResults(data);setView("results");
+    }catch(e){setErrMsg(e.message);setView("error");}
+  }
+
+  // User said none of the listed businesses are theirs.
+  // Instead of scanning blind, take them to the "help us find your business" step.
+  function pickNone(){
+    // Pre-fill the name field with what they already typed, as a convenience.
+    setFhName(bizName||"");
+    setFhAddress("");
+    setFhPhone(phone||"");
+    setView("findhelp");
+  }
+
+  // --- "Help us find your business" step handlers (self-contained) ---
+
+  // BEST PATH: the user pasted their Google Maps link. We send it to
+  // resolveplace.js, which reads the business ID out of the link and
+  // fetches the REAL listing — real reviews, photos, hours.
+  // BEST PATH: the user picked their business from the autocomplete
+  // widget. We have the exact Google place_id — fetch that exact
+  // business and scan it. No guessing, no wrong business.
+  async function findHelpFromWidget(picked){
+    if(!picked||!picked.placeId)return;
+    setFhErr("");
+    setView("loading");setStepIdx(0);
+    try{
+      const res=await fetch("/api/resolveplace",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({placeId:picked.placeId})
+      });
+      const gbp=await res.json();
+      if(gbp&&gbp.found){
+        // Use the PICKED business's own name and website — not the
+        // stale form fields. The form may have a made-up name or a
+        // blank website; the picked business is the real one.
+        const realName=gbp.name||picked.name||bizName;
+        const realWebsite=gbp.website||"";
+        // Update the displayed business name so the report title,
+        // loading screen, and AI advisor all show the picked business.
+        if(realName)setBizName(realName);
+        const data=await runScan(realName,realWebsite,city,phone,gbp);
+        setResults(data);setView("results");
+      }else{
+        setFhErr((gbp&&gbp.message)||"We couldn't load that business. Please try again or use another option below.");
+        setView("findhelp");
+      }
+    }catch(e){
+      setFhErr("Something went wrong loading that business. Please try again.");
+      setView("findhelp");
+    }
+  }
+
+  async function findHelpFromLink(){
+    if(!fhMapsUrl.trim())return;
+    setFhErr("");
+    // Venice-Italy bug fix: most pasted Google URLs do NOT include a usable
+    // Place ID — they carry Knowledge Graph IDs (kgmid) or data IDs that
+    // can't be deterministically converted. If we send those to the server
+    // it falls back to a text search, which has been returning the wrong
+    // country / wrong business. Refuse early here and offer the manual
+    // paste path as the reliable alternative.
+    const url=fhMapsUrl.trim();
+    const ids=extractGoogleUrlIds(url);
+    if(!ids.placeId){
+      // Pre-fill the manual form with the business name from the URL if we
+      // could find one, so the user doesn't have to retype it.
+      if(ids.bizName && !fhName) setFhName(ids.bizName);
+      setFhErr("This Google link doesn't include a Place ID we can use — that's normal for Share links. Use the \"Copy from your Google Business Profile\" option below instead — we've pre-filled what we could read from the link.");
+      setFhMapsUrl("");
+      return;
+    }
+    setView("loading");setStepIdx(0);
+    try{
+      const res=await fetch("/api/resolveplace",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({placeId:ids.placeId})
+      });
+      const gbp=await res.json();
+      if(gbp&&gbp.found){
+        // Use the resolved listing's name and website, not the typed form
+        // values, so the report consistently describes that business.
+        const realName=gbp.name||bizName;
+        if(realName)setBizName(realName);
+        const data=await runScan(realName,gbp.website||website,city,phone,gbp);
+        setResults(data);setView("results");
+      }else{
+        // Couldn't read the link — send them back to try again / use fallback.
+        setFhErr((gbp&&gbp.message)||"We couldn't read that link. Try the full Google listing URL, or use the option below.");
+        setView("findhelp");
+      }
+    }catch(e){
+      setFhErr("Something went wrong reading that link. Please try again, or use the option below.");
+      setView("findhelp");
+    }
+  }
+
+  // The user copied their GBP info into the manual form. BUT FIRST — if they
+  // gave us a phone number, try the phone lookup to find their REAL Google
+  // listing (with the real reviews, rating, photos Google actually has),
+  // because the name-autocomplete missing a business does NOT mean the business
+  // has no findable GBP. Many real businesses (e.g. with a Knowledge-Graph entry
+  // but a lower-ranked Places result) are missed by name search but found
+  // cleanly by phone. Only if the phone lookup finds nothing do we fall back to
+  // the hand-typed manual fields.
+  async function findHelpSubmit(){
+    if(!fhName.trim())return;
+    setView("loading");setStepIdx(0);
+    try{
+      const typedName=fhName.trim();
+      const typedWebsite=fhWebsite.trim();
+      const typedPhone=fhPhone.trim();
+
+      // --- PHONE-LOOKUP FALLBACK: try to find the real GBP by phone ---
+      // NAME GUARD (added 2026-07-22): only accept the phone match if the
+      // business NAME it returns actually resembles the name the owner typed.
+      // A phone number can be attached to a stale, closed, or entirely
+      // unrelated listing, and silently scanning THAT as "your business" is
+      // the worst thing this tool can do — the owner gets a report about
+      // someone else. If the names share no meaningful words, we ignore the
+      // phone result and fall through to the owner's own typed details.
+      // We also send the typed name to /api/findplace so it can pick the
+      // right business itself when a number maps to several.
+      if(typedPhone){
+        try{
+          const pRes=await fetch("/api/findplace",{
+            method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({phone:typedPhone,name:typedName})
+          });
+          const phoneMatch=await pRes.json();
+          const nameConflict=phoneMatch&&phoneMatch.found&&namesLookDifferent(typedName,phoneMatch.name);
+          if(phoneMatch&&phoneMatch.found&&!nameConflict){
+            // Found the real listing by phone — use Google's actual data, not
+            // the hand-typed fields. This is the REAL GBP, so userProvided is
+            // false and the report can use real reviews/rating/photos.
+            const realName=phoneMatch.name||typedName;
+            if(realName)setBizName(realName);
+            const realWebsite=phoneMatch.website||typedWebsite||website;
+            const data=await runScan(realName,realWebsite,city,typedPhone||phone,phoneMatch);
+            setResults(data);setView("results");
+            return;
+          }
+        }catch{ /* phone lookup failed — fall through to manual data below */ }
+      }
+
+      // --- FALLBACK: no phone match (or no phone given) — use typed fields ---
+      // Parse the optional numeric fields softly — bad input becomes null
+      // rather than crashing the scan.
+      const ratingNum=parseFloat(fhRating);
+      const reviewNum=parseInt(fhReviewCount,10);
+      const realName=typedName;
+      const realWebsite=typedWebsite;
+      const manualGBP={
+        name:realName,
+        address:fhAddress.trim()||null,
+        phone:typedPhone||null,
+        rating:(!isNaN(ratingNum)&&ratingNum>0)?ratingNum:null,
+        // Blank review/photo/hours fields mean "the user didn't tell us,"
+        // NOT "the business has none." Use null = unknown so the prompt can
+        // say "could not verify" instead of writing a false negative finding.
+        reviewCount:(!isNaN(reviewNum)&&reviewNum>=0)?reviewNum:null,
+        website:realWebsite||null,
+        hasHours:fhHasHours?true:null,
+        isOpen:null,
+        photoCount:null,
+        businessStatus:null,
+        types:fhCategory.trim()?[fhCategory.trim()]:[],
+        userProvided:true
+      };
+      // Sync the displayed business name so the report title, advisor,
+      // and findings all describe the SAME business.
+      if(realName)setBizName(realName);
+      const data=await runScan(realName,realWebsite||website,city,typedPhone||phone,manualGBP);
+      setResults(data);setView("results");
+    }catch(e){setErrMsg(e.message);setView("error");}
+  }
+
+  // The user confirmed they have no Google listing at all.
+  // Scan with no GBP — this produces the honest "you're invisible" result.
+  async function findHelpNoListing(){
+    setView("loading");setStepIdx(0);
+    try{
+      const data=await runScan(bizName,website,city,phone,null);
+      setResults(data);setView("results");
+    }catch(e){setErrMsg(e.message);setView("error");}
+  }
+
+  function reset(){
+    // Clear EVERY piece of state the form holds, so a second scan in the
+    // same browser session cannot inherit anything from a previous one.
+    // This is the fix for Glitch #6: session contamination across scans.
+    setView("form");
+    setResults(null);
+    setErrMsg("");
+    setPendingMatch(null);
+    setPhoneMatch(null);
+    setFhName("");setFhAddress("");setFhPhone("");setFhMapsUrl("");setFhErr("");
+    setFhWebsite("");setFhRating("");setFhReviewCount("");setFhHasHours(false);setFhCategory("");
+    // The five user-typed form fields — previously NOT cleared, which is what
+    // let an old website value bleed into a later scan and contaminate the AI input.
+    setBizName("");
+    setWebsite("");
+    setCity("");
+    setPhone("");
+    setEmail("");
+    // Sentiment pulse: clear the vote flag so the user can react fresh to
+    // each new scan, not just the first one.
+    setMoodVoted(false);
+  }
+  const sc=results?(results.overallScore>=70?"good":results.overallScore>=40?"warn":"bad"):"warn";
+
+  return(
+    <div className="wrap">
+      <nav className="nav">
+        <div className="logo">PresenceScanner</div>
+        <span className="badge">Beta</span>
+      </nav>
+
+      {view==="form"&&(
+        <div className="hero">
+          <div className="eyebrow"><span className="dot"/>AI-Powered Presence Scanner</div>
+          <h1>Does Your Business<br/><span className="grad">Show Up Online as it Should?</span></h1>
+          <p className="sub">Get a free health check on your online footprint — Google, AI search, reviews, and more. Results in plain English, delivered in 30 seconds.</p>
+          <div className="card">
+            <div className="field"><label>Business Name *</label>
+              <input value={bizName} onChange={e=>setBizName(e.target.value)} placeholder="e.g. Joe's Plumbing & Drain"/></div>
+            <div className="field"><label>Website URL <span style={{opacity:0.45,fontWeight:400,textTransform:"none",letterSpacing:0}}>(if you have one)</span></label>
+              <input value={website} onChange={e=>setWebsite(e.target.value)} placeholder="e.g. https://joesplumbing.com"/></div>
+            <div className="field"><label>Business Phone <span style={{opacity:0.45,fontWeight:400,textTransform:"none",letterSpacing:0}}>(helps us find the right listing)</span></label>
+              <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="e.g. (941) 662-9941"/></div>
+            <div className="field"><label>City & State *</label>
+              <input value={city} onChange={e=>setCity(e.target.value)} placeholder="e.g. Venice, FL"/></div>
+            <div className="field"><label>Email Address</label>
+              <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="e.g. joe@joesplumbing.com"/>
+              <div className="enote">We'll send your full report here. No spam, ever.</div></div>
+            <button className="sbtn" onClick={handleScan} disabled={!bizName.trim()||!city.trim()}>
+              Run My Free Presence Scan
+              <small>Takes about 30 seconds · No credit card needed</small>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {view==="loading"&&(
+        <div className="loading">
+          <div className="spinner"/>
+          <h3>Checking {bizName}'s footprint…</h3>
+          <p>Looking at Google, AI search, your website, reviews, and more</p>
+          <ul className="steps">
+            {STEPS.map((s,i)=>(
+              <li key={i} className={i<stepIdx?"ok":i===stepIdx?"on":""}>
+                <span style={{width:18,textAlign:"center",fontSize:12}}>{i<stepIdx?"✓":i===stepIdx?"◉":"○"}</span>{s}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* --- Phone-match confirmation (self-contained view) --- */}
+      {view==="phoneconfirm"&&phoneMatch&&(
+        <div className="pad">
+          <div className="card" style={{maxWidth:560,margin:"0 auto"}}>
+            <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Is this your business?</h2>
+            <p className="sub" style={{marginTop:6}}>We found this Google listing from your phone number. Confirm it's yours so your report is about the right business.</p>
+            {namesLookDifferent(bizName,phoneMatch.name)&&(
+              <div style={{background:"rgba(176,107,28,0.10)",border:"1px solid rgba(176,107,28,0.45)",borderRadius:10,padding:"12px 14px",margin:"14px 0",color:"#8a5410",fontSize:"0.92rem",lineHeight:1.5}}>
+                <div style={{fontWeight:700,marginBottom:4}}>⚠️ Heads up — these don't seem to match</div>
+                You typed "<b>{bizName}</b>" but the listing we found from your phone number is "<b>{phoneMatch.name}</b>". Two businesses sometimes share one phone. Check the details below carefully before saying yes.
+              </div>
+            )}
+            <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
+              <div style={{fontWeight:700,fontSize:"1.05rem"}}>{phoneMatch.name}</div>
+              {phoneMatch.address&&<div style={{opacity:0.7,fontSize:"0.9rem",marginTop:3}}>{phoneMatch.address}</div>}
+              {phoneMatch.phone&&<div style={{opacity:0.7,fontSize:"0.9rem",marginTop:1}}>{phoneMatch.phone}</div>}
+              {phoneMatch.rating&&<div style={{opacity:0.7,fontSize:"0.9rem",marginTop:1}}>{phoneMatch.rating}★ · {phoneMatch.reviewCount} reviews</div>}
+            </div>
+            <button className="sbtn" onClick={phoneConfirmYes}>Yes, this is my business</button>
+            <button className="rescan" style={{marginTop:10,width:"100%"}} onClick={phoneConfirmNo}>No, that's not my business</button>
+          </div>
+        </div>
+      )}
+
+      {view==="pick"&&pendingMatch&&(
+        <div className="pad">
+          <div className="card" style={{maxWidth:560,margin:"0 auto"}}>
+            <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Which of these is your business?</h2>
+            <p className="sub" style={{marginTop:6}}>We found these Google listings. Pick yours so your report is about the right business.</p>
+            <div style={{margin:"14px 0"}}>
+              {pendingMatch.map((c,i)=>(
+                <div key={i} onClick={()=>pickBusiness(c)}
+                  style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"13px 15px",marginBottom:10,cursor:"pointer"}}>
+                  <div style={{fontWeight:700,fontSize:"1.02rem"}}>{c.name}</div>
+                  {c.address&&<div style={{opacity:0.7,fontSize:"0.88rem",marginTop:3}}>{c.address}</div>}
+                  {c.phone&&<div style={{opacity:0.7,fontSize:"0.88rem",marginTop:1}}>{c.phone}</div>}
+                  {c.rating&&<div style={{opacity:0.7,fontSize:"0.88rem",marginTop:1}}>{c.rating}★ · {c.reviewCount} reviews</div>}
+                </div>
+              ))}
+            </div>
+            <button className="rescan" style={{width:"100%"}} onClick={pickNone}>None of these — help me find my business</button>
+          </div>
+        </div>
+      )}
+
+      {/* --- "Help us find your business" step (self-contained view) --- */}
+      {view==="findhelp"&&(
+        <div className="pad">
+          <div className="card" style={{maxWidth:560,margin:"0 auto"}}>
+            <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Find your business</h2>
+            <p className="sub" style={{marginTop:6}}>Start typing your business name and select it from the list — this is the most accurate way to find your exact Google listing.</p>
+
+            {fhErr&&<div className="err" style={{margin:"10px 0"}}>{fhErr}</div>}
+
+            {/* PRIMARY PATH: the Google autocomplete widget */}
+            <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
+              <div style={{fontWeight:700,marginBottom:8}}>Search for your business <span style={{opacity:0.55,fontWeight:400}}>(recommended)</span></div>
+              <BusinessAutocomplete onPick={findHelpFromWidget} />
+              <div style={{fontSize:"0.8rem",opacity:0.6,marginTop:8,lineHeight:1.5}}>
+                Tip: if several businesses share a similar name, check the address to pick yours.
+              </div>
+            </div>
+
+            {/* FALLBACK 1 (primary): Copy from your Google Business Profile.
+                This used to be the "enter by hand" path. Renamed and expanded
+                to capture real GBP data via copy-paste — sidesteps every
+                Google API matching problem while giving the AI accurate
+                signal to score against. */}
+            <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
+              <div style={{fontWeight:700,marginBottom:6}}>Copy from your Google listing</div>
+              <div style={{fontSize:"0.88rem",opacity:0.75,marginBottom:12,lineHeight:1.55}}>
+                Easiest way: tap Copy below, paste it into Google or Google Maps, and your listing will come up. Then copy your rating, reviews, hours, etc. into the boxes here. Only the business name is required — the more you add, the better your report. Anything left blank is treated as "not verified," never as missing.
+              </div>
+              {(fhName.trim()||bizName||phone||city) && (
+                <div style={{background:"rgba(43,142,176,0.10)",border:"1px solid rgba(43,142,176,0.35)",borderRadius:10,padding:"11px 13px",marginBottom:14}}>
+                  <div style={{fontSize:"0.8rem",fontWeight:600,opacity:0.8,marginBottom:6}}>Paste this into Google to find your listing:</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                    <input readOnly
+                      value={[(fhName.trim()||bizName||""),(fhPhone.trim()||phone||""),(city||"")].filter(Boolean).join("  ")}
+                      style={{flex:"1 1 200px",minWidth:0,padding:"9px 11px",border:"1px solid var(--b1)",borderRadius:8,background:"var(--s2)",color:"var(--t1)",fontFamily:"var(--fb)",fontSize:"0.92rem"}}
+                      onFocusCapture={e=>e.target.select()}/>
+                    <button type="button"
+                      onClick={e=>{
+                        const txt=[(fhName.trim()||bizName||""),(fhPhone.trim()||phone||""),(city||"")].filter(Boolean).join("  ");
+                        try{navigator.clipboard.writeText(txt);}catch{}
+                        const b=e.currentTarget; const o=b.textContent; b.textContent="Copied!"; setTimeout(()=>{b.textContent=o;},1500);
+                      }}
+                      style={{padding:"9px 16px",background:"var(--cyan)",color:"#fff",border:"none",borderRadius:8,fontFamily:"var(--fb)",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+                      Copy
+                    </button>
+                  </div>
+                  <div style={{fontSize:"0.78rem",opacity:0.65,marginTop:7,lineHeight:1.5}}>
+                    On your phone, Google Maps is easiest — your rating, review count, hours, and photos all show on one screen, no login needed.
+                  </div>
+                </div>
+              )}
+              <div className="field"><label>Business Name *</label>
+                <input value={fhName} onChange={e=>setFhName(e.target.value)} placeholder="Exactly as it appears on Google"/></div>
+              <div className="field"><label>Business Address or City</label>
+                <input value={fhAddress} onChange={e=>setFhAddress(e.target.value)} placeholder="Street address, or at least City, State"/></div>
+              <div className="field"><label>Business Phone</label>
+                <input value={fhPhone} onChange={e=>setFhPhone(e.target.value)} placeholder="e.g. (941) 662-9941"/></div>
+              <div className="field"><label>Your Business Website</label>
+                <div style={{fontSize:"0.78rem",opacity:0.65,margin:"-2px 0 6px",lineHeight:1.45}}>Your real website address — NOT your Google listing or share link.</div>
+                <input value={fhWebsite} onChange={e=>setFhWebsite(e.target.value)} placeholder="e.g. yourbusiness.com — leave blank if you don't have one"/></div>
+              <div className="field"><label>Star Rating</label>
+                <input value={fhRating} onChange={e=>setFhRating(e.target.value)} placeholder="the big number at the top of your listing, e.g. 4.8"/></div>
+              <div className="field"><label>Total Reviews</label>
+                <input value={fhReviewCount} onChange={e=>setFhReviewCount(e.target.value)} placeholder="the count next to your stars, e.g. 47"/></div>
+              <div className="field"><label>Business Category on Google</label>
+                <input value={fhCategory} onChange={e=>setFhCategory(e.target.value)} placeholder="e.g. Flower Shop, Plumber, Salon"/></div>
+              <label style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer",margin:"12px 0",fontSize:"0.92rem"}}>
+                <input type="checkbox" checked={fhHasHours} onChange={e=>setFhHasHours(e.target.checked)} style={{width:18,height:18,cursor:"pointer"}}/>
+                <span>My Google Business Profile has business hours filled in</span>
+              </label>
+              <button className="sbtn" onClick={findHelpSubmit} disabled={!fhName.trim()}>Scan with these details</button>
+            </div>
+
+            {/* FALLBACK 2 (rare): paste a Google Maps share link. Most Google
+                share links don't include a Place ID — this only works when
+                yours does. The validator above refuses non-Place-ID URLs
+                and routes the user to the "Copy from your GBP" path. */}
+            <details style={{margin:"14px 0"}}>
+              <summary style={{cursor:"pointer",opacity:0.65,fontSize:"0.88rem"}}>Have a Google listing link with a Place ID? (advanced)</summary>
+              <div style={{marginTop:12}}>
+                <div style={{fontSize:"0.84rem",opacity:0.65,marginBottom:10,lineHeight:1.5}}>
+                  Most Google "Share" links don't include a Place ID. If yours does, paste it here. If not, use the option above.
+                </div>
+                <div className="field" style={{marginBottom:10}}>
+                  <input value={fhMapsUrl} onChange={e=>setFhMapsUrl(e.target.value)} placeholder="Paste a Google link with a Place ID"/></div>
+                <button className="sbtn" onClick={findHelpFromLink} disabled={!fhMapsUrl.trim()}>Find my business from this link</button>
+              </div>
+            </details>
+
+            <button className="rescan" style={{marginTop:6,width:"100%"}} onClick={findHelpNoListing}>I don't have a Google Business Profile yet</button>
+          </div>
+        </div>
+      )}
+
+      {view==="error"&&(
+        <div className="pad">
+          <div className="err">{errMsg}</div>
+          <button className="rescan" onClick={reset}>← Try Again</button>
+        </div>
+      )}
+
+      {view==="results"&&results&&(
+        <div className="results">
+          <div className="shero">
+            <Ring score={results.overallScore} c={sc}/>
+            <div className="sinfo">
+              <div className={`gpill ${sc}-g`}>{results.overallGrade}</div>
+              <h2>Presence Report: {bizName}</h2>
+              {results.gbp ? (
+                <div className="sident">
+                  <span className="sident-row"><b>Scanned:</b> {results.gbp.name}</span>
+                  {results.gbp.address && <span className="sident-row">{results.gbp.address}</span>}
+                  {results.gbp.phone && <span className="sident-row">{results.gbp.phone}</span>}
+                  {results.gbp.rating && <span className="sident-row"><span className="sident-stars">★★★★★</span> {results.gbp.rating} · {results.gbp.reviewCount || 0} reviews</span>}
+                  {results.scannedInputs?.website && <span className="sident-row"><b>Website analyzed:</b> {results.scannedInputs.website}</span>}
+                  {results.gbp.placeId && (
+                    <span className="sident-row">
+                      <a className="sident-link"
+                         href={`https://www.google.com/maps/place/?q=place_id:${results.gbp.placeId}`}
+                         target="_blank" rel="noopener noreferrer">
+                        View this Google listing →
+                      </a>
+                      <span className="sident-verify"> (open it to confirm we scanned the right business)</span>
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="sident">
+                  <span className="sident-row"><b>Scanned:</b> {results.scannedInputs?.bizName || bizName}{results.scannedInputs?.city ? ` · ${results.scannedInputs.city}` : ''}</span>
+                  {results.scannedInputs?.website
+                    ? <span className="sident-row"><b>Website analyzed:</b> {results.scannedInputs.website}</span>
+                    : <span className="sident-row sident-none">No Google Business Profile was matched for this scan</span>}
+                </div>
+              )}
+              <p>{results.summary}</p>
+              <div className="priority"><strong>High-Impact Opportunity</strong>{results.topPriority}</div>
+              <div className="scorecta">
+                <p className="scorecta-h">Want to try to score higher?</p>
+                <p className="scorecta-s">Get a free page in the local business directory, built to help more customers and AI search tools find you.</p>
+                <a className="scorecta-btn" href="https://forms.gle/9yzjCMDn3gUoxBNf7" target="_blank" rel="noopener noreferrer">Get My Free Page →</a><p style={{fontSize:"0.82rem",marginTop:"14px",opacity:0.7,lineHeight:1.6}}>Want to understand your results first?{" "}<a href="/get-found" style={{color:"var(--cyan)",fontWeight:600}}>How to get found in AI search</a>{" · "}<a href="/how-it-works" style={{color:"var(--cyan)",fontWeight:600}}>How the directory works</a></p></div>
+            </div>
+          </div>
+          {/* Small jump-link teasers so curious users can skip ahead to the
+              tools section or the founding-member offer without scrolling
+              past the full diagnosis. Visually quiet on purpose so they
+              don't compete with the score for attention. */}
+          <div className="sjumps">
+            <a className="sjump" onClick={()=>document.getElementById('jump-tools')?.scrollIntoView({behavior:'smooth'})}>See recommended tools</a>
+          </div>
+          <Chat results={results} bizName={bizName}/>
+          {/* AFFILIATE PLACEMENT PRINCIPLE (Decision 4, May 24 2026):
+              category findings come FIRST so the user receives the diagnosis
+              before any recommendations to spend money. AffCards and the
+              founding-member waitlist then sit AFTER the diagnosis, where
+              they read as helpful next steps rather than salesy interruptions.
+              (AlgorithmFeed / "What Changed This Month" was REMOVED 2026-07-22:
+              it presented 1-2 year old news under a "LIVE" badge because the
+              prompt had no date anchor and no web search, and bizType was
+              passing a finding title instead of a business category. It also
+              fired a second Anthropic call on every scan. Reports were already
+              too long; generic industry news was the least valuable section.) */}
+          <div className="cats">{results.categories?.map((cat,i)=><CatCard key={i} cat={cat}/>)}</div>
+          <AffCards results={results} bizName={bizName}/>
+          <SentimentStrip onTextFeedback={requestFeedback} voted={moodVoted} setVoted={setMoodVoted}/>
+          <button className="rescan" onClick={reset}>← Scan Another Business</button>
+          <p style={{fontSize:"0.8rem",opacity:0.6,textAlign:"center",lineHeight:1.6,maxWidth:560,margin:"22px auto 0",padding:"0 16px"}}>
+            <span style={{display:"block",fontWeight:600,color:"var(--t2)",marginBottom:"8px"}}>🔒 These results are private — only you see them. We don't publish or share your scan.</span>
+            PresenceScanner is a free beta tool. This report is an automated estimate based on available public data, not professional advice. Results may be incomplete or inaccurate — please verify anything important before acting on it.
+          </p>
+        </div>
+      )}
+    <BugReport open={bugOpen} setOpen={setBugOpen} mood={bugMood} setMood={setBugMood}
+        onSubmitted={(m)=>{if(m==="okay"||m==="frustrating")setMoodVoted(true);}}/>
+      <footer style={{marginTop:48,padding:"24px 16px 36px",borderTop:"1px solid rgba(0,0,0,0.08)",textAlign:"center",fontSize:"0.82rem",opacity:0.65,lineHeight:1.7}}>
+        <div style={{marginBottom:6}}>
+          <a href="/directory" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Directory</a>
+          <a href="/how-it-works" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>How It Works</a>
+          <a href="/reviews" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Reviews</a>
+          <a href="/about" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Our Story</a>
+          <a href="/get-found" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Get Found in AI</a>
+          <a href="/blog" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Blog</a>
+          <a href="/updates" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Updates</a>
+        </div>
+        <div style={{marginBottom:6}}>
+          <a href="/terms.html" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Terms of Service</a>
+          <a href="/privacy.html" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Privacy Policy</a>
+        </div>
+        <div>PresenceScanner is a free beta tool by Putnam Enterprises LLC. Built by Michael Putnam.</div>
+      </footer>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
