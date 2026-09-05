@@ -80,6 +80,14 @@
   .ps-strip .h{font-family:'Manrope',sans-serif;font-weight:700;font-size:1.1rem;color:var(--ink);margin-bottom:6px;}
   .ps-strip .s{font-size:.98rem;color:var(--med);margin-bottom:14px;}
   .ps-strip a.ps-btn{display:inline-block;background:var(--surface);border:1.5px solid var(--cyan);color:var(--cyan);font-family:'Manrope',sans-serif;font-weight:700;font-size:1rem;text-decoration:none;padding:11px 22px;border-radius:60px;}
+  .owner-zone{border-top:1px solid var(--line);margin:28px 0 0;padding-top:20px}
+  .owner-zone summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    font-family:'Manrope',sans-serif;font-weight:700;font-size:1.02rem;color:var(--med);
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
+  .owner-zone summary::-webkit-details-marker{display:none}
+  .owner-zone summary .hint{font-family:'DM Sans',sans-serif;font-weight:400;font-size:.92rem;color:var(--light);white-space:nowrap}
+  .owner-zone summary:hover{border-color:var(--cyan);color:var(--cyan)}
+  .owner-zone[open] summary{margin-bottom:18px;border-color:var(--cyan);color:var(--cyan)}
   .share-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin:0 0 18px;}
   .share-box .sh-h{font-family:'Manrope',sans-serif;font-weight:700;font-size:1.15rem;color:var(--ink);margin-bottom:6px;}
   .share-box .sh-s{font-size:.98rem;color:var(--med);margin-bottom:14px;}
@@ -166,6 +174,9 @@
     <a class="ps-btn" href="https://www.presencescanner.ai">Run your free check &rarr;</a>
   </div>
 
+  <details class="owner-zone">
+    <summary>Own this business? Tools to share your listing <span class="hint">Tap to open</span></summary>
+
   <div class="share-box">
     <div class="sh-h">Share your listing</div>
     <div class="sh-s">Copy the message below and share it wherever your customers are. <strong>On Facebook, paste it in the first comment (not the post itself) so more people see it.</strong> Everywhere else &mdash; email, texts, your bio &mdash; just paste it normally.</div>
@@ -201,6 +212,7 @@ Found through PresenceScanner, a free local business directory.</textarea>
     <div class="sh-done" id="webDone"></div>
     <p class="sh-why">One thing to get right either way: leave the word PresenceScanner as plain text and never make it part of the link. Search engines and AI tools pick up business names written in ordinary sentences, and a plain mention is worth more to you than the link itself. Making the name into the link is a pattern search engines treat with suspicion.</p>
   </div>
+  </details>
 
   <footer>
     <nav style="margin:0 auto 14px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;font-family:'Manrope',sans-serif;font-weight:600;font-size:.92rem;">
