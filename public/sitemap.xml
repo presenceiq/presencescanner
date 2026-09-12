@@ -198,6 +198,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.presencescanner.ai/venice/fixit-pros</loc>
+    <lastmod>2026-09-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.presencescanner.ai/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
