@@ -558,6 +558,14 @@ function AffCards({results,bizName}){
   return(
     <div className="aff-wrap" id="jump-tools">
       <div className="section-label">Recommended Next Steps</div>
+      <div style={{background:"linear-gradient(135deg,rgba(43,142,176,0.08),rgba(109,40,217,0.08))",border:"1px solid rgba(109,40,217,0.22)",borderRadius:"14px",padding:"20px 22px",marginBottom:"16px"}}>
+        <div style={{fontFamily:"var(--fh)",fontWeight:700,fontSize:"1.12rem",color:"var(--t1)",marginBottom:"7px"}}>Get a free listing on the PresenceScanner directory</div>
+        <div style={{fontSize:"0.97rem",color:"var(--t2)",lineHeight:1.6,marginBottom:"14px"}}>A hand-built page with your services, service area and real reviews — written so Google and AI search can actually read it. No cost, no ads. 24 local businesses on it so far.</div>
+        <div style={{display:"flex",gap:"10px",flexWrap:"wrap"}}>
+          <a href="https://forms.gle/9yzjCMDn3gUoxBNf7" target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"12px 24px",background:"linear-gradient(135deg,var(--cyan),var(--purple))",color:"#fff",fontFamily:"var(--fh)",fontWeight:700,fontSize:"0.98rem",textDecoration:"none",borderRadius:"8px"}}>Get your free listing &rarr;</a>
+          <a href="https://www.presencescanner.ai/directory" target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"12px 24px",background:"transparent",color:"var(--cyan)",fontFamily:"var(--fh)",fontWeight:700,fontSize:"0.98rem",textDecoration:"none",borderRadius:"8px",border:"2px solid var(--cyan)"}}>See the directory</a>
+        </div>
+      </div>
       <div style={{fontSize:"0.8rem",color:"var(--t3)",lineHeight:1.5,marginBottom:"11px",paddingLeft:"2px"}}>Some of these are affiliate links. If you sign up, I may earn a small commission, at no extra cost to you.</div>
       <div className="aff-grid">
         {cards.map((card,i)=>(
