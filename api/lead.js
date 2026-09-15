@@ -1,7 +1,8 @@
 // /api/lead  — PresenceScanner lead-capture email
-// Fires when someone submits a scan. Emails their entered business info
-// (name, website, phone, city, email) to PresenceScanner@gmail.com via Resend.
-// RESEND_API_KEY lives in Vercel env vars, never in the page or this file.
+// Fires AFTER a full scan completes (not on submit), so it carries the results.
+// Emails a structured, consistent record to PresenceScanner@gmail.com via Resend.
+// The record doubles as a log entry (email-as-log) and is database-ready if ever
+// imported. RESEND_API_KEY lives in Vercel env vars, never in this file.
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -20,28 +21,60 @@ export default async function handler(req, res) {
     const phone   = (b.phone   || "").toString().trim();
     const city    = (b.city    || "").toString().trim();
     const email   = (b.email   || "").toString().trim();
-    const score   = (b.score === 0 || b.score) ? String(b.score) : "";
+    const overallScore = (b.overallScore === 0 || b.overallScore) ? b.overallScore : null;
+    const overallGrade = (b.overallGrade || "").toString().trim();
+    const components = (b.components && typeof b.components === "object") ? b.components : {};
+    const topIssues = Array.isArray(b.topIssues) ? b.topIssues : [];
+    const isMine = b.mine === true;
 
-    // Nothing worth emailing if there's no identifying info at all.
     if (!bizName && !city && !website) {
       return res.status(200).json({ ok: false, skipped: "no identifying info" });
     }
 
-    // Useful data in the subject so it reads without opening.
-    const subjBits = [bizName || "Unknown business"];
-    if (city) subjBits.push(city);
-    let subject = "New scan — " + subjBits.join(", ");
-    if (score) subject += " (score " + score + ")";
+    // Consistent ISO date (YYYY-MM-DD) — the key field for before/after tracking.
+    const dateStr = new Date().toISOString().slice(0, 10);
 
-    // Body leads with what matters; omit empty fields entirely.
+    // Subject: useful data up front. Michael's own scans are tagged so his 25
+    // member scans don't look like real inbound leads.
+    let subject = (isMine ? "[MY SCAN] " : "New scan — ") + (bizName || "Unknown business");
+    if (city) subject += ", " + city;
+    if (overallScore !== null) subject += " — " + overallScore + "/100";
+
+    // Body = a clean, consistently-structured record (same fields, same order,
+    // every time) so it reads well AND any future database can ingest it.
     const lines = [];
-    if (bizName) lines.push("BUSINESS   " + bizName);
+    lines.push("DATE       " + dateStr);
+    lines.push("BUSINESS   " + (bizName || "(not given)"));
     if (city)    lines.push("CITY       " + city);
     if (phone)   lines.push("PHONE      " + phone);
     if (email)   lines.push("EMAIL      " + email);
     if (website) lines.push("WEBSITE    <" + website + ">");
-    if (score)   lines.push("SCORE      " + score + " / 100");
-    lines.push("WHEN       " + new Date().toISOString());
+    lines.push("");
+    lines.push("OVERALL    " + (overallScore !== null ? (overallScore + " / 100") : "(not available)") + (overallGrade ? ("  (" + overallGrade + ")") : ""));
+
+    // Component scores — one per line, labeled, consistent.
+    const compKeys = Object.keys(components);
+    if (compKeys.length) {
+      lines.push("");
+      lines.push("COMPONENTS");
+      compKeys.forEach(function (k) {
+        lines.push("  " + k + ": " + components[k]);
+      });
+    }
+
+    // Top issues — up to 3.
+    if (topIssues.length) {
+      lines.push("");
+      lines.push("TOP ISSUES");
+      topIssues.slice(0, 3).forEach(function (t, i) {
+        lines.push("  " + (i + 1) + ". " + t);
+      });
+    }
+
+    if (isMine) {
+      lines.push("");
+      lines.push("(This is one of your own member scans — tagged via ?mine=1.)");
+    }
 
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
