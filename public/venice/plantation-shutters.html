@@ -327,5 +327,32 @@ function copyShare(){
   check();
 })();
 </script>
+<script>
+/* Directory contact tracking. Fires a GA4 event when a visitor tries to reach the business.
+   A click is not proof of a call, but it is the closest measurable signal. */
+(function(){
+  var BIZ = document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : location.pathname;
+  function send(action, label){
+    if (typeof gtag !== 'function') return;
+    gtag('event', 'contact_click', {
+      business: BIZ,
+      method: action,
+      link: label,
+      page_path: location.pathname
+    });
+  }
+  document.addEventListener('click', function(e){
+    var a = e.target.closest ? e.target.closest('a') : null;
+    if (!a || !a.href) return;
+    var h = a.href;
+    if (h.indexOf('tel:') === 0)            send('phone',   h.replace('tel:',''));
+    else if (h.indexOf('mailto:') === 0)    send('email',   h.replace('mailto:',''));
+    else if (h.indexOf('myfloridalicense') > -1) send('licence_check', h);
+    else if (h.indexOf('share.google') > -1 || h.indexOf('maps.app.goo.gl') > -1 || h.indexOf('g.page') > -1) send('google_profile', h);
+    else if (h.indexOf('facebook.com') > -1) send('facebook', h);
+    else if (h.indexOf('presencescanner.ai') === -1 && h.indexOf('http') === 0) send('website', h);
+  }, true);
+})();
+</script>
 </body>
 </html>
