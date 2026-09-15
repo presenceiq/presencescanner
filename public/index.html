@@ -1149,9 +1149,57 @@ function App(){
 
   // When results load, jump to the top so the user sees the score first
   // (not partway down the page at the AI advisor). Finding #2 fix.
+  // Track whether we've already sent the lead email for this scan, so it
+  // fires exactly once per completed scan (not on every re-render).
+  const leadSentRef=useRef(false);
   useEffect(()=>{
-    if(view==="results"){window.scrollTo(0,0);}
-  },[view]);
+    if(view==="results"){
+      window.scrollTo(0,0);
+      // LEAD EMAIL — fires AFTER a full scan completes (not on submit), so it
+      // carries the actual results. Structured/consistent so it doubles as a
+      // log entry and is database-ready if ever imported. Fires once per scan.
+      if(results && !leadSentRef.current){
+        leadSentRef.current=true;
+        // Detect Michael's own scans via ?mine=1 so his 25 member scans are
+        // tagged and don't look like real leads.
+        var isMine=false;
+        try{ isMine=new URLSearchParams(window.location.search).get("mine")==="1"; }catch(e){}
+        // Pull the component category scores into a clean object.
+        var comps={};
+        try{
+          (results.categories||[]).forEach(function(c){
+            if(c && c.name && typeof c.score!=="undefined" && c.score>=0 && !c.comingSoon){
+              comps[c.name]=c.score;
+            }
+          });
+        }catch(e){}
+        // Top 3 issues: pull finding titles flagged warn/bad across categories.
+        var issues=[];
+        try{
+          (results.categories||[]).forEach(function(c){
+            (c.findings||[]).forEach(function(f){
+              if(f && (f.status==="bad"||f.status==="warn") && f.title && issues.length<3){
+                issues.push(f.title);
+              }
+            });
+          });
+        }catch(e){}
+        fetch("/api/lead",{method:"POST",keepalive:true,headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            bizName:(results.scannedInputs&&results.scannedInputs.bizName)||bizName,
+            website:(results.scannedInputs&&results.scannedInputs.website)||website||"",
+            phone:phone||"",
+            city:(results.scannedInputs&&results.scannedInputs.city)||city||"",
+            email:email||"",
+            overallScore:(typeof results.overallScore!=="undefined")?results.overallScore:null,
+            overallGrade:results.overallGrade||"",
+            components:comps,
+            topIssues:issues,
+            mine:isMine
+          })}).catch(function(){});
+      }
+    }
+  },[view,results]);
 
   async function handleScan(){
     if(!bizName.trim()||!city.trim())return;
@@ -1159,11 +1207,6 @@ function App(){
     if(email.trim()){
       fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.trim()})}).catch(()=>{});
     }
-    // LEAD CAPTURE: email the entered business info to Michael on submit, so
-    // every scan becomes a lead even if the visitor leaves before results.
-    // keepalive lets it finish if they navigate away. Fires once per submit.
-    fetch("/api/lead",{method:"POST",keepalive:true,headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({bizName:bizName.trim(),website:website.trim(),phone:phone.trim(),city:city.trim(),email:email.trim()})}).catch(()=>{});
     try{
       // PRIMARY LOOKUP: name + city.
       // These are the two REQUIRED fields the owner typed, so they are the
