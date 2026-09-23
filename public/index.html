@@ -520,6 +520,7 @@ function CatCard({cat}){
         </div>
       </div>
       <div className={`cbody ${open?"":"shut"}`}>
+        <div style={{fontFamily:"var(--fh)",fontWeight:700,fontSize:"1rem",color:"var(--t1)",padding:"10px 0 2px"}}>{cat.name}{cat.subtitle?(" — "+cat.subtitle):""}{(!soon && cat.score>=0)?("  ·  "+cat.score+"%"):(soon?"  ·  Coming soon":"")}</div>
         {!soon && cat.scoreReason && (
           <div className="finding" style={{opacity:0.85}}>
             <div className="fd warn-d" style={{background:"var(--t2)"}}/>
