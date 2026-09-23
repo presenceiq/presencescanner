@@ -26,6 +26,7 @@ export default async function handler(req, res) {
     const components = (b.components && typeof b.components === "object") ? b.components : {};
     const topIssues = Array.isArray(b.topIssues) ? b.topIssues : [];
     const isMine = b.mine === true;
+    const hasDirPage = (b.hasDirPage || "").toString().trim(); // "yes" / "no" / ""
 
     if (!bizName && !city && !website) {
       return res.status(200).json({ ok: false, skipped: "no identifying info" });
@@ -49,6 +50,7 @@ export default async function handler(req, res) {
     if (phone)   lines.push("PHONE      " + phone);
     if (email)   lines.push("EMAIL      " + email);
     if (website) lines.push("WEBSITE    <" + website + ">");
+    if (hasDirPage) lines.push("DIR MEMBER " + (hasDirPage === "yes" ? "Yes" : hasDirPage === "no" ? "No" : hasDirPage));
     lines.push("");
     lines.push("OVERALL    " + (overallScore !== null ? (overallScore + " / 100") : "(not available)") + (overallGrade ? ("  (" + overallGrade + ")") : ""));
 
