@@ -32,6 +32,27 @@ function nameMatchScore(candidateName, wantedName) {
   return hits * 10;
 }
 
+// Normalize a website to a bare host for loose matching (drop scheme, www, path).
+function normalizeSite(s) {
+  return String(s || '')
+    .toLowerCase().trim()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/.*$/, '')
+    .trim();
+}
+
+// Score how well a candidate's website matches the one the owner typed.
+// Same 0-100 scale as nameMatchScore, so name and website carry EQUAL weight.
+function siteMatchScore(candidateSite, wantedSite) {
+  const c = normalizeSite(candidateSite);
+  const w = normalizeSite(wantedSite);
+  if (!c || !w) return 0;
+  if (c === w) return 100;                        // exact host match
+  if (c.includes(w) || w.includes(c)) return 60;  // one contains the other
+  return 0;
+}
+
 // Fetch full details for one place_id. Returns { result, status, errorMessage }
 // so the caller can distinguish a genuine miss from a Google-side failure.
 async function fetchDetails(placeId, apiKey) {
@@ -77,7 +98,7 @@ export default async function handler(req, res) {
   try {
     // `name` is OPTIONAL. When the scan sends it, we use it to pick the
     // right business if the phone number maps to more than one.
-    const { phone, name } = req.body || {};
+    const { phone, name, website } = req.body || {};
     const apiKey = process.env.GOOGLE_PLACES_KEY;
 
     if (!phone || !String(phone).trim()) {
@@ -166,16 +187,21 @@ export default async function handler(req, res) {
     const pool = operational.length ? operational : detailed;
 
     // ---------------------------------------------------------------
-    // Step 4: choose the PRIMARY result.
-    //  - If the scan passed a name, pick the best name match.
-    //  - Otherwise take the first operational one.
+    // Step 4: choose the PRIMARY result when a phone maps to several
+    // businesses. Name and website are weighted EQUALLY (same 0-100 scale),
+    // so either one can pull the right business to the top. Phone already got
+    // us into this pool, so it isn't scored again here.
+    //  - If neither name nor website was passed, take the first operational one.
     // ---------------------------------------------------------------
     let primary = pool[0];
-    if (name && String(name).trim() && pool.length > 1) {
+    const haveTiebreak = (name && String(name).trim()) || (website && String(website).trim());
+    if (haveTiebreak && pool.length > 1) {
+      const scoreOf = (cand) =>
+        nameMatchScore(cand.d.name, name) + siteMatchScore(cand.d.website, website);
       let best = pool[0];
-      let bestScore = nameMatchScore(pool[0].d.name, name);
+      let bestScore = scoreOf(pool[0]);
       for (let i = 1; i < pool.length; i++) {
-        const s = nameMatchScore(pool[i].d.name, name);
+        const s = scoreOf(pool[i]);
         if (s > bestScore) { best = pool[i]; bestScore = s; }
       }
       primary = best;
