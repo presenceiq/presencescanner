@@ -463,6 +463,14 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
       // Fix #3 — trust our deterministic state, not the AI's guess.
       parsed.hasWebsite = !noWebsiteAnywhere;
       parsed.websiteMissingFromGBP = websiteMissingFromGBP;
+      // Hide the two not-yet-built sections (Citation Consistency and Social
+      // Presence) so every scan shows five working sections, not seven with
+      // two "Coming soon" placeholders. Hidden, not built — they return later.
+      if (Array.isArray(parsed.categories)) {
+        parsed.categories = parsed.categories.filter(
+          c => !c.comingSoon && (typeof c.score === 'undefined' || c.score >= 0)
+        );
+      }
     }
     return parsed;
   }
@@ -553,7 +561,6 @@ function AffCards({results,bizName,hasDirPage}){
   if(!results.hasWebsite){
     // We found no website anywhere — the business may genuinely not have one yet.
     cards.push({ico:"🌐",title:"Claim Your Domain",desc:"If you don't have a website yet, every business needs a web address. Search for yours before someone else takes it.",label:"Search Domains →",href:AFF.domain(bizName),note:"From ~$12/yr via GoDaddy"});
-    cards.push({ico:"🖥️",title:"Get Web Hosting",desc:"Once you have a domain you need a home for your website.",label:"View Hosting →",href:AFF.hosting(),note:"From ~$6/mo"});
   } else if(results.websiteMissingFromGBP){
     // Business has a website — it's just not listed on their Google profile.
     cards.push({ico:"🔗",title:"Add Your Website to Google",desc:"Your website isn't on your Google Business Profile, so customers searching Google can't click through. Free 2-minute fix in your Google dashboard.",label:"Open Google Business Profile →",href:"https://business.google.com/",note:"Free — about 2 minutes"});
@@ -1229,28 +1236,43 @@ function App(){
       fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.trim()})}).catch(()=>{});
     }
     try{
-      // PRIMARY LOOKUP: name + city.
-      // These are the two REQUIRED fields the owner typed, so they are the
-      // most reliable identifiers we have. The phone is still passed through
-      // to /api/places, where it acts as a strong SCORING signal (+100 for an
-      // exact match) that floats the right business to the top of the list —
-      // but it never decides the match on its own.
+      // PRIMARY LOOKUP: phone first.
+      // The phone number is the strongest identifier the owner gives us: one
+      // number points at one business far more reliably than a name+city text
+      // search, which can return a far-off town or a competitor instead of them.
+      // So when a phone is present, we look the business up by phone FIRST.
       //
-      // CHANGED 2026-07-22: the old flow ran a "phone-first" step that called
-      // /api/findplace with ONLY the phone number, no name. When a number is
-      // attached to a stale, closed or unrelated listing, that silently
-      // returned the WRONG business every single time, with nothing to
-      // disambiguate it. Name+city first, phone as tiebreak, is the reliable
-      // order. Verified live: Google returned exactly one (dead) listing for
-      // the owner's number, so phone-first could never have worked for him.
+      // SAFETY (this is what the 2026-07-22 name-first revert was protecting
+      // against): a phone can be attached to a stale, closed or unrelated
+      // listing, and silently scanning THAT is the worst thing this tool can
+      // do. So a phone match is NEVER scanned blind. It routes to the
+      // "Is this your business?" confirmation screen, where the owner sees the
+      // matched listing and can reject it. Reject it, give no phone, or get no
+      // phone match, and we fall to the name+city search below.
+      if(phone && phone.trim()){
+        try{
+          const pRes=await fetch("/api/findplace",{
+            method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({phone:phone.trim(),name:bizName,website})
+          });
+          const pMatch=await pRes.json();
+          if(pMatch&&pMatch.found){
+            setPhoneMatch(pMatch);
+            setView("phoneconfirm");
+            return;
+          }
+        }catch(e){ /* phone lookup failed — fall through to name+city search */ }
+      }
+      // SECONDARY LOOKUP: name + city. Phone and website still ride along to
+      // /api/places as strong scoring signals that float the right business up.
       const result=await getCandidates(bizName,city,phone,website);
       if(result&&result.found&&result.candidates&&result.candidates.length>0){
         setPendingMatch(result.candidates);
         setView("pick");
         return;
       }
-      // Google's search found nothing. Don't scan blind — send the user
-      // to the "help us find your business" screen.
+      // Nothing found either way. Don't scan blind — send the user to the
+      // "help us find your business" screen.
       pickNone();
       return;
     }catch(e){setErrMsg(e.message);setView("error");}
