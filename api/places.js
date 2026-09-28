@@ -154,8 +154,10 @@ export default async function handler(req, res) {
     let pool = detailed;
     if (wantState) {
       pool = detailed.filter(d => {
-        const st = addressState(d.detail.formatted_address);
-        return !st || st === wantState;
+        const addr = String(d.detail.formatted_address || '');
+        const st = addressState(addr);
+        if (st) return st === wantState;                 // US state parsed: must match the typed state
+        return /,\s*(USA|United States)\s*$/i.test(addr); // state unreadable: keep only if it's in the USA
       });
     }
     // If the guard removed everything, nothing local actually matched — send
