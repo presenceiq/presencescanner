@@ -54,9 +54,30 @@ export default async function handler(req, res) {
       return c;
     }
 
+    // Pull the US state the owner typed (e.g. "Venice, FL" -> "FL"). Used to
+    // filter out far-off, same-name businesses in other states or countries.
+    const US_STATES = {alabama:'AL',alaska:'AK',arizona:'AZ',arkansas:'AR',california:'CA',colorado:'CO',connecticut:'CT',delaware:'DE',florida:'FL',georgia:'GA',hawaii:'HI',idaho:'ID',illinois:'IL',indiana:'IN',iowa:'IA',kansas:'KS',kentucky:'KY',louisiana:'LA',maine:'ME',maryland:'MD',massachusetts:'MA',michigan:'MI',minnesota:'MN',mississippi:'MS',missouri:'MO',montana:'MT',nebraska:'NE',nevada:'NV',newhampshire:'NH',newjersey:'NJ',newmexico:'NM',newyork:'NY',northcarolina:'NC',northdakota:'ND',ohio:'OH',oklahoma:'OK',oregon:'OR',pennsylvania:'PA',rhodeisland:'RI',southcarolina:'SC',southdakota:'SD',tennessee:'TN',texas:'TX',utah:'UT',vermont:'VT',virginia:'VA',washington:'WA',westvirginia:'WV',wisconsin:'WI',wyoming:'WY'};
+    function parseWantState(loc) {
+      const s = String(loc || '').trim();
+      // Prefer a 2-letter code after a comma: "Venice, FL".
+      const m = s.match(/,\s*([A-Za-z]{2})\b/);
+      if (m) return m[1].toUpperCase();
+      // Fall back to a spelled-out state name anywhere in the string.
+      const key = s.toLowerCase().replace(/[^a-z]/g, '');
+      for (const name in US_STATES) { if (key.includes(name)) return US_STATES[name]; }
+      return '';
+    }
+    // Pull the state/region code out of a Google formatted address, e.g.
+    // "..., North Port, FL 34286, USA" -> "FL"; "..., Toronto, ON M6S ..." -> "ON".
+    function addressState(addr) {
+      const m = String(addr || '').match(/,\s*([A-Z]{2})\s+[A-Z0-9]/);
+      return m ? m[1].toUpperCase() : '';
+    }
+
     const wantPhone = normalizePhone(phone);
     const wantSite = normalizeSite(website);
     const wantName = normalizeName(bizName);
+    const wantState = parseWantState(city);
 
     // --- search Google -------------------------------------------------
 
@@ -123,6 +144,27 @@ export default async function handler(req, res) {
       return res.status(200).json({ found: false, candidates: [], message: 'No Google Business Profile found' });
     }
 
+    // --- LOCATION GUARD: drop far-off same-name businesses ------------
+    // The text search can return a business with the same name in another
+    // state or country (searching a Venice, FL cleaner returned a
+    // "Lemon & Lavender" in Alabama and one in Ontario). If the owner told us
+    // a state, drop any candidate we can confidently place in a DIFFERENT
+    // state. Candidates whose state we can't parse are KEPT (never drop on
+    // uncertainty), so a real local listing is never removed by mistake.
+    let pool = detailed;
+    if (wantState) {
+      pool = detailed.filter(d => {
+        const st = addressState(d.detail.formatted_address);
+        return !st || st === wantState;
+      });
+    }
+    // If the guard removed everything, nothing local actually matched — send
+    // the user to the "help us find your business" path instead of offering
+    // out-of-area businesses.
+    if (pool.length === 0) {
+      return res.status(200).json({ found: false, candidates: [], message: 'No Google Business Profile found in the area you entered' });
+    }
+
     // --- score each candidate -----------------------------------------
 
     function scoreCandidate(detail) {
@@ -146,7 +188,7 @@ export default async function handler(req, res) {
     }
 
     // Build the candidate list the front end will show in the pick-list.
-    let candidates = detailed.map(d => {
+    let candidates = pool.map(d => {
       const detail = d.detail;
       return {
         placeId: d.placeId,
