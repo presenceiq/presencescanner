@@ -1216,6 +1216,7 @@ function App(){
             website:(results.scannedInputs&&results.scannedInputs.website)||website||"",
             phone:phone||"",
             city:(results.scannedInputs&&results.scannedInputs.city)||city||"",
+            matchedAddress:(results.gbp&&!results.gbp.userProvided&&results.gbp.address)?results.gbp.address:"",
             email:email||"",
             hasDirPage:hasDirPage||"",
             overallScore:(typeof results.overallScore!=="undefined")?results.overallScore:null,
@@ -1554,7 +1555,7 @@ function App(){
               <input value={city} onChange={e=>setCity(e.target.value)} placeholder="e.g. Venice, FL"/></div>
             <div className="field"><label>Email Address</label>
               <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="e.g. joe@joesplumbing.com"/>
-              <div className="enote">We'll send your full report here. No spam, ever.</div></div>
+              <div className="enote">We'll send your full report here, plus an occasional follow-up with something useful. Your email is never shared or sold, and one reply stops the follow-ups.</div></div>
             <div className="field">
               <label>Do you already have a free PresenceScanner directory page?</label>
               <div style={{display:"flex",gap:"10px",marginTop:"4px"}}>
