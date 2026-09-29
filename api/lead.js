@@ -20,6 +20,7 @@ export default async function handler(req, res) {
     const website = (b.website || "").toString().trim();
     const phone   = (b.phone   || "").toString().trim();
     const city    = (b.city    || "").toString().trim();
+    const matchedAddress = (b.matchedAddress || "").toString().trim();
     const email   = (b.email   || "").toString().trim();
     const overallScore = (b.overallScore === 0 || b.overallScore) ? b.overallScore : null;
     const overallGrade = (b.overallGrade || "").toString().trim();
@@ -32,8 +33,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: false, skipped: "no identifying info" });
     }
 
-    // Consistent ISO date (YYYY-MM-DD) — the key field for before/after tracking.
-    const dateStr = new Date().toISOString().slice(0, 10);
+    // Date in Eastern time (America/New_York) — Michael schedules follow-ups
+    // off this, so it must be his local date, not UTC. en-CA gives YYYY-MM-DD.
+    const dateStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
     // Subject: useful data up front. Michael's own scans are tagged so his 25
     // member scans don't look like real inbound leads.
@@ -47,8 +49,9 @@ export default async function handler(req, res) {
     lines.push("DATE       " + dateStr);
     lines.push("BUSINESS   " + (bizName || "(not given)"));
     if (city)    lines.push("CITY       " + city);
+    lines.push("MATCHED    " + (matchedAddress || "(no Google listing matched)"));
     if (phone)   lines.push("PHONE      " + phone);
-    if (email)   lines.push("EMAIL      " + email);
+    lines.push("EMAIL      " + (email || "(not provided)"));
     if (website) lines.push("WEBSITE    <" + website + ">");
     if (hasDirPage) lines.push("DIR MEMBER " + (hasDirPage === "yes" ? "Yes" : hasDirPage === "no" ? "No" : hasDirPage));
     lines.push("");
