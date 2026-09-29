@@ -21,6 +21,7 @@ export default async function handler(req, res) {
     const phone   = (b.phone   || "").toString().trim();
     const city    = (b.city    || "").toString().trim();
     const matchedAddress = (b.matchedAddress || "").toString().trim();
+    const websiteScan = (b.websiteScan || "").toString().trim();
     const email   = (b.email   || "").toString().trim();
     const overallScore = (b.overallScore === 0 || b.overallScore) ? b.overallScore : null;
     const overallGrade = (b.overallGrade || "").toString().trim();
@@ -53,7 +54,8 @@ export default async function handler(req, res) {
     if (phone)   lines.push("PHONE      " + phone);
     lines.push("EMAIL      " + (email || "(not provided)"));
     if (website) lines.push("WEBSITE    <" + website + ">");
-    if (hasDirPage) lines.push("DIR MEMBER " + (hasDirPage === "yes" ? "Yes" : hasDirPage === "no" ? "No" : hasDirPage));
+    if (websiteScan) lines.push("WEBSITE SCAN  could not reach site (" + websiteScan + ")");
+    lines.push("DIR MEMBER " + (hasDirPage === "yes" ? "Yes" : hasDirPage === "no" ? "No" : "(not provided)"));
     lines.push("");
     lines.push("OVERALL    " + (overallScore !== null ? (overallScore + " / 100") : "(not available)") + (overallGrade ? ("  (" + overallGrade + ")") : ""));
 
