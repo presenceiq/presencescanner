@@ -36,14 +36,31 @@ export default async function handler(req, res) {
         // (Many sites block a fetcher that announces itself as a bot.)
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9',
+          'Upgrade-Insecure-Requests': '1',
+          'sec-ch-ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+          'sec-ch-ua-mobile': '?0',
+          'sec-ch-ua-platform': '"Windows"',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-User': '?1',
+          'Sec-Fetch-Dest': 'document',
         },
       });
     } catch (fetchErr) {
       clearTimeout(timeout);
+      // Capture WHAT actually failed so the lead notification can show it
+      // (redirect loop, timeout, connection error) instead of a vague miss.
+      const em = String((fetchErr && fetchErr.message) || '').toLowerCase();
+      const scanReason =
+        (fetchErr && fetchErr.name === 'AbortError') ? 'timed out' :
+        /redirect/.test(em) ? 'redirect loop' :
+        /certificate|tls|ssl/.test(em) ? 'SSL/certificate error' :
+        (em ? em.slice(0, 80) : 'could not connect');
       return res.status(200).json({
         fetched: false,
+        scanReason: scanReason,
         // Honest signal: a failed fetch is OFTEN just a security setting,
         // NOT a real problem with the site. The report must not claim
         // the website is "broken" — see reasonForUser below.
@@ -65,6 +82,7 @@ export default async function handler(req, res) {
     if (!pageRes.ok) {
       return res.status(200).json({
         fetched: false,
+        scanReason: 'status ' + pageRes.status,
         reason: 'Website returned status ' + pageRes.status,
         reasonForUser: 'Our automated scanner received an unexpected response (status ' + pageRes.status + ') from this website. This can be caused by security or server settings and does NOT necessarily mean the website is broken for visitors. Website analysis was skipped for this scan.',
         likelyAccessibleToHumans: true,
