@@ -463,12 +463,43 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
       // Fix #3 — trust our deterministic state, not the AI's guess.
       parsed.hasWebsite = !noWebsiteAnywhere;
       parsed.websiteMissingFromGBP = websiteMissingFromGBP;
+      // WEBSITE UNREADABLE: the business HAS a website (from their Google
+      // listing or typed in) but our scan couldn't read it — a redirect loop,
+      // a security setting, a timeout, often nothing a visitor would ever see.
+      // Do NOT show a misleading ~50% on the three website-dependent sections,
+      // and do NOT let an unreadable site drag the overall down. Mark those
+      // three "not scored this time" and rebuild the overall from only the
+      // sections we could actually assess. Deterministic — not left to the AI.
+      const siteUnreadable = !noWebsiteAnywhere && !(site && site.fetched);
+      parsed.websiteUnreadable = siteUnreadable;
+      parsed.websiteScanReason = (site && !site.fetched && site.scanReason) ? site.scanReason : "";
+      if (siteUnreadable && Array.isArray(parsed.categories)) {
+        const affected = ["Website Health","AI Search Visibility","GEO Score"];
+        parsed.categories.forEach(function(c){
+          if (c && affected.indexOf(c.name) !== -1) {
+            c.notScored = true;
+            c.score = -1;
+            c.scoreReason = "";
+            c.findings = [{
+              title: "We couldn't reach your website automatically",
+              detail: "We tried to read " + (knownWebsite || "your website") + " but couldn't reach it automatically. This is usually a security or redirect setting on the site, not something visitors would notice. Because we couldn't read the page, we didn't score this section this time.",
+              status: "warn"
+            }];
+          }
+        });
+        const scored = parsed.categories.filter(function(c){
+          return c && typeof c.score === "number" && c.score >= 0 && !c.comingSoon && !c.notScored;
+        });
+        if (scored.length) {
+          parsed.overallScore = Math.round(scored.reduce(function(a,c){return a+c.score;}, 0) / scored.length);
+        }
+      }
       // Hide the two not-yet-built sections (Citation Consistency and Social
-      // Presence) so every scan shows five working sections, not seven with
-      // two "Coming soon" placeholders. Hidden, not built — they return later.
+      // Presence). KEEP "not scored" website sections visible — they carry the
+      // honest "couldn't reach your site" message, so they're not filtered out.
       if (Array.isArray(parsed.categories)) {
         parsed.categories = parsed.categories.filter(
-          c => !c.comingSoon && (typeof c.score === 'undefined' || c.score >= 0)
+          c => !c.comingSoon && (c.notScored || typeof c.score === 'undefined' || c.score >= 0)
         );
       }
     }
@@ -508,7 +539,7 @@ function Ring({score,c}){
 
 function CatCard({cat}){
   const [open,setOpen]=useState(true);
-  const soon=cat.comingSoon||cat.score<0;
+  const soon=cat.comingSoon||cat.notScored||cat.score<0;
   const c=soon?"warn":(cat.score>=70?"good":cat.score>=40?"warn":"bad");
   return(
     <div className="cat">
@@ -517,7 +548,7 @@ function CatCard({cat}){
         <div className="cmeta"><h3>{cat.name}</h3><span>{cat.subtitle}</span></div>
         <div className="cright">
           {soon?(
-            <span className={`cpct warn`} style={{fontSize:"0.7rem",fontWeight:700}}>Coming soon</span>
+            <span className={`cpct warn`} style={{fontSize:"0.7rem",fontWeight:700}}>{cat.notScored?"Not scored":"Coming soon"}</span>
           ):(
             <>
               <div className="bw"><div className={`bf ${c}-b`} style={{width:cat.score+"%"}}/></div>
@@ -528,7 +559,7 @@ function CatCard({cat}){
         </div>
       </div>
       <div className={`cbody ${open?"":"shut"}`}>
-        <div style={{fontFamily:"var(--fh)",fontWeight:700,fontSize:"1rem",color:"var(--t1)",padding:"10px 0 2px"}}>{cat.name}{cat.subtitle?(" — "+cat.subtitle):""}{(!soon && cat.score>=0)?("  ·  "+cat.score+"%"):(soon?"  ·  Coming soon":"")}</div>
+        <div style={{fontFamily:"var(--fh)",fontWeight:700,fontSize:"1rem",color:"var(--t1)",padding:"10px 0 2px"}}>{cat.name}{cat.subtitle?(" — "+cat.subtitle):""}{(!soon && cat.score>=0)?("  ·  "+cat.score+"%"):(soon?("  ·  "+(cat.notScored?"Not scored":"Coming soon")):"")}</div>
         {!soon && cat.scoreReason && (
           <div className="finding" style={{opacity:0.85}}>
             <div className="fd warn-d" style={{background:"var(--t2)"}}/>
@@ -1217,6 +1248,7 @@ function App(){
             phone:phone||"",
             city:(results.scannedInputs&&results.scannedInputs.city)||city||"",
             matchedAddress:(results.gbp&&!results.gbp.userProvided&&results.gbp.address)?results.gbp.address:"",
+            websiteScan:results.websiteUnreadable?(results.websiteScanReason||"could not reach site"):"",
             email:email||"",
             hasDirPage:hasDirPage||"",
             overallScore:(typeof results.overallScore!=="undefined")?results.overallScore:null,
