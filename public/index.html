@@ -281,10 +281,17 @@ const FOUNDING_SPOTS_TOTAL = 50;
 // will fail with an error message.
 const BUG_REPORT_FORMSPREE_ID = "xpqnyrdq";
 
-async function callClaude(messages, maxTokens=3000) {
+// Model IDs. SCAN_MODEL is the known-good workhorse the whole scan runs on.
+// ADVISOR_MODEL is a cheaper/smaller model for the free chat advisor, so casual
+// back-and-forth doesn't cost scan-grade money. If ADVISOR_MODEL isn't enabled
+// on the API key, chatReply falls back to SCAN_MODEL so the advisor never breaks.
+const SCAN_MODEL = "claude-sonnet-4-6";
+const ADVISOR_MODEL = "claude-haiku-4-5-20251001";
+
+async function callClaude(messages, maxTokens=3000, model=SCAN_MODEL) {
   const res = await fetch("/api/scan", {
     method:"POST", headers:HEADERS,
-    body:JSON.stringify({model:"claude-sonnet-4-6", max_tokens:maxTokens, messages})
+    body:JSON.stringify({model:model, max_tokens:maxTokens, messages})
   });
   if(!res.ok){const t=await res.text();throw new Error("API "+res.status+": "+t.slice(0,200));}
   const d=await res.json();
@@ -492,6 +499,11 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
         });
         if (scored.length) {
           parsed.overallScore = Math.round(scored.reduce(function(a,c){return a+c.score;}, 0) / scored.length);
+          // Recompute the grade word to match the new number — otherwise the
+          // AI's original grade (set when the three 50s were still dragging it
+          // down) contradicts the corrected score.
+          const s = parsed.overallScore;
+          parsed.overallGrade = s >= 75 ? "Good" : s >= 55 ? "Good Foundation" : "Needs Work";
         }
       }
       // Hide the two not-yet-built sections (Citation Consistency and Social
@@ -513,10 +525,27 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
   }
 }
 
+// Session flag: once the cheap advisor model fails (e.g. not enabled on the
+// key), stop retrying it for the rest of this session and go straight to the
+// scan model — so a wrong model ID costs at most ONE wasted attempt, not one
+// on every question.
+let advisorModelBroken = false;
+
 async function chatReply(history, results, bizName) {
-  const sys = "You are the PresenceScanner AI Advisor, helping "+bizName+" understand and improve their online footprint — how customers and AI search engines find them. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+". Write like talking to a busy small business owner. Plain English only, no jargon. 2-3 short paragraphs max. End with one clear next action.";
+  const sys = "You are the PresenceScanner AI Advisor, helping "+bizName+" understand and improve their online footprint — how customers and AI search engines find them. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+". Write like talking to a busy small business owner. Plain English only, no jargon. 2-3 short paragraphs max. End with one clear next action. IMPORTANT: Only answer questions about THIS business's online presence — its website, Google listing, reviews, local visibility, or how AI search engines find it. If a question is off-topic (travel, general trivia, coding help, anything unrelated to their online presence), do not answer it. In one friendly sentence, say that's outside what this advisor covers, and point them back to improving how customers and AI find their business.";
   const msgs = [{role:"user",content:sys+"\n\nConversation:"},{role:"assistant",content:"Ready to help."},...history];
-  return await callClaude(msgs, 500);
+  const model = advisorModelBroken ? SCAN_MODEL : ADVISOR_MODEL;
+  try {
+    return await callClaude(msgs, 500, model);
+  } catch (e) {
+    // Advisor model failed — fall back to the known-good scan model so the
+    // advisor NEVER goes down, and don't try the cheap model again this session.
+    if (model !== SCAN_MODEL) {
+      advisorModelBroken = true;
+      return await callClaude(msgs, 500, SCAN_MODEL);
+    }
+    throw e;
+  }
 }
 
 const STEPS=["Fetching website signals…","Analyzing SEO structure…","Checking Google Business Profile…","Scoring AI search visibility…","Scanning citation consistency…","Reviewing social presence…","Assessing review authority…","Building your action plan…"];
