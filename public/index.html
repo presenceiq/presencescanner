@@ -1869,6 +1869,13 @@ function App(){
               too long; generic industry news was the least valuable section.) */}
           <div className="cats">{results.categories?.map((cat,i)=><CatCard key={i} cat={cat}/>)}</div>
           <AffCards results={results} bizName={bizName} hasDirPage={hasDirPage}/>
+          {/* Quiet, honest one-line offer. Sits AFTER the recommendations and
+              BEFORE the feedback question, per Michael. No banner, no hero, no
+              colored CTA box — the report's credibility stays the product.
+              Results page only (never the picker, loading screen, or email). */}
+          <p style={{fontSize:"0.9rem",lineHeight:1.7,color:"var(--t2)",textAlign:"center",maxWidth:600,margin:"28px auto 0",padding:"18px 16px 0",borderTop:"1px solid rgba(0,0,0,0.08)"}}>
+            This scanner is free and it stays free. If you want a <a href="/websites" style={{color:"var(--cyan)",textDecoration:"underline",fontWeight:500}}>one-page website built by hand</a>, I build those for $199. One payment, no monthly fee, and the domain is yours in your own name.
+          </p>
           <SentimentStrip onTextFeedback={requestFeedback} voted={moodVoted} setVoted={setMoodVoted}/>
           <button className="rescan" onClick={reset}>← Scan Another Business</button>
           <p style={{fontSize:"0.8rem",opacity:0.6,textAlign:"center",lineHeight:1.6,maxWidth:560,margin:"22px auto 0",padding:"0 16px"}}>
@@ -1886,6 +1893,7 @@ function App(){
           <a href="/reviews" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Reviews</a>
           <a href="/about" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Our Story</a>
           <a href="/get-found" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Get Found in AI</a>
+          <a href="/websites" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Websites</a>
           <a href="/blog" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Blog</a>
           <a href="/updates" style={{color:"inherit",textDecoration:"underline",margin:"0 8px"}}>Updates</a>
         </div>
