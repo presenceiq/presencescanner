@@ -248,6 +248,10 @@
     .bug-err{background:rgba(185,28,28,0.1);border:1px solid rgba(185,28,28,0.3);border-radius:8px;padding:10px 12px;color:var(--red);font-size:0.92rem;margin-top:14px}
     .bug-thanks{text-align:center;padding:24px 10px}
     .bug-thanks-mark{font-size:48px;color:var(--green);margin-bottom:12px;font-weight:700;line-height:1}
+    /* Google's search-box dropdown: let each suggestion wrap so the street
+       AND city show in full instead of being cut off ("Rocky ..."). */
+    .pac-item{white-space:normal;line-height:1.4;padding:7px 9px}
+    .pac-item-query{display:inline}
   </style>
 </head>
 <body>
@@ -373,9 +377,17 @@ async function runScan(bizName, website, city, phone, gbp) {
     ? (userProvided ? 'Not provided — could not verify' : 'No rating yet')
     : (gbp ? (userProvided ? gbp.rating + ' (as reported by the user — NOT verified by us)' : gbp.rating) : 'No rating yet');
 
+  // Owner told us "I have a Google listing, your lookup just can't see it."
+  const ownerSaysListed = !!(gbp && gbp.userProvided && gbp.ownerSaysListed);
+  const ownerListedRule = ownerSaysListed ? `
+OWNER CONFIRMATION — THIS OVERRIDES possibility (b) BELOW: the owner has told us they DO have a Google Business Profile${gbp.listingUrl ? ` (their listing link: ${gbp.listingUrl})` : ''}. Our automated lookup simply could not see it, which is common for service-area businesses. Treat the listing as EXISTING but NOT VERIFIED BY US:
+- NEVER say or imply they have no Google listing, and NEVER suggest they create or claim one.
+- Say plainly that our lookup couldn't read their listing, so we could not check its details (photos, hours, categories) this time — that is a limit of our lookup, not a problem with their listing.
+- Any rating or review count shown below was typed by the owner; attribute it to them exactly as the self-reported rules below say.
+` : '';
   const gbpContext = gbp ? `
-${userProvided ? `UNCONFIRMED BUSINESS DETAILS — TYPED IN BY THE USER. NO GOOGLE LISTING WAS VERIFIED:
-- GBP Found: NOT CONFIRMED. Our automated lookup did not find or verify a Google Business Profile for this business.
+${userProvided ? `UNCONFIRMED BUSINESS DETAILS — TYPED IN BY THE USER. NO GOOGLE LISTING WAS VERIFIED:${ownerListedRule}
+- GBP Found: ${ownerSaysListed ? 'THE OWNER SAYS A LISTING EXISTS, but our automated lookup could not see it, so we could not verify or read it.' : 'NOT CONFIRMED. Our automated lookup did not find or verify a Google Business Profile for this business.'}
 - Business Name (typed by the user, NOT read from Google): ${gbp.name}` : `REAL GOOGLE BUSINESS PROFILE DATA (use this for GBP category — do not guess):
 - GBP Found: Yes
 - Business Name on Google: ${gbp.name}`}
@@ -480,6 +492,25 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
       const siteUnreadable = !noWebsiteAnywhere && !(site && site.fetched);
       parsed.websiteUnreadable = siteUnreadable;
       parsed.websiteScanReason = (site && !site.fetched && site.scanReason) ? site.scanReason : "";
+      // GBP NOT CONFIRMED BY OUR LOOKUP: the profile details came from the
+      // owner (typed in, or "my listing exists, you just can't see it"), not
+      // from Google. A lookup that failed is not evidence of a missing or weak
+      // profile, so the Google Business Profile section sits at a neutral 50 —
+      // same principle as "no website found" — instead of whatever the AI chose.
+      // Deterministic, not left to the AI. (Owners who chose "I don't have a
+      // Google Business Profile yet" are NOT affected — that's their own answer.)
+      let gbpNeutralized = false;
+      if (gbp && gbp.userProvided && Array.isArray(parsed.categories)) {
+        parsed.categories.forEach(function(c){
+          if (c && c.name === "Google Business Profile" && typeof c.score === "number" && c.score !== 50) {
+            c.score = 50;
+            c.scoreReason = gbp.ownerSaysListed
+              ? "Neutral: you told us your Google listing exists, but our lookup couldn't read it, so we didn't score its details this time. That's a limit of our lookup, not a penalty."
+              : "Neutral: our lookup couldn't confirm your Google listing, so we didn't score it this time. That's a limit of our lookup, not a sign anything is missing.";
+            gbpNeutralized = true;
+          }
+        });
+      }
       if (siteUnreadable && Array.isArray(parsed.categories)) {
         const affected = ["Website Health","AI Search Visibility","GEO Score"];
         parsed.categories.forEach(function(c){
@@ -494,14 +525,17 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
             }];
           }
         });
+      }
+      // Rebuild the overall from the sections we actually scored whenever we
+      // corrected a section above, so the headline number matches the parts.
+      if ((siteUnreadable || gbpNeutralized) && Array.isArray(parsed.categories)) {
         const scored = parsed.categories.filter(function(c){
           return c && typeof c.score === "number" && c.score >= 0 && !c.comingSoon && !c.notScored;
         });
         if (scored.length) {
           parsed.overallScore = Math.round(scored.reduce(function(a,c){return a+c.score;}, 0) / scored.length);
           // Recompute the grade word to match the new number — otherwise the
-          // AI's original grade (set when the three 50s were still dragging it
-          // down) contradicts the corrected score.
+          // AI's original grade contradicts the corrected score.
           const s = parsed.overallScore;
           parsed.overallGrade = s >= 75 ? "Good" : s >= 55 ? "Good Foundation" : "Needs Work";
         }
@@ -864,6 +898,29 @@ function extractGoogleUrlIds(url){
   return {placeId, bizName};
 }
 
+// --- Candidate sanity check (skip a list that is clearly all wrong) ---
+// A candidate "contradicts the owner" when the owner typed BOTH a phone and a
+// website, the candidate has both too, and BOTH are different. If every
+// candidate does that, none of them is the owner's business.
+function _digits10(s){
+  let d=String(s||"").replace(/\D/g,"");
+  if(d.length===11&&d.charAt(0)==="1")d=d.slice(1);
+  return d;
+}
+function _host(s){
+  return String(s||"").toLowerCase().trim()
+    .replace(/^https?:\/\//,"").replace(/^www\./,"").replace(/\/.*$/,"").trim();
+}
+function allCandidatesContradictOwner(list,phone,website){
+  const tp=_digits10(phone), tw=_host(website);
+  if(tp.length!==10||!tw||!Array.isArray(list)||!list.length)return false;
+  return list.every(function(c){
+    const cp=_digits10(c&&c.phone), cw=_host(c&&c.website);
+    return cp.length===10&&!!cw&&cp!==tp&&cw!==tw;
+  });
+}
+const NO_MATCH_NOTE="We couldn't find a Google listing with your phone number or website. That's common for businesses that serve an area instead of a storefront. Search for it below, or let us know it exists.";
+
 // --- Google Place Autocomplete widget, wrapped as a React component ---
 // Mounts Google's autocomplete on an input. When the user picks a
 // business from the dropdown, calls onPick with {placeId, name, address}.
@@ -882,14 +939,18 @@ function BusinessAutocomplete({ onPick }) {
         const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
           types: ["establishment"],
           fields: ["place_id", "name", "formatted_address"],
-          // Fix #4 — bias predictions toward Florida so local businesses
-          // rank higher and stop dropping off the list as the owner types.
-          // Soft bias (strictBounds:false by default) — businesses outside
-          // Florida still appear if the owner types them clearly.
+          // REGIONAL, not city: keep suggestions inside Southwest Florida
+          // (roughly Tampa Bay south to Naples, coast to Lake Okeechobee).
+          // Deliberately NOT the typed city — service-area businesses are
+          // routinely registered in a different town than the one the owner
+          // types (Port Charlotte typed, listing shows Fruitville/North Port).
+          // A soft all-Florida bias still let Texas, Tennessee and Portugal
+          // crowd out the real business, so this is a hard regional limit.
           bounds: new window.google.maps.LatLngBounds(
-            new window.google.maps.LatLng(24.396308, -87.634938),
-            new window.google.maps.LatLng(31.000888, -79.974306)
+            new window.google.maps.LatLng(25.75, -83.00),
+            new window.google.maps.LatLng(28.20, -80.90)
           ),
+          strictBounds: true,
         });
         ac.addListener("place_changed", () => {
           const place = ac.getPlace();
@@ -1201,6 +1262,17 @@ function App(){
   const [fhReviewCount,setFhReviewCount]=useState("");
   const [fhHasHours,setFhHasHours]=useState(false);
   const [fhCategory,setFhCategory]=useState("");
+  // "My listing exists, you just can't see it" path (service-area businesses
+  // are routinely missing from Google's lookup even though they're on Maps).
+  const [olUrl,setOlUrl]=useState("");
+  const [olRating,setOlRating]=useState("");
+  const [olReviews,setOlReviews]=useState("");
+  // Neutral note shown on the find-your-business screen (e.g. when we skipped
+  // a candidate list that was clearly all wrong).
+  const [fhInfo,setFhInfo]=useState("");
+  // Where the business on the "Is this your business?" screen came from:
+  // "phone" = phone lookup, "search" = picked from the Google search box.
+  const [confirmSource,setConfirmSource]=useState("phone");
   // When the user lands on the manual "find your business" form, carry over what
   // they already typed on the home form (name, website, phone) so they don't
   // have to retype it. Only fills fields that are still empty, so it never
@@ -1277,6 +1349,8 @@ function App(){
             phone:phone||"",
             city:(results.scannedInputs&&results.scannedInputs.city)||city||"",
             matchedAddress:(results.gbp&&!results.gbp.userProvided&&results.gbp.address)?results.gbp.address:"",
+            gbpStatus:!results.gbp?"owner-says-none":(results.gbp.ownerSaysListed?"owner-says-listed":(results.gbp.userProvided?"owner-typed":"google")),
+            listingUrl:(results.gbp&&results.gbp.listingUrl)?results.gbp.listingUrl:"",
             websiteScan:results.websiteUnreadable?(results.websiteScanReason||"could not reach site"):"",
             email:email||"",
             hasDirPage:hasDirPage||"",
@@ -1320,6 +1394,7 @@ function App(){
           const pMatch=await pRes.json();
           if(pMatch&&pMatch.found){
             setPhoneMatch(pMatch);
+            setConfirmSource("phone");
             setView("phoneconfirm");
             return;
           }
@@ -1329,6 +1404,14 @@ function App(){
       // /api/places as strong scoring signals that float the right business up.
       const result=await getCandidates(bizName,city,phone,website);
       if(result&&result.found&&result.candidates&&result.candidates.length>0){
+        // If EVERY candidate has a different phone AND a different website
+        // from what the owner typed, none of them is theirs — showing the list
+        // only invites them to pick a competitor. Skip straight to the
+        // find-your-business screen instead.
+        if(allCandidatesContradictOwner(result.candidates,phone,website)){
+          pickNone(NO_MATCH_NOTE);
+          return;
+        }
         setPendingMatch(result.candidates);
         setView("pick");
         return;
@@ -1360,10 +1443,21 @@ function App(){
   // Owner said the phone-matched business is NOT theirs — fall through
   // to the existing name-search flow so they can find the right one.
   async function phoneConfirmNo(){
+    // Picked from the search box and it's not theirs: back to that screen,
+    // details they typed intact, so they can search again or use another option.
+    if(confirmSource==="search"){
+      setPhoneMatch(null);
+      setView("findhelp");
+      return;
+    }
     setView("loading");setStepIdx(0);
     try{
       const result=await getCandidates(bizName,city,phone,website);
       if(result&&result.found&&result.candidates&&result.candidates.length>0){
+        if(allCandidatesContradictOwner(result.candidates,phone,website)){
+          pickNone(NO_MATCH_NOTE);
+          return;
+        }
         setPendingMatch(result.candidates);
         setView("pick");
         return;
@@ -1388,7 +1482,10 @@ function App(){
 
   // User said none of the listed businesses are theirs.
   // Instead of scanning blind, take them to the "help us find your business" step.
-  function pickNone(){
+  function pickNone(info){
+    // Optional neutral note for the find-your-business screen (a string only;
+    // a click event passed by a button is ignored).
+    setFhInfo(typeof info==="string"?info:"");
     // Pre-fill the name field with what they already typed, as a convenience.
     setFhName(bizName||"");
     setFhAddress("");
@@ -1415,16 +1512,15 @@ function App(){
       });
       const gbp=await res.json();
       if(gbp&&gbp.found){
-        // Use the PICKED business's own name and website — not the
-        // stale form fields. The form may have a made-up name or a
-        // blank website; the picked business is the real one.
-        const realName=gbp.name||picked.name||bizName;
-        const realWebsite=gbp.website||"";
-        // Update the displayed business name so the report title,
-        // loading screen, and AI advisor all show the picked business.
-        if(realName)setBizName(realName);
-        const data=await runScan(realName,realWebsite,city,phone,gbp);
-        setResults(data);setView("results");
+        // Don't scan yet. Google's dropdown can't show phone numbers, and
+        // several businesses share names like "Quality Pressure Washing".
+        // Show the picked listing's full address AND phone on the
+        // "Is this your business?" screen so the owner can tell at a glance.
+        // Yes there scans it (phoneConfirmYes uses the listing's own name
+        // and website); No returns them here.
+        setPhoneMatch(gbp);
+        setConfirmSource("search");
+        setView("phoneconfirm");
       }else{
         setFhErr((gbp&&gbp.message)||"We couldn't load that business. Please try again or use another option below.");
         setView("findhelp");
@@ -1559,6 +1655,40 @@ function App(){
     }catch(e){setErrMsg(e.message);setView("error");}
   }
 
+  // The owner says: "I DO have a Google listing, your lookup just can't see it."
+  // Common for service-area businesses. We take their word that it exists,
+  // keep any link they paste as proof, and treat it as REAL BUT UNVERIFIED:
+  // the report must never say they have no listing, and never present their
+  // typed rating/reviews as something we confirmed.
+  async function ownerListedSubmit(){
+    setView("loading");setStepIdx(0);
+    try{
+      const name=(fhName.trim()||bizName||"").trim();
+      const ratingNum=parseFloat(olRating);
+      const reviewNum=parseInt(olReviews,10);
+      const typedWebsite=fhWebsite.trim()||website||"";
+      const ownerGBP={
+        name:name,
+        address:fhAddress.trim()||null,
+        phone:fhPhone.trim()||phone||null,
+        rating:(!isNaN(ratingNum)&&ratingNum>0)?ratingNum:null,
+        reviewCount:(!isNaN(reviewNum)&&reviewNum>=0)?reviewNum:null,
+        website:typedWebsite||null,
+        hasHours:null,
+        isOpen:null,
+        photoCount:null,
+        businessStatus:null,
+        types:[],
+        userProvided:true,
+        ownerSaysListed:true,
+        listingUrl:olUrl.trim()||null
+      };
+      if(name)setBizName(name);
+      const data=await runScan(name,typedWebsite,city,fhPhone.trim()||phone,ownerGBP);
+      setResults(data);setView("results");
+    }catch(e){setErrMsg(e.message);setView("error");}
+  }
+
   // The user confirmed they have no Google listing at all.
   // Scan with no GBP — this produces the honest "you're invisible" result.
   async function findHelpNoListing(){
@@ -1580,6 +1710,7 @@ function App(){
     setPhoneMatch(null);
     setFhName("");setFhAddress("");setFhPhone("");setFhMapsUrl("");setFhErr("");
     setFhWebsite("");setFhRating("");setFhReviewCount("");setFhHasHours(false);setFhCategory("");
+    setOlUrl("");setOlRating("");setOlReviews("");setFhInfo("");setConfirmSource("phone");
     // The five user-typed form fields — previously NOT cleared, which is what
     // let an old website value bleed into a later scan and contaminate the AI input.
     setBizName("");
@@ -1655,8 +1786,10 @@ function App(){
         <div className="pad">
           <div className="card" style={{maxWidth:560,margin:"0 auto"}}>
             <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Is this your business?</h2>
-            <p className="sub" style={{marginTop:6}}>We found this Google listing from your phone number. Confirm it's yours so your report is about the right business.</p>
-            {namesLookDifferent(bizName,phoneMatch.name)&&(
+            <p className="sub" style={{marginTop:6}}>{confirmSource==="search"
+              ? "Check the address and phone below. Several businesses can share a similar name, so confirm this is yours before we scan it."
+              : "We found this Google listing from your phone number. Confirm it's yours so your report is about the right business."}</p>
+            {confirmSource!=="search"&&namesLookDifferent(bizName,phoneMatch.name)&&(
               <div style={{background:"rgba(176,107,28,0.10)",border:"1px solid rgba(176,107,28,0.45)",borderRadius:10,padding:"12px 14px",margin:"14px 0",color:"#8a5410",fontSize:"0.92rem",lineHeight:1.5}}>
                 <div style={{fontWeight:700,marginBottom:4}}>⚠️ Heads up — these don't seem to match</div>
                 You typed "<b>{bizName}</b>" but the listing we found from your phone number is "<b>{phoneMatch.name}</b>". Two businesses sometimes share one phone. Check the details below carefully before saying yes.
@@ -1703,6 +1836,7 @@ function App(){
             <p className="sub" style={{marginTop:6}}>Start typing your business name and select it from the list — this is the most accurate way to find your exact Google listing.</p>
 
             {fhErr&&<div className="err" style={{margin:"10px 0"}}>{fhErr}</div>}
+            {fhInfo&&<div style={{background:"rgba(43,142,176,0.08)",border:"1px solid rgba(43,142,176,0.35)",borderRadius:10,padding:"11px 13px",margin:"10px 0",fontSize:"0.92rem",lineHeight:1.5}}>{fhInfo}</div>}
 
             {/* PRIMARY PATH: the Google autocomplete widget */}
             <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
@@ -1783,6 +1917,26 @@ function App(){
                 <button className="sbtn" onClick={findHelpFromLink} disabled={!fhMapsUrl.trim()}>Find my business from this link</button>
               </div>
             </details>
+
+            {/* "My listing exists, you just can't see it." Service-area
+                businesses are routinely missing from Google's lookup even
+                though they show on Google Maps. This gives them a door that
+                doesn't force the wrong answer ("I don't have one"). */}
+            <div style={{background:"rgba(43,142,176,0.06)",border:"1px solid rgba(43,142,176,0.35)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
+              <div style={{fontWeight:700,marginBottom:6}}>I have a Google listing, it just isn't showing up</div>
+              <div style={{fontSize:"0.88rem",opacity:0.8,marginBottom:12,lineHeight:1.55}}>
+                That's common for businesses that serve an area instead of a storefront. Google's lookup often can't see them, even when they show up fine on Google Maps. Tell us yours exists and your report will treat it as real. We just won't claim we checked the details.
+              </div>
+              <div className="field"><label>Link to your listing (optional)</label>
+                <input value={olUrl} onChange={e=>setOlUrl(e.target.value)} placeholder="In Google Maps, open your listing, tap Share, then Copy link"/></div>
+              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                <div className="field" style={{flex:"1 1 140px"}}><label>Star rating (optional)</label>
+                  <input value={olRating} onChange={e=>setOlRating(e.target.value)} placeholder="e.g. 5.0"/></div>
+                <div className="field" style={{flex:"1 1 140px"}}><label>Total reviews (optional)</label>
+                  <input value={olReviews} onChange={e=>setOlReviews(e.target.value)} placeholder="e.g. 2"/></div>
+              </div>
+              <button className="sbtn" onClick={ownerListedSubmit} disabled={!(fhName.trim()||bizName)}>Scan my business</button>
+            </div>
 
             <button className="rescan" style={{marginTop:6,width:"100%"}} onClick={findHelpNoListing}>I don't have a Google Business Profile yet</button>
           </div>
