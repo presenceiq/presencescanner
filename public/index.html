@@ -499,6 +499,21 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
       // same principle as "no website found" — instead of whatever the AI chose.
       // Deterministic, not left to the AI. (Owners who chose "I don't have a
       // Google Business Profile yet" are NOT affected — that's their own answer.)
+      // SOURCE LABEL: when the rating / review count came from the business
+      // owner (typed in) instead of from Google, say so in plain words on the
+      // sections built from those numbers. Deterministic, same wording every
+      // scan, so every number in the report is traceable to where it came from.
+      if (gbp && gbp.userProvided && Array.isArray(parsed.categories)) {
+        const hasR = gbp.rating !== null && gbp.rating !== undefined;
+        const hasN = gbp.reviewCount !== null && gbp.reviewCount !== undefined;
+        if (hasR || hasN) {
+          const what = hasR && hasN ? "Rating and review count" : (hasR ? "Rating" : "Review count");
+          const note = what + " supplied by the business owner, not verified by our lookup.";
+          parsed.categories.forEach(function(c){
+            if (c && (c.name === "Google Business Profile" || c.name === "Review Authority")) c.sourceNote = note;
+          });
+        }
+      }
       let gbpNeutralized = false;
       if (gbp && gbp.userProvided && Array.isArray(parsed.categories)) {
         parsed.categories.forEach(function(c){
@@ -623,6 +638,11 @@ function CatCard({cat}){
       </div>
       <div className={`cbody ${open?"":"shut"}`}>
         <div style={{fontFamily:"var(--fh)",fontWeight:700,fontSize:"1rem",color:"var(--t1)",padding:"10px 0 2px"}}>{cat.name}{cat.subtitle?(" — "+cat.subtitle):""}{(!soon && cat.score>=0)?("  ·  "+cat.score+"%"):(soon?("  ·  "+(cat.notScored?"Not scored":"Coming soon")):"")}</div>
+        {cat.sourceNote && (
+          <div style={{background:"rgba(43,142,176,0.08)",border:"1px solid rgba(43,142,176,0.35)",borderRadius:8,padding:"8px 11px",margin:"8px 0 4px",fontSize:"0.88rem",lineHeight:1.5,color:"var(--t1)"}}>
+            <b>Source:</b> {cat.sourceNote}
+          </div>
+        )}
         {!soon && cat.scoreReason && (
           <div className="finding" style={{opacity:0.85}}>
             <div className="fd warn-d" style={{background:"var(--t2)"}}/>
@@ -1683,12 +1703,23 @@ function App(){
   // keep any link they paste as proof, and treat it as REAL BUT UNVERIFIED:
   // the report must never say they have no listing, and never present their
   // typed rating/reviews as something we confirmed.
+  // Sanity bounds for the owner-typed numbers (both optional):
+  // star rating 1 to 5 (e.g. 5, 4.8, 4.75), reviews a whole number.
+  function olRatingError(){
+    const r=olRating.trim(); if(!r)return "";
+    return (/^\d(\.\d{1,2})?$/.test(r)&&+r>=1&&+r<=5)?"":"Star rating must be a number from 1 to 5, like 4.8.";
+  }
+  function olReviewsError(){
+    const n=olReviews.trim().replace(/,/g,""); if(!n)return "";
+    return /^\d{1,6}$/.test(n)?"":"Number of reviews must be a whole number, like 37.";
+  }
   async function ownerListedSubmit(){
+    if(olRatingError()||olReviewsError())return;
     setView("loading");setStepIdx(0);
     try{
       const name=(fhName.trim()||bizName||"").trim();
       const ratingNum=parseFloat(olRating);
-      const reviewNum=parseInt(olReviews,10);
+      const reviewNum=parseInt(olReviews.trim().replace(/,/g,""),10);
       const typedWebsite=fhWebsite.trim()||website||"";
       const ownerGBP={
         name:name,
@@ -1884,6 +1915,9 @@ function App(){
                 <div className="field" style={{flex:"1 1 140px"}}><label>Number of reviews</label>
                   <input value={olReviews} onChange={e=>setOlReviews(e.target.value)} inputMode="numeric" placeholder="e.g. 37"/></div>
               </div>
+              {(olRatingError()||olReviewsError())&&(
+                <div className="err" style={{margin:"0 0 12px"}}>{olRatingError()||olReviewsError()}</div>
+              )}
               <div className="field"><label>Link to your listing (optional)</label>
                 <input value={olUrl} onChange={e=>setOlUrl(e.target.value)} placeholder="In Google Maps: tap Share, then Copy link"/></div>
               <details style={{margin:"6px 0 14px"}}>
@@ -1899,7 +1933,7 @@ function App(){
                   </label>
                 </div>
               </details>
-              <button className="sbtn" onClick={ownerListedSubmit} disabled={!(fhName.trim()||bizName)}>Scan my business</button>
+              <button className="sbtn" onClick={ownerListedSubmit} disabled={!(fhName.trim()||bizName)||!!olRatingError()||!!olReviewsError()}>Scan my business</button>
               {backBtn}
             </>)}
 
@@ -1949,7 +1983,9 @@ function App(){
                   <span className="sident-row"><b>Scanned:</b> {results.gbp.name}</span>
                   {results.gbp.address && <span className="sident-row">{results.gbp.address}</span>}
                   {results.gbp.phone && <span className="sident-row">{results.gbp.phone}</span>}
-                  {results.gbp.rating && <span className="sident-row"><span className="sident-stars">★★★★★</span> {results.gbp.rating} · {results.gbp.reviewCount || 0} reviews</span>}
+                  {results.gbp.userProvided
+                    ? ((results.gbp.rating!=null||results.gbp.reviewCount!=null) && <span className="sident-row"><span className="sident-stars">★★★★★</span> {results.gbp.rating!=null?results.gbp.rating:"no rating given"} · {results.gbp.reviewCount!=null?results.gbp.reviewCount+" reviews":"review count not given"} <i style={{opacity:0.75}}>(supplied by the business owner, not verified by our lookup)</i></span>)
+                    : (results.gbp.rating && <span className="sident-row"><span className="sident-stars">★★★★★</span> {results.gbp.rating} · {results.gbp.reviewCount || 0} reviews</span>)}
                   {results.scannedInputs?.website && <span className="sident-row"><b>Website analyzed:</b> {results.scannedInputs.website}</span>}
                   {results.gbp.placeId && (
                     <span className="sident-row">
