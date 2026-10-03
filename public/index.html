@@ -899,9 +899,14 @@ function extractGoogleUrlIds(url){
 }
 
 // --- Candidate sanity check (skip a list that is clearly all wrong) ---
-// A candidate "contradicts the owner" when the owner typed BOTH a phone and a
-// website, the candidate has both too, and BOTH are different. If every
-// candidate does that, none of them is the owner's business.
+// The phone is the one field that doesn't move. Skip the list when the owner
+// typed a phone, EVERY candidate has a phone, NONE of those phones is the
+// owner's, and (if the owner typed a website) NONE of the candidates' websites
+// is theirs either. A candidate with no website on Google still counts as
+// "not theirs" when its phone is different. A candidate with NO phone can't be
+// ruled out, so it keeps the list. Name is ignored on purpose: similar names
+// ("Quality Pressure Washing" vs "...Southwest Florida") are exactly how the
+// wrong business got picked before.
 function _digits10(s){
   let d=String(s||"").replace(/\D/g,"");
   if(d.length===11&&d.charAt(0)==="1")d=d.slice(1);
@@ -913,10 +918,13 @@ function _host(s){
 }
 function allCandidatesContradictOwner(list,phone,website){
   const tp=_digits10(phone), tw=_host(website);
-  if(tp.length!==10||!tw||!Array.isArray(list)||!list.length)return false;
+  if(tp.length!==10||!Array.isArray(list)||!list.length)return false;
   return list.every(function(c){
     const cp=_digits10(c&&c.phone), cw=_host(c&&c.website);
-    return cp.length===10&&!!cw&&cp!==tp&&cw!==tw;
+    if(cp.length!==10)return false;      // no phone on the listing: can't rule it out
+    if(cp===tp)return false;             // phone matches: could be theirs
+    if(tw&&cw&&cw===tw)return false;     // website matches: could be theirs
+    return true;                         // different phone, no website match
   });
 }
 const NO_MATCH_NOTE="We couldn't find a Google listing with your phone number or website. That's common for businesses that serve an area instead of a storefront. Search for it below, or let us know it exists.";
