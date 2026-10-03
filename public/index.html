@@ -932,7 +932,6 @@ function allCandidatesContradictOwner(list,phone,website){
     return true;                         // different phone, no website match
   });
 }
-const NO_MATCH_NOTE="We couldn't find a Google listing with your phone number or website. That's common for businesses that serve an area instead of a storefront. Search for it below, or let us know it exists.";
 
 // --- Google Place Autocomplete widget, wrapped as a React component ---
 // Mounts Google's autocomplete on an input. When the user picks a
@@ -1283,6 +1282,14 @@ function App(){
   // Neutral note shown on the find-your-business screen (e.g. when we skipped
   // a candidate list that was clearly all wrong).
   const [fhInfo,setFhInfo]=useState("");
+  // Find-your-business screen. fhEntry = how the owner got here, which decides
+  // which choice gets the top spot:
+  //   "nomatch" = phone/website matched nothing (likely a listing we can't see)
+  //   "none"    = they saw a list and tapped "None of these"
+  //   "nophone" = no phone typed, nothing found
+  // fhMode = which step of that screen is showing: choose | yes | search.
+  const [fhEntry,setFhEntry]=useState("nomatch");
+  const [fhMode,setFhMode]=useState("choose");
   // Where the business on the "Is this your business?" screen came from:
   // "phone" = phone lookup, "search" = picked from the Google search box.
   const [confirmSource,setConfirmSource]=useState("phone");
@@ -1422,7 +1429,7 @@ function App(){
         // only invites them to pick a competitor. Skip straight to the
         // find-your-business screen instead.
         if(allCandidatesContradictOwner(result.candidates,phone,website)){
-          pickNone(NO_MATCH_NOTE);
+          pickNone("nomatch");
           return;
         }
         setPendingMatch(result.candidates);
@@ -1431,7 +1438,7 @@ function App(){
       }
       // Nothing found either way. Don't scan blind — send the user to the
       // "help us find your business" screen.
-      pickNone();
+      pickNone(phone&&phone.trim()?"nomatch":"nophone");
       return;
     }catch(e){setErrMsg(e.message);setView("error");}
   }
@@ -1468,14 +1475,14 @@ function App(){
       const result=await getCandidates(bizName,city,phone,website);
       if(result&&result.found&&result.candidates&&result.candidates.length>0){
         if(allCandidatesContradictOwner(result.candidates,phone,website)){
-          pickNone(NO_MATCH_NOTE);
+          pickNone("nomatch");
           return;
         }
         setPendingMatch(result.candidates);
         setView("pick");
         return;
       }
-      pickNone();
+      pickNone("nomatch");
     }catch(e){setErrMsg(e.message);setView("error");}
   }
 
@@ -1495,10 +1502,13 @@ function App(){
 
   // User said none of the listed businesses are theirs.
   // Instead of scanning blind, take them to the "help us find your business" step.
-  function pickNone(info){
-    // Optional neutral note for the find-your-business screen (a string only;
-    // a click event passed by a button is ignored).
-    setFhInfo(typeof info==="string"?info:"");
+  function pickNone(reason){
+    // reason = how they got here ("nomatch" | "none" | "nophone"); it decides
+    // which choice the find-your-business screen puts first.
+    setFhEntry(reason==="none"||reason==="nophone"?reason:"nomatch");
+    setFhMode("choose");
+    setFhErr("");
+    setFhInfo("");
     // Pre-fill the name field with what they already typed, as a convenience.
     setFhName(bizName||"");
     setFhAddress("");
@@ -1559,7 +1569,7 @@ function App(){
       // Pre-fill the manual form with the business name from the URL if we
       // could find one, so the user doesn't have to retype it.
       if(ids.bizName && !fhName) setFhName(ids.bizName);
-      setFhErr("This Google link doesn't include a Place ID we can use — that's normal for Share links. Use the \"Copy from your Google Business Profile\" option below instead — we've pre-filled what we could read from the link.");
+      setFhErr("This link doesn't include a Place ID we can use. That's normal for Share links. Go back and choose \"Yes, I have one\" instead, and paste the link there.");
       setFhMapsUrl("");
       return;
     }
@@ -1687,11 +1697,11 @@ function App(){
         rating:(!isNaN(ratingNum)&&ratingNum>0)?ratingNum:null,
         reviewCount:(!isNaN(reviewNum)&&reviewNum>=0)?reviewNum:null,
         website:typedWebsite||null,
-        hasHours:null,
+        hasHours:fhHasHours?true:null,
         isOpen:null,
         photoCount:null,
         businessStatus:null,
-        types:[],
+        types:fhCategory.trim()?[fhCategory.trim()]:[],
         userProvided:true,
         ownerSaysListed:true,
         listingUrl:olUrl.trim()||null
@@ -1723,7 +1733,7 @@ function App(){
     setPhoneMatch(null);
     setFhName("");setFhAddress("");setFhPhone("");setFhMapsUrl("");setFhErr("");
     setFhWebsite("");setFhRating("");setFhReviewCount("");setFhHasHours(false);setFhCategory("");
-    setOlUrl("");setOlRating("");setOlReviews("");setFhInfo("");setConfirmSource("phone");
+    setOlUrl("");setOlRating("");setOlReviews("");setFhInfo("");setConfirmSource("phone");setFhEntry("nomatch");setFhMode("choose");
     // The five user-typed form fields — previously NOT cleared, which is what
     // let an old website value bleed into a later scan and contaminate the AI input.
     setBizName("");
@@ -1836,125 +1846,89 @@ function App(){
                 </div>
               ))}
             </div>
-            <button className="rescan" style={{width:"100%"}} onClick={pickNone}>None of these — help me find my business</button>
+            <button className="rescan" style={{width:"100%"}} onClick={()=>pickNone("none")}>None of these — help me find my business</button>
           </div>
         </div>
       )}
 
-      {/* --- "Help us find your business" step (self-contained view) --- */}
-      {view==="findhelp"&&(
+      {/* --- "Help us find your business" (self-contained view) ---
+          One question, three choices, ordered by how the owner got here.
+          "No, not yet" is always last: it's the rarest true answer and the
+          most damaging one to pick by mistake. */}
+      {view==="findhelp"&&(()=>{
+        const yesFirst=fhEntry==="nomatch";
+        const btnStyle=(primary)=>primary?{width:"100%",marginTop:10}:{width:"100%",marginTop:10};
+        const yesBtn=(primary)=>(<button key="yes" className={primary?"sbtn":"rescan"} style={btnStyle(primary)} onClick={()=>setFhMode("yes")}>Yes, I have one</button>);
+        const searchBtn=(primary)=>(<button key="search" className={primary?"sbtn":"rescan"} style={btnStyle(primary)} onClick={()=>{setFhErr("");setFhMode("search");}}>Let me search for it</button>);
+        const backBtn=(<button className="rescan" style={{width:"100%",marginTop:12}} onClick={()=>{setFhErr("");setFhMode("choose");}}>← Back</button>);
+        return(
         <div className="pad">
           <div className="card" style={{maxWidth:560,margin:"0 auto"}}>
-            <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Find your business</h2>
-            <p className="sub" style={{marginTop:6}}>Start typing your business name and select it from the list — this is the most accurate way to find your exact Google listing.</p>
 
-            {fhErr&&<div className="err" style={{margin:"10px 0"}}>{fhErr}</div>}
-            {fhInfo&&<div style={{background:"rgba(43,142,176,0.08)",border:"1px solid rgba(43,142,176,0.35)",borderRadius:10,padding:"11px 13px",margin:"10px 0",fontSize:"0.92rem",lineHeight:1.5}}>{fhInfo}</div>}
+            {fhMode==="choose"&&(<>
+              <h2 style={{marginTop:0,fontSize:"1.3rem"}}>{fhEntry==="none"?"None of those were yours? Let's find yours.":"We couldn't find your Google listing automatically."}</h2>
+              <p className="sub" style={{marginTop:6}}>This is common for businesses that serve an area instead of a storefront. It doesn't mean anything is wrong with your listing.</p>
+              <div style={{fontWeight:700,fontSize:"1.08rem",margin:"20px 0 6px"}}>Do you have a Google Business Profile?</div>
+              {yesFirst?[yesBtn(true),searchBtn(false)]:[searchBtn(true),yesBtn(false)]}
+              <button className="rescan" style={{width:"100%",marginTop:10}} onClick={findHelpNoListing}>No, not yet</button>
+            </>)}
 
-            {/* PRIMARY PATH: the Google autocomplete widget */}
-            <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
-              <div style={{fontWeight:700,marginBottom:8}}>Search for your business <span style={{opacity:0.55,fontWeight:400}}>(recommended)</span></div>
-              <BusinessAutocomplete onPick={findHelpFromWidget} />
-              <div style={{fontSize:"0.8rem",opacity:0.6,marginTop:8,lineHeight:1.5}}>
-                Tip: if several businesses share a similar name, check the address to pick yours.
+            {fhMode==="yes"&&(<>
+              <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Good. Let's use your real numbers.</h2>
+              <div style={{background:"rgba(43,142,176,0.08)",border:"1px solid rgba(43,142,176,0.35)",borderRadius:10,padding:"12px 14px",margin:"12px 0 16px",fontSize:"0.95rem",lineHeight:1.55}}>
+                Open <b>Google Maps</b> on your phone and search your business name. Your <b>star rating</b> and <b>number of reviews</b> are right under your business name.
               </div>
-            </div>
-
-            {/* FALLBACK 1 (primary): Copy from your Google Business Profile.
-                This used to be the "enter by hand" path. Renamed and expanded
-                to capture real GBP data via copy-paste — sidesteps every
-                Google API matching problem while giving the AI accurate
-                signal to score against. */}
-            <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
-              <div style={{fontWeight:700,marginBottom:6}}>Copy from your Google listing</div>
-              <div style={{fontSize:"0.88rem",opacity:0.75,marginBottom:12,lineHeight:1.55}}>
-                Easiest way: tap Copy below, paste it into Google or Google Maps, and your listing will come up. Then copy your rating, reviews, hours, etc. into the boxes here. Only the business name is required — the more you add, the better your report. Anything left blank is treated as "not verified," never as missing.
-              </div>
-              {(fhName.trim()||bizName||phone||city) && (
-                <div style={{background:"rgba(43,142,176,0.10)",border:"1px solid rgba(43,142,176,0.35)",borderRadius:10,padding:"11px 13px",marginBottom:14}}>
-                  <div style={{fontSize:"0.8rem",fontWeight:600,opacity:0.8,marginBottom:6}}>Paste this into Google to find your listing:</div>
-                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                    <input readOnly
-                      value={[(fhName.trim()||bizName||""),(fhPhone.trim()||phone||""),(city||"")].filter(Boolean).join("  ")}
-                      style={{flex:"1 1 200px",minWidth:0,padding:"9px 11px",border:"1px solid var(--b1)",borderRadius:8,background:"var(--s2)",color:"var(--t1)",fontFamily:"var(--fb)",fontSize:"0.92rem"}}
-                      onFocusCapture={e=>e.target.select()}/>
-                    <button type="button"
-                      onClick={e=>{
-                        const txt=[(fhName.trim()||bizName||""),(fhPhone.trim()||phone||""),(city||"")].filter(Boolean).join("  ");
-                        try{navigator.clipboard.writeText(txt);}catch{}
-                        const b=e.currentTarget; const o=b.textContent; b.textContent="Copied!"; setTimeout(()=>{b.textContent=o;},1500);
-                      }}
-                      style={{padding:"9px 16px",background:"var(--cyan)",color:"#fff",border:"none",borderRadius:8,fontFamily:"var(--fb)",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
-                      Copy
-                    </button>
-                  </div>
-                  <div style={{fontSize:"0.78rem",opacity:0.65,marginTop:7,lineHeight:1.5}}>
-                    On your phone, Google Maps is easiest — your rating, review count, hours, and photos all show on one screen, no login needed.
-                  </div>
-                </div>
-              )}
-              <div className="field"><label>Business Name *</label>
-                <input value={fhName} onChange={e=>setFhName(e.target.value)} placeholder="Exactly as it appears on Google"/></div>
-              <div className="field"><label>Business Address or City</label>
-                <input value={fhAddress} onChange={e=>setFhAddress(e.target.value)} placeholder="Street address, or at least City, State"/></div>
-              <div className="field"><label>Business Phone</label>
-                <input value={fhPhone} onChange={e=>setFhPhone(e.target.value)} placeholder="e.g. (941) 662-9941"/></div>
-              <div className="field"><label>Your Business Website</label>
-                <div style={{fontSize:"0.78rem",opacity:0.65,margin:"-2px 0 6px",lineHeight:1.45}}>Your real website address — NOT your Google listing or share link.</div>
-                <input value={fhWebsite} onChange={e=>setFhWebsite(e.target.value)} placeholder="e.g. yourbusiness.com — leave blank if you don't have one"/></div>
-              <div className="field"><label>Star Rating</label>
-                <input value={fhRating} onChange={e=>setFhRating(e.target.value)} placeholder="the big number at the top of your listing, e.g. 4.8"/></div>
-              <div className="field"><label>Total Reviews</label>
-                <input value={fhReviewCount} onChange={e=>setFhReviewCount(e.target.value)} placeholder="the count next to your stars, e.g. 47"/></div>
-              <div className="field"><label>Business Category on Google</label>
-                <input value={fhCategory} onChange={e=>setFhCategory(e.target.value)} placeholder="e.g. Flower Shop, Plumber, Salon"/></div>
-              <label style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer",margin:"12px 0",fontSize:"0.92rem"}}>
-                <input type="checkbox" checked={fhHasHours} onChange={e=>setFhHasHours(e.target.checked)} style={{width:18,height:18,cursor:"pointer"}}/>
-                <span>My Google Business Profile has business hours filled in</span>
-              </label>
-              <button className="sbtn" onClick={findHelpSubmit} disabled={!fhName.trim()}>Scan with these details</button>
-            </div>
-
-            {/* FALLBACK 2 (rare): paste a Google Maps share link. Most Google
-                share links don't include a Place ID — this only works when
-                yours does. The validator above refuses non-Place-ID URLs
-                and routes the user to the "Copy from your GBP" path. */}
-            <details style={{margin:"14px 0"}}>
-              <summary style={{cursor:"pointer",opacity:0.65,fontSize:"0.88rem"}}>Have a Google listing link with a Place ID? (advanced)</summary>
-              <div style={{marginTop:12}}>
-                <div style={{fontSize:"0.84rem",opacity:0.65,marginBottom:10,lineHeight:1.5}}>
-                  Most Google "Share" links don't include a Place ID. If yours does, paste it here. If not, use the option above.
-                </div>
-                <div className="field" style={{marginBottom:10}}>
-                  <input value={fhMapsUrl} onChange={e=>setFhMapsUrl(e.target.value)} placeholder="Paste a Google link with a Place ID"/></div>
-                <button className="sbtn" onClick={findHelpFromLink} disabled={!fhMapsUrl.trim()}>Find my business from this link</button>
-              </div>
-            </details>
-
-            {/* "My listing exists, you just can't see it." Service-area
-                businesses are routinely missing from Google's lookup even
-                though they show on Google Maps. This gives them a door that
-                doesn't force the wrong answer ("I don't have one"). */}
-            <div style={{background:"rgba(43,142,176,0.06)",border:"1px solid rgba(43,142,176,0.35)",borderRadius:10,padding:"14px 16px",margin:"14px 0"}}>
-              <div style={{fontWeight:700,marginBottom:6}}>I have a Google listing, it just isn't showing up</div>
-              <div style={{fontSize:"0.88rem",opacity:0.8,marginBottom:12,lineHeight:1.55}}>
-                That's common for businesses that serve an area instead of a storefront. Google's lookup often can't see them, even when they show up fine on Google Maps. Tell us yours exists and your report will treat it as real. We just won't claim we checked the details.
+              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                <div className="field" style={{flex:"1 1 140px"}}><label>Star rating</label>
+                  <input value={olRating} onChange={e=>setOlRating(e.target.value)} inputMode="decimal" placeholder="1 to 5, e.g. 4.8"/></div>
+                <div className="field" style={{flex:"1 1 140px"}}><label>Number of reviews</label>
+                  <input value={olReviews} onChange={e=>setOlReviews(e.target.value)} inputMode="numeric" placeholder="e.g. 37"/></div>
               </div>
               <div className="field"><label>Link to your listing (optional)</label>
-                <input value={olUrl} onChange={e=>setOlUrl(e.target.value)} placeholder="In Google Maps, open your listing, tap Share, then Copy link"/></div>
-              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                <div className="field" style={{flex:"1 1 140px"}}><label>Star rating (optional)</label>
-                  <input value={olRating} onChange={e=>setOlRating(e.target.value)} placeholder="1 to 5, e.g. 4.8"/></div>
-                <div className="field" style={{flex:"1 1 140px"}}><label>Total reviews (optional)</label>
-                  <input value={olReviews} onChange={e=>setOlReviews(e.target.value)} placeholder="number of reviews, e.g. 37"/></div>
-              </div>
+                <input value={olUrl} onChange={e=>setOlUrl(e.target.value)} placeholder="In Google Maps: tap Share, then Copy link"/></div>
+              <details style={{margin:"6px 0 14px"}}>
+                <summary style={{cursor:"pointer",opacity:0.7,fontSize:"0.9rem"}}>Add more details (optional)</summary>
+                <div style={{marginTop:12}}>
+                  <div className="field"><label>Your website</label>
+                    <input value={fhWebsite} onChange={e=>setFhWebsite(e.target.value)} placeholder="e.g. yourbusiness.com, or leave blank"/></div>
+                  <div className="field"><label>Business category on Google</label>
+                    <input value={fhCategory} onChange={e=>setFhCategory(e.target.value)} placeholder="e.g. Pressure washing service"/></div>
+                  <label style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer",margin:"8px 0",fontSize:"0.92rem"}}>
+                    <input type="checkbox" checked={fhHasHours} onChange={e=>setFhHasHours(e.target.checked)} style={{width:18,height:18,cursor:"pointer"}}/>
+                    <span>My Google listing has business hours filled in</span>
+                  </label>
+                </div>
+              </details>
               <button className="sbtn" onClick={ownerListedSubmit} disabled={!(fhName.trim()||bizName)}>Scan my business</button>
-            </div>
+              {backBtn}
+            </>)}
 
-            <button className="rescan" style={{marginTop:6,width:"100%"}} onClick={findHelpNoListing}>I don't have a Google Business Profile yet</button>
+            {fhMode==="search"&&(<>
+              <h2 style={{marginTop:0,fontSize:"1.3rem"}}>Search for your business</h2>
+              <p className="sub" style={{marginTop:6}}>Start typing your business name and pick it from the list. We'll show you the address and phone so you can check it's yours.</p>
+              {fhErr&&<div className="err" style={{margin:"10px 0"}}>{fhErr}</div>}
+              <div style={{margin:"14px 0"}}>
+                <BusinessAutocomplete onPick={findHelpFromWidget} />
+              </div>
+              <div style={{fontSize:"0.9rem",lineHeight:1.55,margin:"4px 0 10px"}}>
+                Not in the list? That's common for service-area businesses.{" "}
+                <a onClick={()=>setFhMode("yes")} style={{color:"var(--cyan)",fontWeight:600,cursor:"pointer",textDecoration:"underline"}}>Tell us you have one instead</a>.
+              </div>
+              <details style={{margin:"10px 0"}}>
+                <summary style={{cursor:"pointer",opacity:0.65,fontSize:"0.88rem"}}>Have a Google listing link with a Place ID? (advanced)</summary>
+                <div style={{marginTop:12}}>
+                  <div className="field" style={{marginBottom:10}}>
+                    <input value={fhMapsUrl} onChange={e=>setFhMapsUrl(e.target.value)} placeholder="Paste a Google link with a Place ID"/></div>
+                  <button className="sbtn" onClick={findHelpFromLink} disabled={!fhMapsUrl.trim()}>Find my business from this link</button>
+                </div>
+              </details>
+              {backBtn}
+            </>)}
+
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {view==="error"&&(
         <div className="pad">
