@@ -660,7 +660,12 @@ function AffCards({results,bizName,hasDirPage}){
     cards.push({ico:"🔗",title:"Add Your Website to Google",desc:"Your website isn't on your Google Business Profile, so customers searching Google can't click through. Free 2-minute fix in your Google dashboard.",label:"Open Google Business Profile →",href:"https://business.google.com/",note:"Free — about 2 minutes"});
   }
   const gbp=results.categories?.find(c=>c.name==="Google Business Profile");
-  if(gbp&&gbp.score<65)cards.push({ico:"📍",title:"Claim Google Listing",desc:"Your Google Business Profile is your most powerful free marketing tool.",label:"Claim Free →",href:AFF.gbp(),note:"Free — takes about 10 minutes"});
+  // Don't tell an owner to "claim" a listing when the profile came from THEM
+  // (they typed it in, or told us "my listing exists, you just can't see it").
+  // They have one; our lookup just couldn't read it. The neutral 50 score
+  // would otherwise always trip this card.
+  const ownerProfile=!!(results.gbp&&results.gbp.userProvided);
+  if(gbp&&gbp.score<65&&!ownerProfile)cards.push({ico:"📍",title:"Claim Google Listing",desc:"Your Google Business Profile is your most powerful free marketing tool.",label:"Claim Free →",href:AFF.gbp(),note:"Free — takes about 10 minutes"});
   cards.push({ico:"📧",title:"Professional Email",desc:"joe@gmail.com loses customers. joe@joesplumbing.com wins them.",label:"Get Business Email →",href:AFF.workspace(),note:"Google Workspace from $6/user/mo"});
   return(
     <div className="aff-wrap" id="jump-tools">
@@ -1939,9 +1944,9 @@ function App(){
                 <input value={olUrl} onChange={e=>setOlUrl(e.target.value)} placeholder="In Google Maps, open your listing, tap Share, then Copy link"/></div>
               <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
                 <div className="field" style={{flex:"1 1 140px"}}><label>Star rating (optional)</label>
-                  <input value={olRating} onChange={e=>setOlRating(e.target.value)} placeholder="e.g. 5.0"/></div>
+                  <input value={olRating} onChange={e=>setOlRating(e.target.value)} placeholder="1 to 5, e.g. 4.8"/></div>
                 <div className="field" style={{flex:"1 1 140px"}}><label>Total reviews (optional)</label>
-                  <input value={olReviews} onChange={e=>setOlReviews(e.target.value)} placeholder="e.g. 2"/></div>
+                  <input value={olReviews} onChange={e=>setOlReviews(e.target.value)} placeholder="number of reviews, e.g. 37"/></div>
               </div>
               <button className="sbtn" onClick={ownerListedSubmit} disabled={!(fhName.trim()||bizName)}>Scan my business</button>
             </div>
