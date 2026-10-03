@@ -21,6 +21,14 @@ export default async function handler(req, res) {
     const phone   = (b.phone   || "").toString().trim();
     const city    = (b.city    || "").toString().trim();
     const matchedAddress = (b.matchedAddress || "").toString().trim();
+    // How the Google profile was (or wasn't) found. Lets the MATCHED line say
+    // what our LOOKUP did, never what exists — an empty lookup is not proof a
+    // business has no Google listing (service-area businesses are often missed).
+    //   "owner-says-listed" = owner says they have a listing we couldn't find
+    //   "owner-says-none"   = owner chose "I don't have a Google Business Profile yet"
+    //   anything else       = lookup found nothing; owner typed details by hand
+    const gbpStatus = (b.gbpStatus || "").toString().trim();
+    const listingUrl = (b.listingUrl || "").toString().trim();
     const websiteScan = (b.websiteScan || "").toString().trim();
     const email   = (b.email   || "").toString().trim();
     const overallScore = (b.overallScore === 0 || b.overallScore) ? b.overallScore : null;
@@ -50,7 +58,18 @@ export default async function handler(req, res) {
     lines.push("DATE       " + dateStr);
     lines.push("BUSINESS   " + (bizName || "(not given)"));
     if (city)    lines.push("CITY       " + city);
-    lines.push("MATCHED    " + (matchedAddress || "(no Google listing matched)"));
+    let matchedLine;
+    if (matchedAddress) {
+      matchedLine = matchedAddress;
+    } else if (gbpStatus === "owner-says-listed") {
+      matchedLine = "Our Google lookup found no matching listing. The owner says one exists"
+        + (listingUrl ? ": <" + listingUrl + ">" : " (no link given).");
+    } else if (gbpStatus === "owner-says-none") {
+      matchedLine = "Our Google lookup found no matching listing, and the owner chose \"I don't have a Google Business Profile yet.\" Check Google Maps before relying on that.";
+    } else {
+      matchedLine = "Our Google lookup found no matching listing. Check Google Maps before telling them they don't have one.";
+    }
+    lines.push("MATCHED    " + matchedLine);
     if (phone)   lines.push("PHONE      " + phone);
     lines.push("EMAIL      " + (email || "(not provided)"));
     if (website) lines.push("WEBSITE    <" + website + ">");
