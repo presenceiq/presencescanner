@@ -19,16 +19,15 @@
     gtag('js', new Date());
     gtag('config', 'G-WD4QS0XK2C');
   </script>
-  <!-- ============================================================
-       GOOGLE MAPS — powers the "find your business" autocomplete.
-       BROWSER KEY: referrer-restricted, safe to be public
-       below with your "PresenceScanner Browser Key". Only swap that
-       placeholder text — keep everything else exactly as is.
-       ============================================================ -->
-  <script async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAO8fNTowmk2VhQGNfUDLApUUJHJtALIjA&libraries=places">
-  </script>
+  <!-- Google Maps is no longer loaded here. It is loaded on demand by
+       BusinessAutocomplete, which only renders on the search screen, so
+       visitors who never search never download it. Changed 4 Oct 2026. -->
   <!-- End Google Analytics -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#2b8eb0">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="PresenceScanner — free online footprint health check for small businesses. See how Google, AI search, and customers find you, with plain-English fixes in 30 seconds." />
   <title>PresenceScanner — Free Online Footprint Health Check</title>
@@ -962,6 +961,18 @@ function BusinessAutocomplete({ onPick }) {
   const [status, setStatus] = useState("loading"); // loading | ready | failed
 
   useEffect(() => {
+    // Load Google's Maps + Places library the first time this screen opens.
+    // This component only renders when fhMode === "search", so a visitor who
+    // never searches never downloads it. The poll below already handles the
+    // library arriving late, which is why this is safe. Added 4 Oct 2026.
+    if (!document.getElementById("gmaps-js")) {
+      const gs = document.createElement("script");
+      gs.id = "gmaps-js";
+      gs.async = true;
+      gs.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyAO8fNTowmk2VhQGNfUDLApUUJHJtALIjA&libraries=places";
+      document.head.appendChild(gs);
+    }
+
     // Wait for Google's library to be available, then mount once.
     let tries = 0;
     const tryMount = () => {
