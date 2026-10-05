@@ -144,6 +144,7 @@ const MEMBERS = [
  {t:"House cleaning",n:"CMPCleaning Venice",a:"Venice, Nokomis, Osprey",u:"https://www.presencescanner.ai/venice/cmpcleaning-venice",k:"clean cleaner cleaning house maid vacation rental vrbo airbnb turnover deep move",mine:true,c:"CMPCleaning, family run, house cleaning and vacation rental turnovers around Venice, Nokomis and Osprey.",d:"That one's mine, so take it with a pinch of salt. CMPCleaning, family run, house cleaning and vacation rental turnovers around Venice, Nokomis and Osprey. Happy to point you elsewhere if you'd rather."},
  {t:"Real estate",n:"Putnam Realty Group",a:"Venice, Nokomis, North Port, Sarasota",u:"https://www.presencescanner.ai/venice/putnam-realty-group",k:"realtor real estate agent sell selling list listing flat fee mls home",mine:true,c:"Putnam Realty Group. Full service or flat fee MLS listing options, Venice, Nokomis, North Port and Sarasota. 941-662-9941.",d:"That's me, so I'm not a neutral party here. Putnam Realty Group, full service or flat fee MLS listings, Venice, Nokomis, North Port and Sarasota. Call me if it's useful, 941-662-9941."},
  {t:"Website, one page",n:"$299 one-page website",a:"Built by you, Venice",u:"https://www.presencescanner.ai/websites",offer:true,k:"website web site webpage page build builder designer design developer online wix squarespace godaddy need a website domain web address cost price",c:"I build one-page websites by hand for small businesses. $299, one payment, no monthly fee. That includes me buying your web address and putting it in your name, so it is yours from the start. I\'m in Venice."},
+ {t:"Recruiting post",n:"Recruiting post / no links",a:"Paste as a post, not a comment",offer:true,u:"",btn:"Copy the post",note:"No link in this, on purpose. Facebook shows posts with links to fewer people, and the comment is the action. Reply to every single comment yourself, in your own words, never the same block twice.",k:"recruit recruiting recruitment post posting new member members join joining sign up signup get listed listing free directory business owners group announcement",c:"Are you a local business owner in Venice, North Port, Nokomis or Sarasota?\n\nI\u2019ve been building a free directory of local businesses for about three months. Twenty-nine are on it so far. There\u2019s no fee, nothing to sign up for, and nothing to cancel.\n\nHere\u2019s what\u2019s different about it. I write every page by hand after talking to the owner. Your services, your towns, your real reviews, in your own words. No form letter and no template.\n\nTwo things I ask. You live in or serve this area, and your business is registered with the State of Florida.\n\nComment below with your business name and I\u2019ll reply to you myself.\n\nI\u2019ve been in the trades 18 years, so I know how it feels to be good at the work and invisible online."},
  {t:"Is this legit?",n:"What members say",a:"Seven owners, under their own names",offer:true,u:"https://www.presencescanner.ai/reviews",k:"recommend recommends recommended recommendation recommendations referral referrals refer reference references vouch vouched review reviews testimonial testimonials legit legitimate scam trust trusted real catch who are you is this real why free what is the catch",c:"Seven local business owners put their recommendation in writing, under their own names and their own businesses. If you are wondering whether this is worth your time, have a read and judge for yourself."},
  {t:"Free online check",n:"PresenceScanner free check",a:"Anywhere. Runs in 30 seconds",offer:true,u:"https://www.presencescanner.ai",k:"scan scanner check free audit google ai chatgpt search visible found online invisible showing up show up rank ranking seo how do i get on google nobody can find me",c:"I built a free tool that checks how a business shows up on Google and in AI search like ChatGPT. Takes about 30 seconds, no signup, nothing to pay. It tells you what\u2019s missing and what to fix first."},
  {t:"Free directory listing",n:"PresenceScanner directory",a:"Venice and surrounding towns",offer:true,u:"https://www.presencescanner.ai/directory",k:"directory listing list free get found google ai search visible online presence advertise",c:"I run a free local business directory for Venice and the towns around here. 29 businesses on it so far, every page written by hand from what the owner tells me. No fee, no monthly, nothing to cancel. Happy to add you."}
@@ -155,7 +156,7 @@ const countEl = document.getElementById('count');
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
-function answerText(m, v){ return ((v==='d' && m.d) ? m.d : m.c) + "\n\n" + m.u; }
+function answerText(m, v){ var t = (v==='d' && m.d) ? m.d : m.c; return m.u ? (t + "\n\n" + m.u) : t; }
 
 function render(items){
   list.innerHTML = '';
@@ -175,12 +176,12 @@ function render(items){
       '<span class="trade">'+esc(m.t)+'</span>'
       + '<p class="biz">'+esc(m.n)+'</p>'
       + '<p class="towns">'+esc(m.a)+'</p>'
-      + (m.offer ? '<p class="mineflag">Your own service. The wording already starts with &ldquo;I&rdquo;, so it says it&rsquo;s you without needing a disclaimer.</p>' : '')
+      + (m.note ? '<p class="mineflag">'+esc(m.note)+'</p>' : (m.offer ? '<p class="mineflag">Your own service. The wording already starts with &ldquo;I&rdquo;, so it says it&rsquo;s you without needing a disclaimer.</p>' : ''))
       + (m.mine ? '<p class="mineflag">Your own business. In your own group, where everyone posts their own, the plain one is fine. Replying to somebody else&rsquo;s question, use the one that says it&rsquo;s yours.</p>' : '')
       + (m.mine
           ? '<button class="copy" type="button" data-v="c">Copy for your own group</button>'
             + '<button class="copy alt" type="button" data-v="d">Copy for someone else&rsquo;s post</button>'
-          : '<button class="copy" type="button" data-v="c">Copy the comment</button>')
+          : '<button class="copy" type="button" data-v="c">'+esc(m.btn||'Copy the comment')+'</button>')
       + '<p class="preview">'+esc(answerText(m,'c'))+'</p>';
 
     const prev = card.querySelector('.preview');
@@ -238,7 +239,7 @@ function near(v){
       if(d>lim && t.length>v.length) d=ed(v,t.slice(0,v.length));
       if(d<=lim){ hit=t; break; }
     }
-    if(hit && !seen[m.u]){ seen[m.u]=1; out.push({m:m,w:hit}); }
+    if(hit && !seen[m.n]){ seen[m.n]=1; out.push({m:m,w:hit}); }
   });
   return out;
 }
