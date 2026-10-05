@@ -132,6 +132,14 @@
   .owner-zone summary .hint{font-family:'DM Sans',sans-serif;font-weight:400;font-size:.92rem;color:var(--light);white-space:nowrap}
   .owner-zone summary:hover{border-color:var(--cyan);color:var(--cyan)}
   .owner-zone[open] summary{margin-bottom:18px;border-color:var(--cyan);color:var(--cyan)}
+  .setup-once{margin:0 0 18px}
+  .setup-once > summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    font-family:'Manrope',sans-serif;font-weight:700;font-size:.98rem;color:var(--med);
+    background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:14px 18px}
+  .setup-once > summary::-webkit-details-marker{display:none}
+  .setup-once > summary .hint{font-family:'DM Sans',sans-serif;font-weight:400;font-size:.88rem;color:var(--light);white-space:nowrap}
+  .setup-once > summary:hover{border-color:var(--cyan);color:var(--cyan)}
+  .setup-once[open] > summary{margin-bottom:16px;border-style:solid;border-color:var(--cyan);color:var(--cyan)}
   .share-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin:0 0 18px;}
   .share-box .sh-h{font-family:'Manrope',sans-serif;font-weight:700;font-size:1.15rem;color:var(--ink);margin-bottom:6px;}
   .share-box .sh-s{font-size:.98rem;color:var(--med);margin-bottom:14px;}
@@ -254,7 +262,9 @@ Found through PresenceScanner, a free local business directory.</textarea>
     <div class="sh-done" id="shDone"></div>
   </div>
 
-  <div class="share-box">
+  <details class="setup-once">
+    <summary>Put your listing on your own website <span class="hint">Set up once</span></summary>
+    <div class="share-box">
     <div class="sh-h">Add your listing to your website</div>
     <div class="sh-s">Two minutes of work, and it helps you get found by Google and AI tools like ChatGPT. <strong>If someone else manages your website, forward this to them.</strong></div>
 
@@ -300,6 +310,7 @@ Found through PresenceScanner, a free local business directory.</textarea>
     <div class="sh-done" id="webDone"></div>
     <p class="sh-why">One thing to get right either way: leave the word PresenceScanner as plain text and never make it part of the link. Search engines and AI tools pick up business names written in ordinary sentences, and a plain mention is worth more to you than the link itself. Making the name into the link is a pattern search engines treat with suspicion.</p>
   </div>
+  </details>
   </details>
 
   <footer>
