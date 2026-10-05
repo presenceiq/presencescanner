@@ -160,7 +160,7 @@
   .backdir.on{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
   .backdir svg{width:15px;height:15px}
   @media (max-width:640px){.backdir{bottom:14px;font-size:.9rem;padding:11px 20px}}
-  footer{margin-top:32px;padding:22px 0 40px;border-top:1px solid var(--line);text-align:center;font-size:.86rem;color:var(--light);}
+  footer{margin-top:32px;padding:22px 0 120px;border-top:1px solid var(--line);text-align:center;font-size:.86rem;color:var(--light);}
   footer a{color:var(--cyan);text-decoration:none}
   .disc{font-size:.8rem;color:var(--light);margin-top:10px;line-height:1.5;}
   @media (max-width:640px){h1{font-size:1.7rem}}
@@ -335,7 +335,10 @@ function copyUrl(){ copyBox('webUrl','Link copied.'); }
 (function(){
   var b=document.getElementById('backdir');
   if(!b) return;
-  function check(){ b.classList.toggle('on', window.scrollY > 420); }
+  function check(){
+    var nearBottom = (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 200);
+    b.classList.toggle('on', window.scrollY > 420 && !nearBottom);
+  }
   window.addEventListener('scroll', check, {passive:true});
   check();
 })();

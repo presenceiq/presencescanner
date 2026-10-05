@@ -233,7 +233,7 @@
     opacity:0;visibility:hidden;transition:opacity .18s,transform .18s,visibility .18s}
   .backdir.on{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
   .backdir svg{width:15px;height:15px}
-  footer{margin-top:20px;padding:24px 0 40px;border-top:1px solid var(--line);text-align:center;font-size:.9rem;color:var(--light);}
+  footer{margin-top:20px;padding:24px 0 120px;border-top:1px solid var(--line);text-align:center;font-size:.9rem;color:var(--light);}
   footer a{color:var(--cyan);text-decoration:none}
   @media (max-width:640px){h1{font-size:1.55rem}.bizhead{padding:26px 22px}.info-row{flex-direction:column;gap:2px}.info-row .k{min-width:0}.contact-cta{display:block;text-align:center}.backdir{bottom:14px;font-size:.9rem;padding:11px 20px}}
 </style>
@@ -463,7 +463,10 @@ function copyShare(){
 (function(){
   var b=document.getElementById('backdir');
   if(!b) return;
-  function check(){ b.classList.toggle('on', window.scrollY > 420); }
+  function check(){
+    var nearBottom = (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 200);
+    b.classList.toggle('on', window.scrollY > 420 && !nearBottom);
+  }
   window.addEventListener('scroll', check, {passive:true});
   check();
 })();
