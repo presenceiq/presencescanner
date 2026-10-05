@@ -287,17 +287,35 @@ Found through PresenceScanner, a free local business directory.</textarea>
 
     <div style="background:rgba(109,40,217,.05);border:1px solid rgba(109,40,217,.25);border-radius:12px;padding:16px 18px;margin:0 0 20px">
       <p style="font-family:'Manrope',sans-serif;font-weight:700;font-size:1.02rem;color:var(--ink);margin-bottom:6px">One thing not to do</p>
-      <p style="font-size:.98rem;color:var(--med);margin-bottom:8px">On your Google Business Profile there's a box for your website. Don't put your PresenceScanner page there. That box is for your own website. This page is part of the PresenceScanner directory, not your site, and Google has a rule against pointing that box at somebody else's page.</p>
+      <p style="font-size:.98rem;color:var(--med);margin-bottom:8px">On your Google Business Profile there's a box for your website. Don't put your PresenceScanner page there. That box is for your own website. This page is part of the PresenceScanner directory, not your own website, and Google has a rule against pointing that box at somebody else's page.</p>
       <p style="font-size:.98rem;color:var(--med);margin-bottom:8px">If you don't have a website, leave that box empty. Anywhere else is fine though. Your own website, your Facebook page, your emails, your business cards.</p>
       <p style="font-size:.9rem;color:var(--light);margin-bottom:0">Google's rule, if you want to read it: <a href="https://support.google.com/business/answer/3038177" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none">support.google.com/business/answer/3038177</a></p>
     </div>
 
-    <p class="sh-lbl">Option 1. Send this to whoever edits your website</p>
+    <p class="sh-lbl">Option 1. The badge</p>
+    <p class="sh-note">A small picture for your own website that links back to this page. Pick whichever suits it, hit copy, and paste the code in. Most people put it in the footer.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:6px">
+      <div style="flex:1 1 230px;min-width:210px">
+        <div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center">
+          <img src="https://www.presencescanner.ai/badge-light.png" alt="Listed on PresenceScanner" width="240" height="48" style="max-width:100%;height:auto">
+        </div>
+        <button class="sh-copy" style="width:100%;margin-top:9px" onclick="copyBadge('light')">Copy this one</button>
+      </div>
+      <div style="flex:1 1 230px;min-width:210px">
+        <div style="background:#222730;border:1px solid #394250;border-radius:12px;padding:16px;text-align:center">
+          <img src="https://www.presencescanner.ai/badge-color.png" alt="Listed on PresenceScanner" width="240" height="48" style="max-width:100%;height:auto">
+        </div>
+        <button class="sh-copy" style="width:100%;margin-top:9px" onclick="copyBadge('color')">Copy this one</button>
+      </div>
+    </div>
+    <p class="sh-note" style="margin-top:4px">Left one for a white or light website. Right one for a dark or colored background.</p>
+
+    <p class="sh-lbl" style="margin-top:26px">Option 2. Send this to whoever edits your website</p>
     <p class="sh-note">This is the finished code. They paste it in, nothing to build.</p>
     <textarea class="sh-msg" id="webCode" readonly>Honey Do Painting and Handyman Services is listed on PresenceScanner, a free local business directory. &lt;a href="https://www.presencescanner.ai/venice/honey-do-painting"&gt;See our listing here&lt;/a&gt;.</textarea>
     <button class="sh-copy" onclick="copyCode()">Copy the code</button>
 
-    <p class="sh-lbl" style="margin-top:26px">Option 2. If you edit your own website</p>
+    <p class="sh-lbl" style="margin-top:26px">Option 3. If you edit your own website</p>
     <p class="sh-note">Paste this sentence onto your homepage or About page. Then highlight the words <em>See our listing here</em> and use your editor's link button to make a clickable link using the address underneath.</p>
     <textarea class="sh-msg" id="webMsg" readonly>Honey Do Painting and Handyman Services is listed on PresenceScanner, a free local business directory. See our listing here.</textarea>
     <textarea class="sh-msg" id="webUrl" readonly style="min-height:48px;margin-top:10px">https://www.presencescanner.ai/venice/honey-do-painting</textarea>
@@ -338,6 +356,29 @@ function copyBox(id,msg){
   t.select(); t.setSelectionRange(0,99999);
   try{ navigator.clipboard.writeText(t.value); }catch(e){ document.execCommand('copy'); }
   document.getElementById('webDone').textContent=msg;
+}
+function psBadgeFallback(text,done){
+  var t=document.createElement('textarea');
+  t.value=text; t.setAttribute('readonly','');
+  t.style.position='fixed'; t.style.top='0'; t.style.opacity='0';
+  document.body.appendChild(t); t.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(t); done();
+}
+function copyBadge(v){
+  var url='https://www.presencescanner.ai/venice/honey-do-painting';
+  var img='https://www.presencescanner.ai/badge-'+(v==='light'?'light':'color')+'.png';
+  var code='<a href="'+url+'" target="_blank" rel="noopener">\\n'
+    +'  <img src="'+img+'"\\n'
+    +'       alt="Listed on PresenceScanner"\\n'
+    +'       width="280" height="56" style="max-width:100%;height:auto">\\n'
+    +'</a>';
+  var done=function(){
+    var d=document.getElementById('webDone');
+    if(d) d.textContent='Badge code copied. Paste it on your website, the footer is fine.';
+  };
+  try{ navigator.clipboard.writeText(code).then(done,function(){ psBadgeFallback(code,done); }); }
+  catch(e){ psBadgeFallback(code,done); }
 }
 function copyCode(){ copyBox('webCode','Code copied. Send it to whoever edits your website.'); }
 function copyMsg(){ copyBox('webMsg','Sentence copied. Paste it on your homepage or About page.'); }
