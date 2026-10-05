@@ -124,7 +124,7 @@
   .ps-strip .h{font-family:'Manrope',sans-serif;font-weight:700;font-size:1.1rem;color:var(--ink);margin-bottom:6px;}
   .ps-strip .s{font-size:.98rem;color:var(--med);margin-bottom:14px;}
   .ps-strip a.ps-btn{display:inline-block;background:var(--surface);border:1.5px solid var(--cyan);color:var(--cyan);font-family:'Manrope',sans-serif;font-weight:700;font-size:1rem;text-decoration:none;padding:11px 22px;border-radius:60px;}
-  .owner-zone{border-top:1px solid var(--line);margin:28px 0 0;padding-top:20px}
+  .owner-zone{margin:0 0 10px}
   .owner-zone summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
     font-family:'Manrope',sans-serif;font-weight:700;font-size:1.02rem;color:var(--med);
     background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
@@ -246,8 +246,9 @@
     <a class="ps-btn" href="https://www.presencescanner.ai">Run your free check &rarr;</a> <div class="s" style="margin:14px 0 0;font-size:.92rem">Need your own website? I build one-page websites by hand for $299, web address included. <a href="https://www.presencescanner.ai/websites" style="color:var(--cyan);text-decoration:none;font-weight:600">See what that includes &rarr;</a></div>
   </div>
 
+  <p style="font-family:'Manrope',sans-serif;font-weight:700;font-size:1.02rem;color:var(--ink);margin:30px 0 12px;padding-top:20px;border-top:1px solid var(--line)">Own this business?</p>
   <details class="owner-zone">
-    <summary>Own this business? Tools to share your listing <span class="hint">Tap to open</span></summary>
+    <summary>Share your listing <span class="hint">Tap to open</span></summary>
 
   <div class="share-box">
     <div class="sh-h">Share your listing</div>
@@ -261,21 +262,19 @@ Found through PresenceScanner, a free local business directory.</textarea>
     </div>
     <div class="sh-done" id="shDone"></div>
   </div>
+    </details>
 
-  <details class="setup-once">
-    <summary>Put your listing on your own website <span class="hint">Set up once</span></summary>
+  <details class="owner-zone">
+    <summary>Put it on your own website <span class="hint">Set up once</span></summary>
     <div class="share-box">
     <div class="sh-h">Add your listing to your website</div>
     <div class="sh-s">Two minutes of work, and it helps you get found by Google and AI tools like ChatGPT. <strong>If someone else manages your website, forward this to them.</strong></div>
 
-    <div style="background:rgba(109,40,217,.05);border:1px solid rgba(109,40,217,.25);border-radius:12px;padding:16px 18px;margin:0 0 20px">
-      <p style="font-family:'Manrope',sans-serif;font-weight:700;font-size:1.02rem;color:var(--ink);margin-bottom:6px">One thing not to do</p>
-      <p style="font-size:.98rem;color:var(--med);margin-bottom:8px">On your Google Business Profile there's a box for your website. Don't put your PresenceScanner page there. That box is for your own website. This page is part of the PresenceScanner directory, not your own website, and Google has a rule against pointing that box at somebody else's page.</p>
-      <p style="font-size:.98rem;color:var(--med);margin-bottom:8px">If you don't have a website, leave that box empty. Anywhere else is fine though. Your own website, your Facebook page, your emails, your business cards.</p>
-      <p style="font-size:.9rem;color:var(--light);margin-bottom:0">Google's rule, if you want to read it: <a href="https://support.google.com/business/answer/3038177" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none">support.google.com/business/answer/3038177</a></p>
+    <div style="background:rgba(109,40,217,.05);border:1px solid rgba(109,40,217,.25);border-radius:12px;padding:14px 16px;margin:0 0 18px">
+      <p style="font-family:'Manrope',sans-serif;font-weight:700;font-size:1rem;color:var(--ink);margin-bottom:5px">One thing not to do</p>
+      <p style="font-size:.96rem;color:var(--med);margin-bottom:0">Don't put this page in the website box on your Google Business Profile. That box is for your own website, and Google has a <a href="https://support.google.com/business/answer/3038177" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none">rule against</a> pointing it somewhere else. No website of your own? Leave it empty.</p>
     </div>
-
-    <p class="sh-lbl">Option 1. The badge</p>
+    <p class="sh-lbl">The badge</p>
     <p class="sh-note">A small picture for your own website that links back to this page. Pick whichever suits it, hit copy, and paste the code in. Most people put it in the footer.</p>
     <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:6px">
       <div style="flex:1 1 230px;min-width:210px">
@@ -293,24 +292,24 @@ Found through PresenceScanner, a free local business directory.</textarea>
     </div>
     <p class="sh-note" style="margin-top:4px">Left one for a white or light website. Right one for a dark or colored background.</p>
 
-    <p class="sh-lbl" style="margin-top:26px">Option 2. Send this to whoever edits your website</p>
-    <p class="sh-note">This is the finished code. They paste it in, nothing to build.</p>
+    <p class="sh-lbl" style="margin-top:26px">Rather send words than a picture?</p>
+    <p class="sh-note">A finished line of code instead. Paste it on your website, or forward it to whoever looks after it.</p>
     <textarea class="sh-msg" id="webCode" readonly>CMP Cleaning Venice is listed in the PresenceScanner local business directory. &lt;a href="https://www.presencescanner.ai/venice/cmpcleaning-venice"&gt;See our listing here&lt;/a&gt;.</textarea>
     <button class="sh-copy" onclick="copyCode()">Copy the code</button>
-
-    <p class="sh-lbl" style="margin-top:26px">Option 3. If you edit your own website</p>
-    <p class="sh-note">Paste this sentence onto your homepage or About page. Then highlight the words <em>See our listing here</em> and use your editor's link button to make a clickable link using the address underneath.</p>
-    <textarea class="sh-msg" id="webMsg" readonly>CMP Cleaning Venice is listed in the PresenceScanner local business directory. See our listing here.</textarea>
-    <textarea class="sh-msg" id="webUrl" readonly style="min-height:48px;margin-top:10px">https://www.presencescanner.ai/venice/cmpcleaning-venice</textarea>
-    <div class="sh-btns">
-      <button class="sh-copy" onclick="copyMsg()">Copy the sentence</button>
-      <button class="sh-copy" onclick="copyUrl()">Copy the link</button>
-    </div>
 
     <div class="sh-done" id="webDone"></div>
     <p class="sh-why">One thing to get right either way: leave the word PresenceScanner as plain text and never make it part of the link. Search engines and AI tools pick up business names written in ordinary sentences, and a plain mention is worth more to you than the link itself. Making the name into the link is a pattern search engines treat with suspicion.</p>
   </div>
   </details>
+
+  <details class="owner-zone">
+    <summary>Recommend somebody else <span class="hint">Tap to open</span></summary>
+    <div class="share-box">
+      <div class="sh-h">Who to recommend</div>
+      <div class="sh-s">Somebody in a local group asks for a roofer, or a notary, or a lawn guy, and it isn't you. Look it up here and copy a ready-written comment. Ten seconds, and it's how the rest of us get work too.</div>
+      <p style="margin:0 0 14px"><a class="sh-fb" href="https://www.presencescanner.ai/recommend" target="_blank" rel="noopener">Open Who To Recommend &rarr;</a></p>
+      <p class="sh-why" style="margin-top:0;padding-top:0;border-top:0">Worth putting on your phone. Open that page, tap your browser's share button, and choose Add to Home Screen. It becomes an icon like any other app, which matters because Facebook posts have a habit of vanishing while you go looking.</p>
+    </div>
   </details>
 
   <footer>
