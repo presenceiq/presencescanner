@@ -33,6 +33,7 @@ export default async function handler(req, res) {
     // Google ID). Lets Michael see photos, reviews and what the listing says
     // before he calls. Only sent when Google itself returned the listing.
     const googleListing = (b.googleListing || "").toString().trim();
+    const mapsRank = (b.mapsRank || "").toString().trim().slice(0, 200);
     const websiteScan = (b.websiteScan || "").toString().trim();
     const email   = (b.email   || "").toString().trim();
     const overallScore = (b.overallScore === 0 || b.overallScore) ? b.overallScore : null;
@@ -77,6 +78,7 @@ export default async function handler(req, res) {
     // Links sit bare at the END of their line, with nothing after them. Gmail
     // was treating the old closing ">" as part of the link, which made a 404.
     if (googleListing) lines.push("LISTING    " + googleListing);
+    if (mapsRank) lines.push("MAPS RANK  " + mapsRank);
     if (phone)   lines.push("PHONE      " + phone);
     lines.push("EMAIL      " + (email || "(not provided)"));
     if (website) lines.push("WEBSITE    " + website);

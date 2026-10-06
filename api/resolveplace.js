@@ -1,4 +1,5 @@
 import { isSiteDisabled, disabledResponse } from './_killswitch.js';
+import { spend, refused } from './_budget.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -9,6 +10,8 @@ export default async function handler(req, res) {
 
   // KILL SWITCH — if SITE_DISABLED=true in Vercel env vars, return immediately.
   if (isSiteDisabled()) return disabledResponse(res);
+  // SPENDING GUARD: caps paid Google lookups per visitor and per day. (6 Oct 2026)
+  { const ok = await spend(req, 'google'); if (!ok.ok) return refused(res, ok.message); }
 
   try {
     const { mapsUrl, placeId: directPlaceId } = req.body || {};

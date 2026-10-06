@@ -1,5 +1,12 @@
 import { isSiteDisabled, disabledResponse } from './_killswitch.js';
-import { checkRateLimit, rateLimitedResponse } from './_ratelimit.js';
+import { spend, refused } from './_budget.js';
+
+// Only these models may be called through this endpoint, each with a ceiling
+// on reply length, so nobody can use it to run an expensive model or a huge
+// reply on Michael's account. (Added 6 Oct 2026.)
+const ALLOWED_MODELS = { 'claude-sonnet-4-6': 3000, 'claude-haiku-4-5-20251001': 600 };
+const MAX_INPUT_CHARS = 40000;
+const ADVISOR_MAX_TOKENS = 600; // anything this size or smaller counts as an advisor message, not a scan
 
 // Hard timeout for the Anthropic API call. If the API hangs or runs
 // slow, we abort the request after this many milliseconds so a single
@@ -17,9 +24,19 @@ export default async function handler(req, res) {
   // KILL SWITCH — if SITE_DISABLED=true in Vercel env vars, return immediately.
   if (isSiteDisabled()) return disabledResponse(res);
 
-  // RATE LIMITER — block IPs that have already done their daily quota.
-  const rl = await checkRateLimit(req);
-  if (!rl.allowed) return rateLimitedResponse(res, rl.message);
+  // CHECK THE REQUEST before anything costs money.
+  const inBody = req.body || {};
+  const model = String(inBody.model || '');
+  if (!ALLOWED_MODELS[model]) return res.status(400).json({ error: 'Model not allowed' });
+  if (!Array.isArray(inBody.messages) || !inBody.messages.length) return res.status(400).json({ error: 'No messages' });
+  if (JSON.stringify(inBody.messages).length > MAX_INPUT_CHARS) return res.status(413).json({ error: 'Request too large' });
+  const maxTokens = Math.min(Math.max(parseInt(inBody.max_tokens, 10) || 500, 1), ALLOWED_MODELS[model]);
+
+  // SPENDING GUARD — full scans and advisor messages are counted separately,
+  // so asking the advisor questions no longer uses up someone's 3 daily scans.
+  const bucket = maxTokens > ADVISOR_MAX_TOKENS ? 'scan' : 'advisor';
+  const ok = await spend(req, bucket);
+  if (!ok.ok) return refused(res, ok.message);
 
   // SCAN TIMEOUT — abort the Anthropic call if it takes longer than
   // SCAN_TIMEOUT_MS. AbortController is the standard way to cancel
@@ -28,7 +45,8 @@ export default async function handler(req, res) {
   const timeoutId = setTimeout(() => controller.abort(), SCAN_TIMEOUT_MS);
 
   try {
-    const body = req.body;
+    const body = { model: model, max_tokens: maxTokens, messages: inBody.messages };
+    if (typeof inBody.temperature === 'number' && inBody.temperature >= 0 && inBody.temperature <= 1) body.temperature = inBody.temperature;
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {

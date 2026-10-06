@@ -81,6 +81,8 @@ export default async function handler(req, res) {
     const grade = cap(b.overallGrade, 40);
     const summary = cap(b.summary, 800);
     const topPriority = cap(b.topPriority, 500);
+    const mapsLine = cap(b.mapsLine, 400);
+    const basisLine = cap(b.basisLine, 200);
     const scannedName = cap(b.scannedName, 120);
     const scannedAddress = cap(b.scannedAddress, 200);
     const isMember = b.isMember === true;
@@ -107,6 +109,8 @@ export default async function handler(req, res) {
     T.push('');
     if (scannedName) T.push('Scanned: ' + scannedName + (scannedAddress ? ', ' + scannedAddress : ''));
     T.push('Overall: ' + (score !== null ? score + ' / 100' : 'not available') + (grade ? ' (' + grade + ')' : ''));
+    if (basisLine) T.push(basisLine);
+    if (mapsLine) { T.push(''); T.push('Google Maps check: ' + mapsLine); }
     if (summary) { T.push(''); T.push(summary); }
     if (topPriority) { T.push(''); T.push('Start here: ' + topPriority); }
     cats.forEach(function (c) {
@@ -138,7 +142,9 @@ export default async function handler(req, res) {
     H += '<div style="margin:18px 0;padding:16px;border-radius:10px;background:linear-gradient(135deg,' + cyan + ',' + purple + ');color:#ffffff">';
     H += '<div style="font-size:32px;font-weight:bold">' + (score !== null ? score + '<span style="font-size:16px"> / 100</span>' : 'Score not available') + '</div>';
     if (grade) H += '<div style="font-size:15px">' + esc(grade) + '</div>';
+    if (basisLine) H += '<div style="font-size:13px;opacity:0.9;margin-top:4px">' + esc(basisLine) + '</div>';
     H += '</div>';
+    if (mapsLine) H += '<p style="font-size:15px;line-height:1.55;margin:0 0 12px;padding:12px;background:#f7f8fa;border-radius:8px"><b>Google Maps check:</b> ' + esc(mapsLine) + '</p>';
     if (summary) H += '<p style="font-size:15px;line-height:1.55;margin:0 0 12px">' + esc(summary) + '</p>';
     if (topPriority) H += '<p style="font-size:15px;line-height:1.55;margin:0 0 18px"><b>Start here:</b> ' + esc(topPriority) + '</p>';
     cats.forEach(function (c) {

@@ -1,9 +1,16 @@
+import { isSiteDisabled, disabledResponse } from './_killswitch.js';
+import { spend, refused } from './_budget.js';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  // KILL SWITCH and SPENDING GUARD: each search here pays for up to 6 Google
+  // lookups, so it's capped per visitor and per day. (6 Oct 2026)
+  if (isSiteDisabled()) return disabledResponse(res);
+  { const ok = await spend(req, 'google'); if (!ok.ok) return refused(res, ok.message); }
 
   try {
     // phone and website are optional — they only help with scoring.
