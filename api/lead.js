@@ -34,6 +34,7 @@ export default async function handler(req, res) {
     // before he calls. Only sent when Google itself returned the listing.
     const googleListing = (b.googleListing || "").toString().trim();
     const mapsRank = (b.mapsRank || "").toString().trim().slice(0, 200);
+    const aiCheck = (b.aiCheck || "").toString().trim().slice(0, 900);
     const websiteScan = (b.websiteScan || "").toString().trim();
     const email   = (b.email   || "").toString().trim();
     const overallScore = (b.overallScore === 0 || b.overallScore) ? b.overallScore : null;
@@ -79,6 +80,7 @@ export default async function handler(req, res) {
     // was treating the old closing ">" as part of the link, which made a 404.
     if (googleListing) lines.push("LISTING    " + googleListing);
     if (mapsRank) lines.push("MAPS RANK  " + mapsRank);
+    if (aiCheck) lines.push("AI CHECK   " + aiCheck);
     if (phone)   lines.push("PHONE      " + phone);
     lines.push("EMAIL      " + (email || "(not provided)"));
     if (website) lines.push("WEBSITE    " + website);

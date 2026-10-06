@@ -81,7 +81,8 @@ export default async function handler(req, res) {
     const grade = cap(b.overallGrade, 40);
     const summary = cap(b.summary, 800);
     const topPriority = cap(b.topPriority, 500);
-    const mapsLine = cap(b.mapsLine, 400);
+    const mapsLine = cap(b.mapsLine, 900);
+    const aiLine = cap(b.aiLine, 900);
     const basisLine = cap(b.basisLine, 200);
     const scannedName = cap(b.scannedName, 120);
     const scannedAddress = cap(b.scannedAddress, 200);
@@ -111,6 +112,7 @@ export default async function handler(req, res) {
     T.push('Overall: ' + (score !== null ? score + ' / 100' : 'not available') + (grade ? ' (' + grade + ')' : ''));
     if (basisLine) T.push(basisLine);
     if (mapsLine) { T.push(''); T.push('Google Maps check: ' + mapsLine); }
+    if (aiLine) { T.push(''); T.push('AI assistant check: ' + aiLine); }
     if (summary) { T.push(''); T.push(summary); }
     if (topPriority) { T.push(''); T.push('Start here: ' + topPriority); }
     cats.forEach(function (c) {
@@ -145,6 +147,7 @@ export default async function handler(req, res) {
     if (basisLine) H += '<div style="font-size:13px;opacity:0.9;margin-top:4px">' + esc(basisLine) + '</div>';
     H += '</div>';
     if (mapsLine) H += '<p style="font-size:15px;line-height:1.55;margin:0 0 12px;padding:12px;background:#f7f8fa;border-radius:8px"><b>Google Maps check:</b> ' + esc(mapsLine) + '</p>';
+    if (aiLine) H += '<p style="font-size:15px;line-height:1.55;margin:0 0 12px;padding:12px;background:#f7f8fa;border-radius:8px"><b>AI assistant check:</b> ' + esc(aiLine) + '</p>';
     if (summary) H += '<p style="font-size:15px;line-height:1.55;margin:0 0 12px">' + esc(summary) + '</p>';
     if (topPriority) H += '<p style="font-size:15px;line-height:1.55;margin:0 0 18px"><b>Start here:</b> ' + esc(topPriority) + '</p>';
     cats.forEach(function (c) {

@@ -46,7 +46,8 @@ export default async function handler(req, res) {
       checked: results.length,
       rank: idx === -1 ? null : idx + 1,
       // The top 3 names, so the report can say who shows up first.
-      top: results.slice(0, 3).map(function (x) { return { name: String(x.name || '').slice(0, 80), isYou: x.place_id === placeId }; }),
+      top: results.slice(0, 3).map(function (x) { return { name: String(x.name || '').slice(0, 80), isYou: x.place_id === placeId,
+        rating: typeof x.rating === 'number' ? x.rating : null, reviews: typeof x.user_ratings_total === 'number' ? x.user_ratings_total : null }; }),
     });
   } catch (e) {
     console.error('MAPSRANK ERROR ' + String(e).slice(0, 200));

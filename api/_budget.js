@@ -22,7 +22,8 @@ export const LIMITS = {
   google:  { perIp: 10,  site: 60  },  // business lookups (places, findplace, resolveplace); a real scan uses 1 to 3
   mapsrank:{ perIp: 6,   site: 30  },  // Google Maps rank check
   scan:    { perIp: 3,   site: 40  },  // full AI scans (the per-IP 3 matches the old limiter)
-  advisor: { perIp: 40,  site: 200 },  // advisor chat messages and the short search-phrase call
+  advisor: { perIp: 25,  site: 200 },  // advisor chat messages (7 per visit) and the short search-phrase call
+  aicheck: { perIp: 3,   site: 30  },  // AI assistant check (1 web search each)
 };
 
 const DAY = 86400;
