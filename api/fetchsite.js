@@ -1,5 +1,53 @@
 import { isSiteDisabled, disabledResponse } from './_killswitch.js';
 
+// Real browser-like headers so ordinary bot-detection lets us in.
+// (Many sites block a fetcher that announces itself as a bot.)
+const BROWSER_HEADERS = {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Upgrade-Insecure-Requests': '1',
+          'sec-ch-ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+          'sec-ch-ua-mobile': '?0',
+          'sec-ch-ua-platform': '"Windows"',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-User': '?1',
+          'Sec-Fetch-Dest': 'document',
+        };
+
+// Follows up to 8 redirects by hand, keeping cookies like a browser. Throws
+// "redirect loop" only when the same address comes back with the same cookies.
+async function fetchFollow(startUrl, signal, headers) {
+  let url = startUrl;
+  const jar = {};
+  const seen = {};
+  for (let hop = 0; hop < 8; hop++) {
+    const cookie = Object.keys(jar).map(function (k) { return k + '=' + jar[k]; }).join('; ');
+    const h = cookie ? Object.assign({}, headers, { Cookie: cookie }) : headers;
+    const r = await fetch(url, { signal: signal, redirect: 'manual', headers: h });
+    const setCookies = (r.headers && typeof r.headers.getSetCookie === 'function')
+      ? r.headers.getSetCookie()
+      : (r.headers && r.headers.get('set-cookie') ? [r.headers.get('set-cookie')] : []);
+    setCookies.forEach(function (c) {
+      const m = String(c).match(/^\s*([^=;\s]+)=([^;]*)/);
+      if (m) jar[m[1]] = m[2];
+    });
+    const loc = r.headers && r.headers.get('location');
+    if (r.status >= 300 && r.status < 400 && loc) {
+      const next = new URL(loc, url).toString();
+      const now = Object.keys(jar).map(function (k) { return k + '=' + jar[k]; }).join('; ');
+      const key = next + '|' + now;
+      if (seen[key]) throw new Error('redirect loop');
+      seen[key] = 1;
+      url = next;
+      continue;
+    }
+    return r;
+  }
+  throw new Error('redirect loop (too many redirects)');
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -30,24 +78,19 @@ export default async function handler(req, res) {
 
     let pageRes;
     try {
-      pageRes = await fetch(website, {
-        signal: controller.signal,
-        // Real browser-like headers so ordinary bot-detection lets us in.
-        // (Many sites block a fetcher that announces itself as a bot.)
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Upgrade-Insecure-Requests': '1',
-          'sec-ch-ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
-          'sec-ch-ua-mobile': '?0',
-          'sec-ch-ua-platform': '"Windows"',
-          'Sec-Fetch-Site': 'none',
-          'Sec-Fetch-Mode': 'navigate',
-          'Sec-Fetch-User': '?1',
-          'Sec-Fetch-Dest': 'document',
-        },
-      });
+      // Follow redirects ourselves, carrying cookies between hops the way a
+      // browser does. Some sites (a real one: The Breakfast Cottage, 6 Oct 2026)
+      // bounce a visitor between http and https until a cookie is set, which a
+      // plain fetch sees as an endless loop. If it still loops, try once more
+      // without the "upgrade to secure" header, which some servers react to.
+      try {
+        pageRes = await fetchFollow(website, controller.signal, BROWSER_HEADERS);
+      } catch (firstErr) {
+        if (!/redirect/i.test(String(firstErr && firstErr.message))) throw firstErr;
+        const plain = Object.assign({}, BROWSER_HEADERS);
+        ['Upgrade-Insecure-Requests','Sec-Fetch-Site','Sec-Fetch-Mode','Sec-Fetch-User','Sec-Fetch-Dest'].forEach(function (h) { delete plain[h]; });
+        pageRes = await fetchFollow(website, controller.signal, plain);
+      }
     } catch (fetchErr) {
       clearTimeout(timeout);
       // Capture WHAT actually failed so the lead notification can show it

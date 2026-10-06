@@ -92,7 +92,7 @@ export default async function handler(req, res) {
 
   // The question must not name the business, or the check would be biased.
   const named = norm(bizName) && (' ' + norm(q) + ' ').indexOf(' ' + norm(bizName) + ' ') !== -1;
-  const question = (q.length >= 12 && /\?$/.test(q) && !named) ? q : ('Who are the best places for ' + phrase + ' in ' + city + '?');
+  const question = (q.length >= 12 && /\?$/.test(q) && !named) ? q : ('Can you recommend a good ' + phrase + ' in ' + city + '?');
 
   try {
     let out = null, used = null;
