@@ -1415,6 +1415,10 @@ function App(){
   // Track whether we've already sent the lead email for this scan, so it
   // fires exactly once per completed scan (not on every re-render).
   const leadSentRef=useRef(false);
+  // REPORT EMAIL (Round 4, 6 Oct 2026): when the person typed an email, send
+  // them a copy of the finished report. Once per completed scan.
+  const reportSentRef=useRef(false);
+  const [reportStatus,setReportStatus]=useState("");
   useEffect(()=>{
     if(view==="results"){
       window.scrollTo(0,0);
@@ -1466,6 +1470,29 @@ function App(){
             topIssues:issues,
             mine:isMine
           })}).catch(function(){});
+      }
+      if(results && !reportSentRef.current && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email||"").trim())){
+        reportSentRef.current=true;
+        setReportStatus("sending");
+        fetch("/api/sendreport",{method:"POST",keepalive:true,headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            email:email.trim(),
+            bizName:(results.scannedInputs&&results.scannedInputs.bizName)||bizName,
+            scannedName:(results.gbp&&results.gbp.name)||"",
+            scannedAddress:(results.gbp&&results.gbp.address)||"",
+            overallScore:(typeof results.overallScore==="number")?results.overallScore:null,
+            overallGrade:results.overallGrade||"",
+            summary:results.summary||"",
+            topPriority:results.topPriority||"",
+            isMember:hasDirPage==="yes",
+            categories:(results.categories||[]).map(function(c){return {
+              name:c.name, score:c.score, notScored:!!c.notScored, scoreReason:c.scoreReason||"",
+              sourceNote:c.sourceNote||"",
+              findings:(c.findings||[]).map(function(f){return {title:f.title||"",detail:f.detail||"",action:f.action||""};})
+            };})
+          })})
+          .then(function(r){ setReportStatus(r.ok?"sent":"failed"); })
+          .catch(function(){ setReportStatus("failed"); });
       }
     }
   },[view,results]);
@@ -1826,6 +1853,8 @@ function App(){
     setView("form");
     setResults(null);
     setErrMsg("");
+    // Let the next scan send its own lead email and report email.
+    leadSentRef.current=false;reportSentRef.current=false;setReportStatus("");
     setPendingMatch(null);
     setPhoneMatch(null);
     setFhName("");setFhAddress("");setFhPhone("");setFhMapsUrl("");setFhErr("");
@@ -1867,7 +1896,7 @@ function App(){
               <input value={city} onChange={e=>setCity(e.target.value)} placeholder="e.g. Venice, FL"/></div>
             <div className="field"><label>Email Address</label>
               <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="e.g. joe@joesplumbing.com"/>
-              <div className="enote">Optional. Your report shows on the next screen, so read or save it there. If you add your email, I may send an occasional useful tip. It's never shared or sold, and you can unsubscribe anytime.</div></div>
+              <div className="enote">Optional. Add it and we'll email you a copy of your report, plus an occasional useful tip. It's never shared or sold, and you can unsubscribe anytime.</div></div>
             <div className="field">
               <label>Do you already have a free PresenceScanner directory page?</label>
               <div style={{display:"flex",gap:"10px",marginTop:"4px"}}>
@@ -2044,6 +2073,9 @@ function App(){
             <div className="sinfo">
               <div className={`gpill ${sc}-g`}>{results.overallGrade}</div>
               <h2>Presence Report: {bizName}</h2>
+              {reportStatus==="sending" && <div className="rsend" style={{fontSize:"0.9rem",color:"var(--t2)",margin:"4px 0 8px"}}>Emailing a copy of this report to {email.trim()}…</div>}
+              {reportStatus==="sent" && <div className="rsend" style={{fontSize:"0.9rem",color:"var(--t2)",margin:"4px 0 8px"}}>✓ A copy of this report is on its way to {email.trim()}. Check your spam folder if you don't see it.</div>}
+              {reportStatus==="failed" && <div className="rsend" style={{fontSize:"0.9rem",color:"var(--t2)",margin:"4px 0 8px"}}>We couldn't email this report, so please read or save it here.</div>}
               {results.gbp ? (
                 <div className="sident">
                   <span className="sident-row"><b>Scanned:</b> {results.gbp.name}</span>
@@ -2122,7 +2154,7 @@ function App(){
           <SentimentStrip onTextFeedback={requestFeedback} voted={moodVoted} setVoted={setMoodVoted}/>
           <button className="rescan" onClick={reset}>← Scan Another Business</button>
           <p style={{fontSize:"0.8rem",opacity:0.6,textAlign:"center",lineHeight:1.6,maxWidth:560,margin:"22px auto 0",padding:"0 16px"}}>
-            <span style={{display:"block",fontWeight:600,color:"var(--t2)",marginBottom:"8px"}}>🔒 These results are private. Only you see them. We don't publish or share your scan.</span>
+            <span style={{display:"block",fontWeight:600,color:"var(--t2)",marginBottom:"8px"}}>🔒 These results are private. We don't publish your scan or share it with anyone.</span>
             PresenceScanner is a free beta tool. This report is an automated estimate based on available public data, not professional advice. Results may be incomplete or inaccurate, so please verify anything important before acting on it.
           </p>
         </div>
