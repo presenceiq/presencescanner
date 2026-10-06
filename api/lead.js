@@ -29,6 +29,10 @@ export default async function handler(req, res) {
     //   anything else       = lookup found nothing; owner typed details by hand
     const gbpStatus = (b.gbpStatus || "").toString().trim();
     const listingUrl = (b.listingUrl || "").toString().trim();
+    // Direct link to the Google listing our lookup matched (built from its
+    // Google ID). Lets Michael see photos, reviews and what the listing says
+    // before he calls. Only sent when Google itself returned the listing.
+    const googleListing = (b.googleListing || "").toString().trim();
     const websiteScan = (b.websiteScan || "").toString().trim();
     const email   = (b.email   || "").toString().trim();
     const overallScore = (b.overallScore === 0 || b.overallScore) ? b.overallScore : null;
@@ -70,6 +74,7 @@ export default async function handler(req, res) {
       matchedLine = "Our Google lookup found no matching listing. Check Google Maps before telling them they don't have one.";
     }
     lines.push("MATCHED    " + matchedLine);
+    if (googleListing) lines.push("LISTING    <" + googleListing + ">");
     if (phone)   lines.push("PHONE      " + phone);
     lines.push("EMAIL      " + (email || "(not provided)"));
     if (website) lines.push("WEBSITE    <" + website + ">");
