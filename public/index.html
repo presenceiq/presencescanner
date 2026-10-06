@@ -414,37 +414,71 @@ let CURRENT_HAS_DIR_PAGE = "";
 // Step 1: a tiny AI call picks the search words (e.g. "breakfast restaurant").
 // Step 2: /api/mapsrank runs ONE Google search and finds the business in it.
 // Both are capped by the spending guard. Any failure just skips the check.
-async function getSearchPhrase(bizName, gbp, site){
-  const generic = ["point_of_interest","establishment","store","food","premise","political"];
-  const cats = ((gbp && gbp.types) || []).filter(function(x){ return generic.indexOf(x) === -1; }).map(function(x){ return String(x).replace(/_/g," "); });
+// "NOKOMIS fl" -> "Nokomis, FL", so searches and the report read properly.
+function niceCity(c){
+  const s = String(c || "").replace(/\s+/g, " ").trim().replace(/(,\s*|\s+)(USA|US)$/i, "").replace(/,?\s*\d{5}(-\d{4})?$/, "").trim();
+  const m = s.match(/^(.*?)[,\s]+([A-Za-z]{2})$/);
+  const cap = function(x){ return x.toLowerCase().replace(/\b[a-z]/g, function(ch){ return ch.toUpperCase(); }); };
+  return m ? cap(m[1].replace(/,\s*$/, "")) + ", " + m[2].toUpperCase() : cap(s);
+}
+// Step 1 of the live checks: a tiny AI call picks (a) the words a customer
+// would type into Google Maps and (b) the question they'd ask an AI assistant.
+async function getSearchPhrase(bizName, gbp, site, city){
+  const skipTypes = ["point_of_interest","establishment","store","food","premise","political","meal_takeaway","meal_delivery"];
+  const cats = ((gbp && gbp.types) || []).filter(function(x){ return skipTypes.indexOf(x) === -1; }).map(function(x){ return String(x).replace(/_/g," "); });
+  // Words a real person doesn't search with (Google category jargon).
+  const junk = /\b(takeaway|takeout|take out|delivery|meal|establishment|point of interest)\b/g;
   const clean = function(s){
-    s = String(s || "").toLowerCase().replace(/[^a-z &'-]/g, " ").replace(/\s+/g, " ").trim();
+    s = String(s || "").toLowerCase().replace(junk, " ").replace(/[^a-z &'-]/g, " ").replace(/\s+/g, " ").trim();
     const w = s.split(" ").filter(Boolean);
     return (w.length >= 1 && w.length <= 4) ? w.join(" ") : "";
   };
+  let phrase = "", question = "";
   try {
-    const q = "A customer is looking on Google Maps for a local business like this one.\nBusiness name: " + bizName +
+    const q = "A customer near " + city + " is looking for a local business like this one.\nBusiness name: " + bizName +
       "\nGoogle categories: " + (cats.join(", ") || "unknown") +
       "\nWebsite title: " + ((site && site.fetched && site.title) ? site.title : "unknown") +
-      "\nReply with ONLY the 1 to 4 word phrase a customer would type to find this kind of business. Lowercase. No town name, no business name, no punctuation. Examples: plumber, breakfast restaurant, house cleaning, pool service, mobile notary, roofing contractor.";
-    const out = await callClaude([{role:"user",content:q}], 20, ADVISOR_MODEL, 0);
-    const phrase = clean(out);
-    if (phrase) return phrase;
+      "\nReply with exactly 2 lines and nothing else.\nLine 1: the 1 to 4 words an American customer would type into Google Maps to find this kind of business. Lowercase, no town, no business name. Use everyday words, never Google category words like takeaway, takeout, delivery or meal. Examples: plumber, breakfast restaurant, house cleaning, pool service, mobile notary.\nLine 2: the question that customer would ask an AI assistant like ChatGPT, naming the town but NOT this business. Example: What are the best breakfast spots in Nokomis, FL?";
+    const out = String(await callClaude([{role:"user",content:q}], 60, ADVISOR_MODEL, 0) || "");
+    const lines = out.split("\n").map(function(l){ return l.replace(/^line\s*\d\s*:\s*/i, "").trim(); }).filter(Boolean);
+    phrase = clean(lines[0]);
+    question = String(lines[1] || "").replace(/[^A-Za-z0-9 &'.,?-]/g, " ").replace(/\s+/g, " ").trim().slice(0, 140);
+    if (!/\?$/.test(question)) question = "";
   } catch (e) {}
-  return clean(cats[0] || "");
+  if (!phrase) phrase = clean(cats[0] || "");
+  return { phrase: phrase, question: question };
 }
-async function getMapsRank(bizName, gbp, site, city){
+// Step 2: run the Google Maps check and the AI assistant check at the same
+// time. Both are capped by the spending guard. Any failure just skips that
+// check; the scan carries on without it.
+// Remembered for this visit, so a "please try again" doesn't pay for the
+// same live checks twice.
+const LIVE_CACHE = {};
+async function getLiveChecks(bizName, gbp, site, city){
+  const key = (gbp && gbp.placeId ? gbp.placeId : "") + "|" + niceCity(city);
+  if (gbp && gbp.placeId && LIVE_CACHE[key]) return LIVE_CACHE[key];
+  const out = await runLiveChecks(bizName, gbp, site, city);
+  if (gbp && gbp.placeId && (out.maps || out.ai)) LIVE_CACHE[key] = out;
+  return out;
+}
+async function runLiveChecks(bizName, gbp, site, city){
+  const out = { maps: null, ai: null };
   try {
-    if (!gbp || gbp.userProvided || !gbp.placeId || !city) return null;
-    const phrase = await getSearchPhrase(bizName, gbp, site);
-    if (!phrase) return null;
-    const r = await fetch("/api/mapsrank", {method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({phrase: phrase, city: city, placeId: gbp.placeId})});
-    if (!r.ok) return null;
-    const j = await r.json();
-    if (!j || !j.ok || !j.checked) return null;
-    return {query: j.query, rank: j.rank, checked: j.checked, top: j.top || []};
-  } catch (e) { return null; }
+    if (!gbp || gbp.userProvided || !city) return out;
+    const nc = niceCity(city);
+    const sp = await getSearchPhrase(bizName, gbp, site, nc);
+    if (!sp.phrase) return out;
+    const post = function(url, body){ return fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)})
+      .then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }); };
+    const res = await Promise.all([
+      gbp.placeId ? post("/api/mapsrank", {phrase: sp.phrase, city: nc, placeId: gbp.placeId}) : Promise.resolve(null),
+      post("/api/aicheck", {bizName: gbp.name || bizName, phrase: sp.phrase, city: nc, question: sp.question})
+    ]);
+    const m = res[0], a = res[1];
+    if (m && m.ok && m.checked) out.maps = {query: m.query, rank: m.rank, checked: m.checked, top: m.top || [], you: {rating: gbp.rating, reviews: gbp.reviewCount}};
+    if (a && a.ok && a.searched) out.ai = {question: a.question, named: a.named, position: a.position, count: a.count, names: a.names || []};
+  } catch (e) {}
+  return out;
 }
 function mapsRankLine(m){
   if (!m) return "";
@@ -452,6 +486,14 @@ function mapsRankLine(m){
   const names = (m.top || []).map(function(x){ return x.name; }).filter(Boolean);
   return "When someone searches Google Maps for “" + m.query + "”, this business doesn't come up in the first " + m.checked + "." +
     (names.length ? " The first results are " + names.join(", ") + "." : "");
+}
+function aiCheckLine(a){
+  if (!a) return "";
+  const ord = function(n){ return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : n + "th"; };
+  const asked = "We asked an AI assistant (Claude, with live web search): “" + a.question + "”";
+  if (a.named) return asked + " It recommended this business " + ord(a.position) + " of " + a.count + ".";
+  if (!a.count) return asked + " It didn't recommend any specific business.";
+  return asked + " It didn't mention this business. It recommended " + a.names.join(", ") + ".";
 }
 
 async function runScan(bizName, website, city, phone, gbp) {
@@ -471,7 +513,9 @@ async function runScan(bizName, website, city, phone, gbp) {
   const noWebsiteAnywhere = !knownWebsite;
 
   const site = await getSiteData(website);
-  const mapsRank = await getMapsRank(bizName, gbp, site, city);
+  const live = await getLiveChecks(bizName, gbp, site, city);
+  const mapsRank = live.maps;
+  const aiCheck = live.ai;
   
   const userProvided = !!(gbp && gbp.userProvided);
   // Helper: render a GBP attribute honestly. On the manual path a blank/null
@@ -587,7 +631,7 @@ Handle this honestly:
 REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automated scanner could not fetch it. Treat Website Health, AI Search Visibility, and GEO Score as NOT MEASURED — give each a neutral score of 50 with ONE finding explaining honestly that the website could not be scanned automatically (often a security setting), so analysis was skipped. Do NOT claim the website is broken. Do NOT penalize the overall score.
 `;
 
-  const prompt = "You are auditing a local business's online presence. Use ONLY the real data provided below. Do NOT invent facts. Return ONLY valid JSON, no other text.\n\nBusiness: "+bizName+"\nWebsite: "+(website||"none")+"\nCity: "+city+"\n\n"+gbpContext+"\n"+siteContext+(mapsRank ? "\n\nGOOGLE MAPS CHECK (a real measurement we just made, the strongest fact in this report): "+mapsRankLine(mapsRank)+" This depends on the exact search words, so always name the search when you mention it. If the business came up anywhere in these results, that is a real strength: say so in the summary, using its exact position, and do not invent weaknesses to balance it out. A top 3 position is the strongest. If it did not come up, say so plainly in the summary and name who comes up first. Mention this check ONCE, in the summary only." : "")+"\n\nWRITING RULES: Never use em dashes. Say each fact and each number ONCE in the whole report. Do not repeat the same advice in the summary, the topPriority and a finding: if the topPriority covers it, leave it out of the findings. If you mention schema.org markup, name only types that really exist on schema.org (for example LocalBusiness, FinancialService, Plumber, RoofingContractor, FAQPage). Never invent a type name. If you are not sure a more specific type exists, say LocalBusiness.\n\nReturn this JSON:\n{\"overallScore\":50,\"overallGrade\":\"Needs Work\",\"summary\":\"2 sentence summary\",\"topPriority\":\"top action\",\"hasWebsite\":false,\"categories\":[{\"name\":\"Website Health\",\"subtitle\":\"SEO and mobile\",\"icon\":\"🌐\",\"score\":50,\"findings\":[{\"title\":\"finding\",\"detail\":\"detail\",\"status\":\"warn\",\"action\":\"action\"}]},{\"name\":\"Google Business Profile\",\"subtitle\":\"Local ranking power\",\"icon\":\"📍\",\"score\":50,\"findings\":[]},{\"name\":\"AI Search Visibility\",\"subtitle\":\"ChatGPT and Google AI\",\"icon\":\"🤖\",\"score\":50,\"findings\":[]},{\"name\":\"Citation Consistency\",\"subtitle\":\"NAP across the web\",\"icon\":\"📋\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Social Presence\",\"subtitle\":\"Facebook and Instagram\",\"icon\":\"📱\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Review Authority\",\"subtitle\":\"Volume and recency\",\"icon\":\"⭐\",\"score\":50,\"findings\":[]},{\"name\":\"GEO Score\",\"subtitle\":\"AI search trust and authority\",\"icon\":\"🧠\",\"score\":50,\"findings\":[]}]}\n\nSCORING RULES:\n- CONFIDENCE CALIBRATION (most important rule): State verified facts confidently. State recommendations cautiously, as suggestions. State AI-visibility and search-ranking claims conservatively. No one — not Google, OpenAI, Perplexity, or Anthropic — publishes a proven formula for what makes AI or search recommend a business, so never claim certainty about it.\\n- SCORE REASON: For each of the FIVE scored categories, add a field \\\"scoreReason\\\" — ONE short plain-English sentence explaining what helped the score and what held it back, so the number is not a mystery. Name the actual things observed. Example: 'Scored well for the 5-star rating and 58 reviews, held back by the low photo count.' Do NOT invent sub-point breakdowns or exact point values (no '27 out of 30') — describe the reasoning in words only, since precise sub-scores would be made up. For the two coming-soon categories, omit scoreReason.\n- The scanner only knows what was on the SCANNED PAGE. NEVER claim 'AI tools cannot cite this business', 'Google has no understanding of this business', 'AI models can't find you', or that something does not exist anywhere — you only checked one page. NEVER call any change 'the highest-impact' or 'the most important' change; you cannot prove ranking of impact. NEVER cite a statistic you cannot source (e.g. 'businesses with 100+ photos get more engagement', 'pages need 500+ words to rank') — no invented numbers or thresholds presented as fact.\n- FACT to INTERPRETATION to RECOMMENDATION: every finding's detail should connect an observed fact to its reasoning to the suggestion, not jump from fact straight to a command. Example of the right shape: 'No FAQ content was detected on the scanned homepage. FAQ sections can help answer common customer questions and give search engines and AI systems more to work with. Consider adding a short FAQ section.' Observed fact, then why it may matter (softly), then a suggestion. Do not skip the middle step.\n- Soften AI/SEO cause-and-effect: prefer 'can help', 'may improve', 'is commonly recommended because', 'often' over 'will', 'needs', 'must', 'has no'. Recommendations are suggestions the owner may consider, not laws.\n- Score these FIVE categories with real numbers 0-100 based strictly on the real data above: Website Health, Google Business Profile, AI Search Visibility, Review Authority, GEO Score. Vary the scores honestly — a business with schema, FAQ, good word count and strong reviews should score well; one missing those should score low. Do NOT give every category a similar number.\n- For Citation Consistency and Social Presence: these are NOT measured yet. Keep score as -1 and comingSoon as true exactly as shown. Give each ONE finding with title 'Coming soon', a short detail explaining full citation/social analysis is being added, status 'warn', and no action. Do not invent a score for these two.\n- overallScore must be the average of ONLY the five real scored categories (ignore the two coming-soon ones).\n- Use the REAL GBP DATA for the Google Business Profile category. Use the REAL WEBSITE DATA for Website Health, AI Search Visibility and GEO Score.\n- FINDINGS COUNT: Give each scored category between 1 and 3 findings — ONLY as many as there are genuinely distinct things to say. Quality over quantity. If a category has only one real thing worth noting, give ONE finding. Do NOT pad a category up to three by rewording the same point or inventing minor filler. A short, sharp report is better than a long repetitive one. Be concrete — reference actual things found or missing.\n- NO REPETITION ACROSS THE WHOLE REPORT: Each finding must raise a DISTINCT issue. If you have already made a point in one category (e.g. 'thin website content' or 'needs more reviews' or 'no schema'), do NOT restate that same point in another category under a different heading. Every finding across all categories must be about a different thing. Before adding a finding, check you have not already said it elsewhere.\n- NO SUMMARY/SYNTHESIS FINDINGS: Do NOT create a finding whose job is to re-explain or combine issues already covered in their own findings (for example, after a schema finding and an FAQ finding, do NOT add a third 'limited structured signals' finding that re-explains schema and FAQ again). Each issue gets ONE finding, explained once.\n- TOP PRIORITY framing: the topPriority field is ONE important opportunity identified from what was actually checked (the homepage and the GBP), NOT a definitive ranking of everything the business should do. The scanner does not check competitors, citations, backlinks, Bing, social, or service pages, so do not phrase it as 'the single most important thing' or imply it outranks everything. Frame it as a high-impact opportunity worth considering.\n- AIM for roughly 8-11 total findings across the five scored categories for a typical business — not 15. Fewer is fine. More than 12 means you are repeating yourself; cut the repeats.\n- EXCEPTION when the website was NOT scannable (REAL WEBSITE DATA section says scanner was blocked or analysis was skipped): Website Health gets exactly 1 finding (the honest 'analysis was skipped' explanation). For AI Search Visibility and GEO Score, AT MOST 1 finding per category may be about the blocked scan; any additional findings MUST draw on real signals you actually have — GBP completeness, rating, review volume, photo count, business category, location — not repeated rewordings of 'we couldn't see the website.' Give fewer findings rather than padding with repetition.\n- For GEO Score: assess how easily ChatGPT or Perplexity could find citable information about this business, based on whether the real website data shows schema markup and FAQ content. Most small businesses score low here because they lack these signals — score honestly, and frame it as an opportunity, not a verdict, since no one can prove exactly how AI tools choose what to cite.\n- PHOTO ADVICE MUST SAY WHERE: whenever you suggest adding or uploading photos, ALWAYS tell the owner exactly where to do it — their Google Business Profile (via the Google Maps app: open your business listing, tap Photos, then Add). Never just say 'upload more photos' without naming the location; business owners get confused about where photos go.\n- If 'IMPORTANT FIX OPPORTUNITY' is mentioned in the GBP data above (the business has its own real website but it is not linked on the Google profile), you MAY surface it as ONE finding in the Google Business Profile category, title 'Website not linked on your Google listing', status 'warn', action: 'If you have a website, add its URL in your Google Business Profile dashboard so customers can click through.' Do this ONLY when the business genuinely has its own website. NEVER suggest putting a directory listing page (such as a PresenceScanner directory page), a social media page, or any other third-party page in the website field of a Google Business Profile. Google's own guidelines require that field to point at a website representing the business itself, and prohibit URLs that refer users to landing pages other than those of the actual business. This applies even when the business has no website of its own: in that case the correct advice is to leave the field empty. A directory listing is valuable as an additional citation elsewhere, never as the Google Business Profile website.\n- DIRECTORY MEMBERSHIP CONTEXT: "+(CURRENT_HAS_DIR_PAGE==="yes" ? "This business HAS a free PresenceScanner directory page (a live listing page). Treat that page as an existing, citable web presence for this business. When discussing web presence, AI citability, or where customers/AI can find information, ACKNOWLEDGE their PresenceScanner directory page as a real citable source they already have. Do NOT tell them to 'get a free directory page' — they have one. You may still note OTHER directories (HomeAdvisor, Angi, BBB, Houzz, Birdeye) as ADDITIONAL places worth being listed, but mention their existing PresenceScanner page FIRST as something they already have. Do NOT imply they have no web presence." : (CURRENT_HAS_DIR_PAGE==="no" ? "This business does NOT have a PresenceScanner directory page. If web presence is weak, a free PresenceScanner directory page is a genuinely useful first step and worth mentioning as an option, alongside other directories (HomeAdvisor, Angi, BBB, Houzz, Birdeye)." : "Directory membership is unknown for this business — do not assume either way."))+"\n- NEVER tell any business to use a directory listing page as their primary website or as their Google Business Profile website URL. Google's guidelines prohibit a website URL that refers users to a landing page other than the actual business's own. If a business has no website, the Google Business Profile website field stays EMPTY. Frame directory pages as ADDITIONAL citations only.";
+  const prompt = "You are auditing a local business's online presence. Use ONLY the real data provided below. Do NOT invent facts. Return ONLY valid JSON, no other text.\n\nBusiness: "+bizName+"\nWebsite: "+(website||"none")+"\nCity: "+city+"\n\n"+gbpContext+"\n"+siteContext+((mapsRank || aiCheck) ? "\n\nLIVE CHECKS (real measurements we just made, the strongest facts in this report; they are shown to the owner in their own box above your summary):"+(mapsRank ? "\n- "+mapsRankLine(mapsRank) : "")+(aiCheck ? "\n- "+aiCheckLine(aiCheck) : "")+"\nHow to use them: if the business showed up in either check, that is a real strength, so say so in the summary in a few words and do not invent weaknesses to balance it out. If it did not show up, say so plainly in the summary. Do NOT restate the search words, the question, the position numbers or the other business names: the box already shows them. Mention the checks in the summary only, never in findings." : "")+"\n\nWRITING RULES: Never use em dashes. Never compare the business to other businesses or to what most businesses achieve, unless the live checks above show it. Never write the phrase worthwhile opportunity. Say each fact and each number ONCE in the whole report. Do not repeat the same advice in the summary, the topPriority and a finding: if the topPriority covers it, leave it out of the findings. If you mention schema.org markup, name only types that really exist on schema.org (for example LocalBusiness, FinancialService, Plumber, RoofingContractor, FAQPage). Never invent a type name. If you are not sure a more specific type exists, say LocalBusiness.\n\nReturn this JSON:\n{\"overallScore\":50,\"overallGrade\":\"Needs Work\",\"summary\":\"2 sentence summary\",\"topPriority\":\"top action\",\"hasWebsite\":false,\"categories\":[{\"name\":\"Website Health\",\"subtitle\":\"SEO and mobile\",\"icon\":\"🌐\",\"score\":50,\"findings\":[{\"title\":\"finding\",\"detail\":\"detail\",\"status\":\"warn\",\"action\":\"action\"}]},{\"name\":\"Google Business Profile\",\"subtitle\":\"Local ranking power\",\"icon\":\"📍\",\"score\":50,\"findings\":[]},{\"name\":\"AI Search Visibility\",\"subtitle\":\"ChatGPT and Google AI\",\"icon\":\"🤖\",\"score\":50,\"findings\":[]},{\"name\":\"Citation Consistency\",\"subtitle\":\"NAP across the web\",\"icon\":\"📋\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Social Presence\",\"subtitle\":\"Facebook and Instagram\",\"icon\":\"📱\",\"score\":-1,\"comingSoon\":true,\"findings\":[]},{\"name\":\"Review Authority\",\"subtitle\":\"Volume and recency\",\"icon\":\"⭐\",\"score\":50,\"findings\":[]},{\"name\":\"GEO Score\",\"subtitle\":\"AI search trust and authority\",\"icon\":\"🧠\",\"score\":50,\"findings\":[]}]}\n\nSCORING RULES:\n- CONFIDENCE CALIBRATION (most important rule): State verified facts confidently. State recommendations cautiously, as suggestions. State AI-visibility and search-ranking claims conservatively. No one — not Google, OpenAI, Perplexity, or Anthropic — publishes a proven formula for what makes AI or search recommend a business, so never claim certainty about it.\\n- SCORE REASON: For each of the FIVE scored categories, add a field \\\"scoreReason\\\" — ONE short plain-English sentence explaining what helped the score and what held it back, so the number is not a mystery. Name the actual things observed. Example: 'Scored well for the 5-star rating and 58 reviews, held back by the low photo count.' Do NOT invent sub-point breakdowns or exact point values (no '27 out of 30') — describe the reasoning in words only, since precise sub-scores would be made up. For the two coming-soon categories, omit scoreReason.\n- The scanner only knows what was on the SCANNED PAGE. NEVER claim 'AI tools cannot cite this business', 'Google has no understanding of this business', 'AI models can't find you', or that something does not exist anywhere — you only checked one page. NEVER call any change 'the highest-impact' or 'the most important' change; you cannot prove ranking of impact. NEVER cite a statistic you cannot source (e.g. 'businesses with 100+ photos get more engagement', 'pages need 500+ words to rank') — no invented numbers or thresholds presented as fact.\n- FACT to INTERPRETATION to RECOMMENDATION: every finding's detail should connect an observed fact to its reasoning to the suggestion, not jump from fact straight to a command. Example of the right shape: 'No FAQ content was detected on the scanned homepage. FAQ sections can help answer common customer questions and give search engines and AI systems more to work with. Consider adding a short FAQ section.' Observed fact, then why it may matter (softly), then a suggestion. Do not skip the middle step.\n- Soften AI/SEO cause-and-effect: prefer 'can help', 'may improve', 'is commonly recommended because', 'often' over 'will', 'needs', 'must', 'has no'. Recommendations are suggestions the owner may consider, not laws.\n- Score these FIVE categories with real numbers 0-100 based strictly on the real data above: Website Health, Google Business Profile, AI Search Visibility, Review Authority, GEO Score. Vary the scores honestly — a business with schema, FAQ, good word count and strong reviews should score well; one missing those should score low. Do NOT give every category a similar number.\n- For Citation Consistency and Social Presence: these are NOT measured yet. Keep score as -1 and comingSoon as true exactly as shown. Give each ONE finding with title 'Coming soon', a short detail explaining full citation/social analysis is being added, status 'warn', and no action. Do not invent a score for these two.\n- overallScore must be the average of ONLY the five real scored categories (ignore the two coming-soon ones).\n- Use the REAL GBP DATA for the Google Business Profile category. Use the REAL WEBSITE DATA for Website Health, AI Search Visibility and GEO Score.\n- FINDINGS COUNT: Give each scored category between 1 and 3 findings — ONLY as many as there are genuinely distinct things to say. Quality over quantity. If a category has only one real thing worth noting, give ONE finding. Do NOT pad a category up to three by rewording the same point or inventing minor filler. A short, sharp report is better than a long repetitive one. Be concrete — reference actual things found or missing.\n- NO REPETITION ACROSS THE WHOLE REPORT: Each finding must raise a DISTINCT issue. If you have already made a point in one category (e.g. 'thin website content' or 'needs more reviews' or 'no schema'), do NOT restate that same point in another category under a different heading. Every finding across all categories must be about a different thing. Before adding a finding, check you have not already said it elsewhere.\n- NO SUMMARY/SYNTHESIS FINDINGS: Do NOT create a finding whose job is to re-explain or combine issues already covered in their own findings (for example, after a schema finding and an FAQ finding, do NOT add a third 'limited structured signals' finding that re-explains schema and FAQ again). Each issue gets ONE finding, explained once.\n- TOP PRIORITY framing: the topPriority field is ONE important opportunity identified from what was actually checked (the homepage and the GBP), NOT a definitive ranking of everything the business should do. The scanner does not check competitors, citations, backlinks, Bing, social, or service pages, so do not phrase it as 'the single most important thing' or imply it outranks everything. Frame it as a high-impact opportunity worth considering.\n- AIM for roughly 8-11 total findings across the five scored categories for a typical business — not 15. Fewer is fine. More than 12 means you are repeating yourself; cut the repeats.\n- EXCEPTION when the website was NOT scannable (REAL WEBSITE DATA section says scanner was blocked or analysis was skipped): Website Health gets exactly 1 finding (the honest 'analysis was skipped' explanation). For AI Search Visibility and GEO Score, AT MOST 1 finding per category may be about the blocked scan; any additional findings MUST draw on real signals you actually have — GBP completeness, rating, review volume, photo count, business category, location — not repeated rewordings of 'we couldn't see the website.' Give fewer findings rather than padding with repetition.\n- For GEO Score: assess how easily ChatGPT or Perplexity could find citable information about this business, based on whether the real website data shows schema markup and FAQ content. Most small businesses score low here because they lack these signals — score honestly, and frame it as an opportunity, not a verdict, since no one can prove exactly how AI tools choose what to cite.\n- PHOTO ADVICE MUST SAY WHERE: whenever you suggest adding or uploading photos, ALWAYS tell the owner exactly where to do it — their Google Business Profile (via the Google Maps app: open your business listing, tap Photos, then Add). Never just say 'upload more photos' without naming the location; business owners get confused about where photos go.\n- If 'IMPORTANT FIX OPPORTUNITY' is mentioned in the GBP data above (the business has its own real website but it is not linked on the Google profile), you MAY surface it as ONE finding in the Google Business Profile category, title 'Website not linked on your Google listing', status 'warn', action: 'If you have a website, add its URL in your Google Business Profile dashboard so customers can click through.' Do this ONLY when the business genuinely has its own website. NEVER suggest putting a directory listing page (such as a PresenceScanner directory page), a social media page, or any other third-party page in the website field of a Google Business Profile. Google's own guidelines require that field to point at a website representing the business itself, and prohibit URLs that refer users to landing pages other than those of the actual business. This applies even when the business has no website of its own: in that case the correct advice is to leave the field empty. A directory listing is valuable as an additional citation elsewhere, never as the Google Business Profile website.\n- DIRECTORY MEMBERSHIP CONTEXT: "+(CURRENT_HAS_DIR_PAGE==="yes" ? "This business HAS a free PresenceScanner directory page (a live listing page). Treat that page as an existing, citable web presence for this business. When discussing web presence, AI citability, or where customers/AI can find information, ACKNOWLEDGE their PresenceScanner directory page as a real citable source they already have. Do NOT tell them to 'get a free directory page' — they have one. You may still note OTHER directories (HomeAdvisor, Angi, BBB, Houzz, Birdeye) as ADDITIONAL places worth being listed, but mention their existing PresenceScanner page FIRST as something they already have. Do NOT imply they have no web presence." : (CURRENT_HAS_DIR_PAGE==="no" ? "This business does NOT have a PresenceScanner directory page. If web presence is weak, a free PresenceScanner directory page is a genuinely useful first step and worth mentioning as an option, alongside other directories (HomeAdvisor, Angi, BBB, Houzz, Birdeye)." : "Directory membership is unknown for this business — do not assume either way."))+"\n- NEVER tell any business to use a directory listing page as their primary website or as their Google Business Profile website URL. Google's guidelines prohibit a website URL that refers users to a landing page other than the actual business's own. If a business has no website, the Google Business Profile website field stays EMPTY. Frame directory pages as ADDITIONAL citations only.";
   const raw = await callClaude([{role:"user",content:prompt}], 3000, SCAN_MODEL, 0);
   const clean = raw.replace(/```json|```/g,"").trim();
   // Helper: attach the matched-business context to the parsed result so the
@@ -598,6 +642,7 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
       tidyDeep(parsed);
       parsed.gbp = gbp || null;
       parsed.mapsRank = mapsRank || null;
+      parsed.aiCheck = aiCheck || null;
       parsed.scannedInputs = { bizName, city, website: knownWebsite || null };
       // Fix #3 — trust our deterministic state, not the AI's guess.
       parsed.hasWebsite = !noWebsiteAnywhere;
@@ -657,7 +702,9 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
             // Explain it fully once. The other two sections just point back,
             // instead of repeating the same paragraph three times.
             if (explained) {
-              c.findings = [{ title: "Not scored this time", detail: "Same reason as above: we couldn't read your website.", status: "warn" }];
+              c.findings = [{ title: "Not scored this time", detail: (c.name === "AI Search Visibility" && aiCheck)
+                ? "Same reason as above: we couldn't read your website. The AI assistant check at the top of this report shows whether an AI assistant recommended you."
+                : "Same reason as above: we couldn't read your website.", status: "warn" }];
               return;
             }
             explained = true;
@@ -686,6 +733,34 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
       // Hide the two not-yet-built sections (Citation Consistency and Social
       // Presence). KEEP "not scored" website sections visible — they carry the
       // honest "couldn't reach your site" message, so they're not filtered out.
+      // REPEAT REMOVAL (6 Oct 2026). Telling the AI "say each thing once" wasn't
+      // enough: a real report repeated the review numbers 5 times and the photo
+      // tip twice. So, in code: (1) review findings live only in Review
+      // Authority, not also in Google Business Profile; (2) a finding about the
+      // same topic as the "Start here" tip is dropped, since that tip covers it.
+      if (Array.isArray(parsed.categories)) {
+        const hasReviewSection = parsed.categories.some(function(c){ return c && c.name === "Review Authority" && !c.comingSoon; });
+        // Only the tip's first sentence counts as its topic ("well-reviewed" in a
+        // photo tip must not knock out the review findings).
+        const tp = String(parsed.topPriority || "").toLowerCase().split(/[.!?](\s|$)/)[0];
+        const topics = [[/\bphotos?\b/],[/\breviews?\b/],[/\bmeta description\b/],[/\bschema\b/,/\bstructured data\b/],[/\bfaqs?\b/],[/\bhours\b/],[/\bbusiness description\b/]];
+        const tpTopics = topics.filter(function(ws){ return ws.some(function(w){ return w.test(tp); }); });
+        parsed.categories.forEach(function(c){
+          if (!c || !Array.isArray(c.findings) || c.notScored || c.comingSoon) return;
+          const before = c.findings.slice();
+          c.findings = c.findings.filter(function(f){
+            const title = String((f && f.title) || "").toLowerCase();
+            if (hasReviewSection && c.name === "Google Business Profile" && /review/.test(title)) return false;
+            // Strengths are never removed, and Review Authority keeps its own findings.
+            if (f && f.status === "good") return true;
+            if (c.name === "Review Authority") return true;
+            if (tpTopics.some(function(ws){ return ws.some(function(w){ return w.test(title); }); })) return false;
+            return true;
+          });
+          // Never leave a scored section with nothing in it.
+          if (!c.findings.length && before.length) c.findings = [before[0]];
+        });
+      }
       // How many of the five sections actually got a score, so the headline
       // number can say what it's based on.
       if (Array.isArray(parsed.categories)) {
@@ -716,7 +791,7 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
 let advisorModelBroken = false;
 
 async function chatReply(history, results, bizName) {
-  const sys = "You are the PresenceScanner AI Advisor, helping "+bizName+" understand and improve their online footprint — how customers and AI search engines find them. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+". Write like talking to a busy small business owner. Plain English only, no jargon. 2-3 short paragraphs max. End with one clear next action. IMPORTANT: Only answer questions about THIS business's online presence — its website, Google listing, reviews, local visibility, or how AI search engines find it. If a question is off-topic (travel, general trivia, coding help, anything unrelated to their online presence), do not answer it. In one friendly sentence, say that's outside what this advisor covers, and point them back to improving how customers and AI find their business.";
+  const sys = "You are the PresenceScanner AI Advisor, helping "+bizName+" understand and improve their online footprint — how customers and AI search engines find them. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+"."+(results.mapsRank ? " Live Google Maps check: "+mapsRankLine(results.mapsRank) : "")+(results.aiCheck ? " Live AI assistant check: "+aiCheckLine(results.aiCheck) : "")+" Write like talking to a busy small business owner. Plain English only, no jargon. 2-3 short paragraphs max. End with one clear next action. IMPORTANT: Only answer questions about THIS business's online presence — its website, Google listing, reviews, local visibility, or how AI search engines find it. If a question is off-topic (travel, general trivia, coding help, anything unrelated to their online presence), do not answer it. In one friendly sentence, say that's outside what this advisor covers, and point them back to improving how customers and AI find their business. RULES YOU MUST FOLLOW: Never use em dashes. Never promise rankings, results or that AI tools will recommend them. Never quote statistics or percentages you can't source. Never advise putting a directory page, social media page or any other third-party page in the website field of a Google Business Profile: Google's guidelines require that field to be the business's own website, and if they have none it stays empty. Never invent facts about this business; use only the report. If they want hands-on help, tell them Michael Putnam, who built PresenceScanner, helps local businesses with this himself and can be reached at PresenceScanner@gmail.com.";
   const msgs = [{role:"user",content:sys+"\n\nConversation:"},{role:"assistant",content:"Ready to help."},...history];
   const model = advisorModelBroken ? SCAN_MODEL : ADVISOR_MODEL;
   try {
@@ -724,7 +799,8 @@ async function chatReply(history, results, bizName) {
   } catch (e) {
     // Advisor model failed — fall back to the known-good scan model so the
     // advisor NEVER goes down, and don't try the cheap model again this session.
-    if (model !== SCAN_MODEL) {
+    // A daily-limit refusal (429) is not a broken model; don't switch models.
+    if (model !== SCAN_MODEL && String((e && e.message) || "").indexOf("API 429") === -1) {
       advisorModelBroken = true;
       return tidyText(await callClaude(msgs, 500, SCAN_MODEL));
     }
@@ -996,7 +1072,8 @@ function Chat({results,bizName}){
       <div className="msgs" ref={msgsRef}>
         {msgs.map((m,i)=><div key={i} className={`msg ${m.r}`}>{m.t}</div>)}
         {busy&&<div className="msg ai thinking">Thinking…</div>}
-        {limitReached&&!busy&&<div className="msg ai">We've covered a lot here — that's all this advisor session can cover. For more, run a fresh scan anytime. Good luck out there!</div>}
+        {userTurns>=3&&!limitReached&&!busy&&<div className="msg ai">Want a person to go over this with you? Michael Putnam built PresenceScanner and helps local businesses with this himself. Email PresenceScanner@gmail.com.</div>}
+        {limitReached&&!busy&&<div className="msg ai">That's all this advisor can cover in one visit. For more, email Michael Putnam at PresenceScanner@gmail.com and he'll go over your results with you.</div>}
         <div ref={bottom}/>
       </div>
       <div className="chat-bottom">
@@ -1004,7 +1081,7 @@ function Chat({results,bizName}){
           onKeyDown={e=>e.key==="Enter"&&send()}
           disabled={limitReached}
           maxLength={MAX_CHARS}
-          placeholder={limitReached?"Session limit reached — run a fresh scan for more":"Ask anything about your results…"}/>
+          placeholder={limitReached?"Advisor limit reached for this visit":"Ask anything about your results…"}/>
         <button className="csend" onClick={send} disabled={!input.trim()||busy||limitReached}>Send</button>
       </div>
     </div>
@@ -1550,6 +1627,7 @@ function App(){
             overallGrade:results.overallGrade||"",
             components:comps,
             topIssues:issues,
+            aiCheck:results.aiCheck?(results.aiCheck.named?("named "+results.aiCheck.position+" of "+results.aiCheck.count):("not named; named "+(results.aiCheck.names||[]).join(", ")))+" for \""+results.aiCheck.question+"\"":"",
             mapsRank:results.mapsRank?(results.mapsRank.rank?("#"+results.mapsRank.rank+" of "+results.mapsRank.checked):("not in first "+results.mapsRank.checked))+" for \""+results.mapsRank.query+"\"":"",
             mine:isMine
           })}).catch(function(){});
@@ -1568,6 +1646,7 @@ function App(){
             summary:results.summary||"",
             topPriority:results.topPriority||"",
             mapsLine:mapsRankLine(results.mapsRank),
+            aiLine:aiCheckLine(results.aiCheck),
             basisLine:(results.sectionsTotal && results.sectionsScored < results.sectionsTotal) ? ("Based on "+results.sectionsScored+" of "+results.sectionsTotal+" sections."+(results.websiteUnreadable?" We couldn't read your website, so the others weren't scored.":"")) : "",
             isMember:hasDirPage==="yes",
             categories:(results.categories||[]).map(function(c){return {
@@ -2192,10 +2271,25 @@ function App(){
                     : <span className="sident-row sident-none">No Google Business Profile was matched for this scan</span>}
                 </div>
               )}
-              {results.mapsRank && (
+              {(results.mapsRank || results.aiCheck) && (
                 <div style={{background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",padding:"12px 14px",margin:"10px 0",fontSize:"0.95rem",lineHeight:1.5}}>
-                  <b>📍 Google Maps check:</b> {mapsRankLine(results.mapsRank)}
-                  <div style={{fontSize:"0.8rem",color:"var(--t3)",marginTop:"4px"}}>Results can change with the exact search words and where the person searching is.</div>
+                  <div style={{fontFamily:"var(--fh)",fontWeight:700,marginBottom:"6px"}}>Live checks, run just now</div>
+                  {results.mapsRank && (
+                    <div style={{marginBottom:"10px"}}>
+                      <b>📍 Google Maps:</b> {mapsRankLine(results.mapsRank)}
+                      {(results.mapsRank.top||[]).length > 0 && (
+                        <ol style={{margin:"6px 0 0",paddingLeft:"20px",fontSize:"0.88rem",color:"var(--t2)"}}>
+                          {results.mapsRank.top.map(function(x,i){ return (
+                            <li key={i} style={x.isYou?{fontWeight:700,color:"var(--t1)"}:null}>{x.name}{x.isYou?" (you)":""}{x.rating!=null?(" · ★ "+x.rating):""}{x.reviews!=null?(" · "+x.reviews.toLocaleString()+" reviews"):""}</li>
+                          ); })}
+                        </ol>
+                      )}
+                    </div>
+                  )}
+                  {results.aiCheck && (
+                    <div style={{marginBottom:"6px"}}><b>🤖 AI assistant:</b> {aiCheckLine(results.aiCheck)}</div>
+                  )}
+                  <div style={{fontSize:"0.8rem",color:"var(--t3)",marginTop:"4px"}}>Results change with the exact words used, where the person searching is, and from one AI to another. Each check was run once.</div>
                 </div>
               )}
               <p>{results.summary}</p>
@@ -2209,9 +2303,9 @@ function App(){
                   </>
                 ) : (
                   <>
-                    {(results.mapsRank && results.mapsRank.rank) ? (
+                    {((results.mapsRank && results.mapsRank.rank) || (results.aiCheck && results.aiCheck.named)) ? (
                       <>
-                        <p className="scorecta-h">{results.mapsRank.rank <= 3 ? "You already come up near the top" : "You already show up on Google Maps for this search"}</p>
+                        <p className="scorecta-h">{(results.mapsRank && results.mapsRank.rank && results.mapsRank.rank <= 3) ? "You already come up near the top" : ((results.mapsRank && results.mapsRank.rank) ? "You already show up on Google Maps for this search" : "An AI assistant already recommends you")}</p>
                         <p className="scorecta-s">A free page in the local business directory gives Google and AI one more place to find you.</p>
                       </>
                     ) : (
@@ -2233,7 +2327,6 @@ function App(){
           <div className="sjumps">
             <a className="sjump" onClick={()=>document.getElementById('jump-tools')?.scrollIntoView({behavior:'smooth'})}>See recommended tools</a>
           </div>
-          <Chat results={results} bizName={bizName}/>
           {/* AFFILIATE PLACEMENT PRINCIPLE (Decision 4, May 24 2026):
               category findings come FIRST so the user receives the diagnosis
               before any recommendations to spend money. AffCards and the
@@ -2247,6 +2340,8 @@ function App(){
               too long; generic industry news was the least valuable section.) */}
           <div className="cats">{results.categories?.map((cat,i)=><CatCard key={i} cat={cat}/>)}</div>
           <AffCards results={results} bizName={bizName} hasDirPage={hasDirPage}/>
+          {/* Advisor moved below the report (6 Oct 2026): read the report first, then ask. */}
+          <Chat results={results} bizName={bizName}/>
           {/* Quiet, honest one-line offer. Sits AFTER the recommendations and
               BEFORE the feedback question, per Michael. No banner, no hero, no
               colored CTA box — the report's credibility stays the product.
