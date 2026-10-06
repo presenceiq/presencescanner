@@ -714,7 +714,7 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
             explained = true;
             c.findings = [{
               title: "We couldn't get into your website",
-              detail: "We tried to read " + (knownWebsite || "your website") + ", but our scanner couldn't get in. Lots of websites keep automated tools out, a bit like a No Solicitors sign on the front door. Your customers can usually still get in, but our scanner couldn't, so we didn't score this section. Your Google listing and the live checks at the top were still fully checked. Want a person to look at your website? Email PresenceScanner@gmail.com and Michael will check it by hand.",
+              detail: "We tried to read " + (knownWebsite || "your website") + ", but our scanner couldn't get in. Lots of websites keep automated tools out, a bit like a No Solicitors sign on the front door. Your customers can usually still get in, but our scanner couldn't, so we didn't score this section. Your Google listing and the live checks at the top were still fully checked. Want a person to look at it? Email PresenceScanner@gmail.com and Michael will open your website himself and tell you, in plain words, whether it works well on a phone, shows your phone number, hours and services clearly, and is set up so Google and AI tools can read it.",
               status: "warn"
             }];
           }
@@ -737,6 +737,20 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
       // Hide the two not-yet-built sections (Citation Consistency and Social
       // Presence). KEEP "not scored" website sections visible — they carry the
       // honest "couldn't reach your site" message, so they're not filtered out.
+      // ONE NUMBER, ONE LISTING (6 Oct 2026). When we looked up the owner's
+      // phone number and Google returned exactly one listing, say so: one
+      // number pointing at one business is what you want. Only claimed when we
+      // actually checked it (the phone lookup), never guessed.
+      if (gbp && !gbp.userProvided && gbp.matchCount === 1 && Array.isArray(parsed.categories)) {
+        const gbpCat = parsed.categories.find(function(c){ return c && c.name === "Google Business Profile" && !c.notScored; });
+        if (gbpCat) {
+          gbpCat.findings = (gbpCat.findings || []).concat([{
+            title: "Your phone number leads to one Google listing",
+            detail: "We looked up your phone number on Google and it leads to this listing only, not several. One number for one business is what you want, so customers and AI tools don't mix you up with anyone else.",
+            status: "good"
+          }]);
+        }
+      }
       // REPEAT REMOVAL (6 Oct 2026). Telling the AI "say each thing once" wasn't
       // enough: a real report repeated the review numbers 5 times and the photo
       // tip twice. So, in code: (1) review findings live only in Review
@@ -762,7 +776,9 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
             return true;
           });
           // Never leave a scored section with nothing in it.
-          if (!c.findings.length && before.length) c.findings = [before[0]];
+          // An emptied section still shows its score and "Why this score", so it
+          // only gets a finding back if it would otherwise have no explanation at all.
+          if (!c.findings.length && before.length && !c.scoreReason) c.findings = [before[0]];
         });
       }
       // How many of the five sections actually got a score, so the headline
@@ -795,7 +811,7 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
 let advisorModelBroken = false;
 
 async function chatReply(history, results, bizName) {
-  const sys = "You are the PresenceScanner AI Advisor, helping "+bizName+" understand and improve their online footprint — how customers and AI search engines find them. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+"."+(results.mapsRank ? " Live Google Maps check: "+mapsRankLine(results.mapsRank) : "")+(results.aiCheck ? " Live AI assistant check: "+aiCheckLine(results.aiCheck) : "")+" Write like talking to a busy small business owner. Plain English only, no jargon. 2-3 short paragraphs max. End with one clear next action. IMPORTANT: Only answer questions about THIS business's online presence — its website, Google listing, reviews, local visibility, or how AI search engines find it. If a question is off-topic (travel, general trivia, coding help, anything unrelated to their online presence), do not answer it. In one friendly sentence, say that's outside what this advisor covers, and point them back to improving how customers and AI find their business. RULES YOU MUST FOLLOW: Never use em dashes. Never promise rankings, results or that AI tools will recommend them. Never quote statistics or percentages you can't source. Never advise putting a directory page, social media page or any other third-party page in the website field of a Google Business Profile: Google's guidelines require that field to be the business's own website, and if they have none it stays empty. Never invent facts about this business; use only the report. If they want hands-on help, tell them Michael Putnam, who built PresenceScanner, helps local businesses with this himself and can be reached at PresenceScanner@gmail.com.";
+  const sys = "You are the PresenceScanner AI Advisor, helping "+bizName+" understand and improve their online footprint — how customers and AI search engines find them. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+"."+(results.gbp && !results.gbp.userProvided ? " Google listing facts: "+[results.gbp.name, results.gbp.address, results.gbp.phone, results.gbp.website ? "website "+results.gbp.website : "", results.gbp.rating!=null ? results.gbp.rating+" stars from "+results.gbp.reviewCount+" reviews" : "", (results.gbp.hours && results.gbp.hours.length) ? "hours: "+results.gbp.hours.join("; ") : "hours not available"].filter(Boolean).join(", ")+"." : "")+(results.mapsRank ? " Live Google Maps check: "+mapsRankLine(results.mapsRank) : "")+(results.aiCheck ? " Live AI assistant check: "+aiCheckLine(results.aiCheck) : "")+" Write like talking to a busy small business owner. Plain English only, no jargon. 2-3 short paragraphs max. End with one clear next action. IMPORTANT: Only answer questions about THIS business's online presence — its website, Google listing, reviews, local visibility, or how AI search engines find it. Questions about what their Google listing shows (hours, phone, address, website, rating) ARE on topic: answer them from the Google listing facts above, and if a fact isn't there, say the listing data we pulled doesn't include it. If a question is off-topic (travel, general trivia, coding help, anything unrelated to their online presence), do not answer it. In one friendly sentence, say that's outside what this advisor covers, and point them back to improving how customers and AI find their business. RULES YOU MUST FOLLOW: Never use em dashes. Never promise rankings, results or that AI tools will recommend them. Never quote statistics or percentages you can't source. Never advise putting a directory page, social media page or any other third-party page in the website field of a Google Business Profile: Google's guidelines require that field to be the business's own website, and if they have none it stays empty. Never invent facts about this business; use only the report. If they want hands-on help, tell them Michael Putnam, who built PresenceScanner, helps local businesses with this himself and can be reached at PresenceScanner@gmail.com.";
   const msgs = [{role:"user",content:sys+"\n\nConversation:"},{role:"assistant",content:"Ready to help."},...history];
   const model = advisorModelBroken ? SCAN_MODEL : ADVISOR_MODEL;
   try {
@@ -1605,8 +1621,14 @@ function App(){
         }catch(e){}
         // Top 3 issues: pull finding titles flagged warn/bad across categories.
         var issues=[];
+        // The "Start here" tip leads the list (its first sentence), since repeat
+        // removal takes the matching finding out of the sections.
+        try{ var tp1=String(results.topPriority||"").split(/[.!?](\s|$)/)[0].trim(); if(tp1) issues.push(tp1.slice(0,140)); }catch(e){}
         try{
           (results.categories||[]).forEach(function(c){
+            // Sections we couldn't score hold our scanner's limits, not the
+            // business's problems, so they never count as "top issues".
+            if(!c || c.notScored) return;
             (c.findings||[]).forEach(function(f){
               if(f && (f.status==="bad"||f.status==="warn") && f.title && issues.length<3){
                 issues.push(f.title);
@@ -2309,7 +2331,9 @@ function App(){
                   <>
                     {((results.mapsRank && results.mapsRank.rank) || (results.aiCheck && results.aiCheck.named)) ? (
                       <>
-                        <p className="scorecta-h">{(results.mapsRank && results.mapsRank.rank && results.mapsRank.rank <= 3) ? "You already come up near the top" : ((results.mapsRank && results.mapsRank.rank) ? "You already show up on Google Maps for this search" : "An AI assistant already recommends you")}</p>
+                        <p className="scorecta-h">{(results.mapsRank && results.mapsRank.rank)
+                          ? ("You already come up #" + results.mapsRank.rank + " on Google Maps for \u201c" + results.mapsRank.query + "\u201d")
+                          : ("An AI assistant already recommends you when asked \u201c" + results.aiCheck.question + "\u201d")}</p>
                         <p className="scorecta-s">A free page in the local business directory gives Google and AI one more place to find you.</p>
                       </>
                     ) : (
