@@ -67,17 +67,19 @@ export default async function handler(req, res) {
       matchedLine = matchedAddress;
     } else if (gbpStatus === "owner-says-listed") {
       matchedLine = "Our Google lookup found no matching listing. The owner says one exists"
-        + (listingUrl ? ": <" + listingUrl + ">" : " (no link given).");
+        + (listingUrl ? ". Their link: " + listingUrl : " (no link given).");
     } else if (gbpStatus === "owner-says-none") {
       matchedLine = "Our Google lookup found no matching listing, and the owner chose \"I don't have a Google Business Profile yet.\" Check Google Maps before relying on that.";
     } else {
       matchedLine = "Our Google lookup found no matching listing. Check Google Maps before telling them they don't have one.";
     }
     lines.push("MATCHED    " + matchedLine);
-    if (googleListing) lines.push("LISTING    <" + googleListing + ">");
+    // Links sit bare at the END of their line, with nothing after them. Gmail
+    // was treating the old closing ">" as part of the link, which made a 404.
+    if (googleListing) lines.push("LISTING    " + googleListing);
     if (phone)   lines.push("PHONE      " + phone);
     lines.push("EMAIL      " + (email || "(not provided)"));
-    if (website) lines.push("WEBSITE    <" + website + ">");
+    if (website) lines.push("WEBSITE    " + website);
     if (websiteScan) lines.push("WEBSITE SCAN  could not reach site (" + websiteScan + ")");
     lines.push("DIR MEMBER " + (hasDirPage === "yes" ? "Yes" : hasDirPage === "no" ? "No" : "(not provided)"));
     lines.push("");
