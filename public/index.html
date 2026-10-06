@@ -1501,9 +1501,9 @@ function App(){
     if(!bizName.trim()||!city.trim())return;
     CURRENT_HAS_DIR_PAGE = hasDirPage || "";
     setView("loading");setStepIdx(0);
-    if(email.trim()){
-      fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.trim()})}).catch(()=>{});
-    }
+    // The scan form no longer adds the email to the Mailchimp tips list
+    // (6 Oct 2026). The form only promises a copy of the report, so that's all
+    // the email is used for. /api/subscribe is still used by other signups.
     try{
       // PRIMARY LOOKUP: phone first.
       // The phone number is the strongest identifier the owner gives us: one
@@ -1896,7 +1896,7 @@ function App(){
               <input value={city} onChange={e=>setCity(e.target.value)} placeholder="e.g. Venice, FL"/></div>
             <div className="field"><label>Email Address</label>
               <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="e.g. joe@joesplumbing.com"/>
-              <div className="enote">Optional. Add it and we'll email you a copy of your report, plus an occasional useful tip. It's never shared or sold, and you can unsubscribe anytime.</div></div>
+              <div className="enote">Optional. Add it and we'll email you a copy of your report.</div></div>
             <div className="field">
               <label>Do you already have a free PresenceScanner directory page?</label>
               <div style={{display:"flex",gap:"10px",marginTop:"4px"}}>
