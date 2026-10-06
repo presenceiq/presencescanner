@@ -210,6 +210,8 @@ export default async function handler(req, res) {
         website: detail.website || null,
         hasHours: !!(detail.opening_hours),
         isOpen: detail.opening_hours?.open_now ?? null,
+        // Opening hours as Google shows them, e.g. "Monday: 7:30 AM \u2013 2:00 PM" (already in the lookup, no extra cost).
+        hours: Array.isArray(detail.opening_hours?.weekday_text) ? detail.opening_hours.weekday_text.slice(0, 7) : [],
         photoCount: detail.photos?.length || 0,
         businessStatus: detail.business_status || null,
         types: detail.types || [],

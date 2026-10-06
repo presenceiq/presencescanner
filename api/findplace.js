@@ -80,6 +80,7 @@ function shape(placeId, d) {
     website: d.website || null,
     hasHours: !!(d.opening_hours),
     isOpen: d.opening_hours?.open_now ?? null,
+    hours: Array.isArray(d.opening_hours?.weekday_text) ? d.opening_hours.weekday_text.slice(0, 7) : [],
     photoCount: d.photos?.length || 0,
     businessStatus: d.business_status || null,
     types: d.types || [],
