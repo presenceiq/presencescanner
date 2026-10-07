@@ -1619,6 +1619,10 @@ function App(){
   // them a copy of the finished report. Once per completed scan.
   const reportSentRef=useRef(false);
   const [reportStatus,setReportStatus]=useState("");
+  const [reportTo,setReportTo]=useState("");
+  const [laterEmail,setLaterEmail]=useState("");
+  const [laterErr,setLaterErr]=useState("");
+  const leadBodyRef=useRef(null);
   useEffect(()=>{
     if(view==="results"){
       window.scrollTo(0,0);
@@ -1657,8 +1661,7 @@ function App(){
             });
           });
         }catch(e){}
-        fetch("/api/lead",{method:"POST",keepalive:true,headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({
+        var leadBody={
             bizName:(results.scannedInputs&&results.scannedInputs.bizName)||bizName,
             website:(results.scannedInputs&&results.scannedInputs.website)||website||"",
             phone:phone||"",
@@ -1679,14 +1682,33 @@ function App(){
             aiCheck:results.aiCheck?(results.aiCheck.named?("named "+results.aiCheck.position+" of "+results.aiCheck.count):("not named; named "+(results.aiCheck.names||[]).join(", ")))+" for \""+results.aiCheck.question+"\"":"",
             mapsRank:results.mapsRank?(results.mapsRank.rank?("#"+results.mapsRank.rank+" of "+results.mapsRank.checked):("not in first "+results.mapsRank.checked))+" for \""+results.mapsRank.query+"\"":"",
             mine:isMine
-          })}).catch(function(){});
+          };
+        leadBodyRef.current=leadBody;
+        fetch("/api/lead",{method:"POST",keepalive:true,headers:{"Content-Type":"application/json"},
+          body:JSON.stringify(leadBody)}).catch(function(){});
       }
       if(results && !reportSentRef.current && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email||"").trim())){
+        sendReportTo(email.trim(), false);
+      }
+    }
+  },[view,results]);
+
+  // Sends the report email. Used right after the scan when the email was typed
+  // on the form, and from the "Email me this report" box on the results page
+  // when it wasn't (added 7 Oct 2026). A later email also tells Michael.
+  function sendReportTo(addr, later){
+        if(!results || reportSentRef.current) return;
         reportSentRef.current=true;
+        setReportTo(addr);
         setReportStatus("sending");
+        if(later && leadBodyRef.current){
+          var lb=Object.assign({}, leadBodyRef.current, {email:addr, emailLater:true});
+          fetch("/api/lead",{method:"POST",keepalive:true,headers:{"Content-Type":"application/json"},
+            body:JSON.stringify(lb)}).catch(function(){});
+        }
         fetch("/api/sendreport",{method:"POST",keepalive:true,headers:{"Content-Type":"application/json"},
           body:JSON.stringify({
-            email:email.trim(),
+            email:addr,
             bizName:(results.scannedInputs&&results.scannedInputs.bizName)||bizName,
             scannedName:(results.gbp&&results.gbp.name)||"",
             scannedAddress:(results.gbp&&results.gbp.address)||"",
@@ -1706,9 +1728,7 @@ function App(){
           })})
           .then(function(r){ setReportStatus(r.ok?"sent":"failed"); })
           .catch(function(){ setReportStatus("failed"); });
-      }
-    }
-  },[view,results]);
+  }
 
   async function handleScan(){
     if(!bizName.trim()||!city.trim())return;
@@ -2067,7 +2087,7 @@ function App(){
     setResults(null);
     setErrMsg("");
     // Let the next scan send its own lead email and report email.
-    leadSentRef.current=false;reportSentRef.current=false;setReportStatus("");
+    leadSentRef.current=false;reportSentRef.current=false;setReportStatus("");setReportTo("");setLaterEmail("");setLaterErr("");leadBodyRef.current=null;
     setPendingMatch(null);
     setPhoneMatch(null);
     setFhName("");setFhAddress("");setFhPhone("");setFhMapsUrl("");setFhErr("");
@@ -2289,9 +2309,20 @@ function App(){
                 <div style={{fontSize:"0.85rem",color:"var(--t2)",margin:"-2px 0 8px"}}>{results.partial ? ("We could check " + results.sectionsScored + " of " + results.sectionsTotal + " areas, so we're not giving an overall score.") : ("Based on " + results.sectionsScored + " of " + results.sectionsTotal + " sections.")}{results.websiteUnreadable ? " We couldn't read your website, so the others weren't scored." : ""}</div>
               ) : null}
               <h2>Presence Report: {bizName}</h2>
-              {reportStatus==="sending" && <div className="rsend" style={{fontSize:"0.9rem",color:"var(--t2)",margin:"4px 0 8px"}}>Emailing a copy of this report to {email.trim()}…</div>}
-              {reportStatus==="sent" && <div className="rsend" style={{fontSize:"0.9rem",color:"var(--t2)",margin:"4px 0 8px"}}>✓ A copy of this report is on its way to {email.trim()}. Check your spam folder if you don't see it.</div>}
+              {reportStatus==="sending" && <div className="rsend" style={{fontSize:"0.9rem",color:"var(--t2)",margin:"4px 0 8px"}}>Emailing a copy of this report to {reportTo}…</div>}
+              {reportStatus==="sent" && <div className="rsend" style={{fontSize:"0.9rem",color:"var(--t2)",margin:"4px 0 8px"}}>✓ A copy of this report is on its way to {reportTo}. Check your spam folder if you don't see it.</div>}
               {reportStatus==="failed" && <div className="rsend" style={{fontSize:"0.9rem",color:"var(--t2)",margin:"4px 0 8px"}}>We couldn't email this report, so please read or save it here.</div>}
+              {!reportStatus && (
+                <div className="rsend" style={{margin:"6px 0 10px",display:"flex",flexWrap:"wrap",gap:"8px",alignItems:"center"}}>
+                  <input type="email" value={laterEmail} onChange={e=>{setLaterEmail(e.target.value);setLaterErr("");}}
+                    placeholder="Your email" aria-label="Your email"
+                    style={{flex:"1 1 200px",minWidth:0,padding:"10px 12px",borderRadius:"8px",border:"1px solid var(--b1)",background:"var(--s2)",color:"var(--t1)",fontFamily:"var(--fb)",fontSize:"1rem"}}/>
+                  <button type="button" className="sbtn" style={{width:"auto",marginTop:0,padding:"10px 16px",fontSize:"0.95rem"}}
+                    onClick={()=>{var a=laterEmail.trim(); if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a)){setLaterErr("Please check the email address.");return;} sendReportTo(a, true);}}>
+                    Email me this report</button>
+                  {laterErr && <div style={{width:"100%",fontSize:"0.85rem",color:"var(--red,#c0392b)"}}>{laterErr}</div>}
+                </div>
+              )}
               {results.gbp ? (
                 <div className="sident">
                   <span className="sident-row"><b>Scanned:</b> {results.gbp.name}</span>
