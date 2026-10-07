@@ -109,7 +109,7 @@ export default async function handler(req, res) {
     T.push('Your PresenceScanner report for ' + biz);
     T.push('');
     if (scannedName) T.push('Scanned: ' + scannedName + (scannedAddress ? ', ' + scannedAddress : ''));
-    T.push('Overall: ' + (score !== null ? score + ' / 100' : 'not available') + (grade ? ' (' + grade + ')' : ''));
+    T.push(score !== null ? ('Overall: ' + score + ' / 100' + (grade ? ' (' + grade + ')' : '')) : ('Overall: ' + (grade || 'not available')));
     if (basisLine) T.push(basisLine);
     if (mapsLine) { T.push(''); T.push('Google Maps check: ' + mapsLine); }
     if (aiLine) { T.push(''); T.push('AI assistant check: ' + aiLine); }
@@ -142,8 +142,8 @@ export default async function handler(req, res) {
     H += '<h1 style="font-size:22px;margin:8px 0 4px">' + esc(biz) + '</h1>';
     if (scannedName) H += '<div style="font-size:14px;color:' + mute + '">Scanned: ' + esc(scannedName) + (scannedAddress ? ', ' + esc(scannedAddress) : '') + '</div>';
     H += '<div style="margin:18px 0;padding:16px;border-radius:10px;background:linear-gradient(135deg,' + cyan + ',' + purple + ');color:#ffffff">';
-    H += '<div style="font-size:32px;font-weight:bold">' + (score !== null ? score + '<span style="font-size:16px"> / 100</span>' : 'Score not available') + '</div>';
-    if (grade) H += '<div style="font-size:15px">' + esc(grade) + '</div>';
+    H += '<div style="font-size:32px;font-weight:bold">' + (score !== null ? score + '<span style="font-size:16px"> / 100</span>' : esc(grade || 'Score not available')) + '</div>';
+    if (grade && score !== null) H += '<div style="font-size:15px">' + esc(grade) + '</div>';
     if (basisLine) H += '<div style="font-size:13px;opacity:0.9;margin-top:4px">' + esc(basisLine) + '</div>';
     H += '</div>';
     if (mapsLine) H += '<p style="font-size:15px;line-height:1.55;margin:0 0 12px;padding:12px;background:#f7f8fa;border-radius:8px"><b>Google Maps check:</b> ' + esc(mapsLine) + '</p>';

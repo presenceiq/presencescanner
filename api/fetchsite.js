@@ -16,6 +16,13 @@ const BROWSER_HEADERS = {
           'Sec-Fetch-Dest': 'document',
         };
 
+// Plain, honest request used when a site refuses the browser-style one.
+const PLAIN_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (compatible; PresenceScanner/1.0; +https://www.presencescanner.ai)',
+  'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+};
+
 // Follows up to 8 redirects by hand, keeping cookies like a browser. Throws
 // "redirect loop" only when the same address comes back with the same cookies.
 async function fetchFollow(startUrl, signal, headers) {
@@ -119,6 +126,26 @@ export default async function handler(req, res) {
         facebookStatus: 'unknown',
         instagramStatus: 'unknown',
       });
+    }
+    // REFUSED? (7 Oct 2026) A real scan of Titanium Tint got "403 refused"
+    // from a site that a plain request read fine the same day. Some sites'
+    // protection rejects a request that dresses up as Chrome but comes from a
+    // server. So when refused, ask once more the plain way, saying honestly
+    // who we are, and if the address was http, try the https version too.
+    if (pageRes && [401, 403, 406, 429, 503].indexOf(pageRes.status) !== -1) {
+      const firstStatus = pageRes.status;
+      const tries = [website];
+      if (/^http:/i.test(website)) tries.push(website.replace(/^http:/i, 'https:'));
+      // Close the refused answer so its connection isn't left hanging.
+      try { if (pageRes.body) pageRes.body.cancel(); } catch (e) {}
+      for (const u of tries) {
+        try {
+          const alt = await fetchFollow(u, controller.signal, PLAIN_HEADERS);
+          if (alt.ok) { pageRes = alt; break; }
+          try { if (alt.body) alt.body.cancel(); } catch (e) {}
+        } catch (e) { /* keep the first answer */ }
+      }
+      if (!pageRes.ok) console.error('FETCHSITE refused (' + firstStatus + ') even on plain retry: ' + website);
     }
     clearTimeout(timeout);
 

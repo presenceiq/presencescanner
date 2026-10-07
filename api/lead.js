@@ -43,6 +43,10 @@ export default async function handler(req, res) {
     const topIssues = Array.isArray(b.topIssues) ? b.topIssues : [];
     const isMine = b.mine === true;
     const hasDirPage = (b.hasDirPage || "").toString().trim(); // "yes" / "no" / ""
+    // "2 of 5" when too few sections were scored for the customer to be shown an
+    // overall number. Michael still sees the internal number, clearly marked.
+    const partial = (b.partial || "").toString().trim().slice(0, 20);
+    const basis = (b.basis || "").toString().trim().slice(0, 200);
 
     if (!bizName && !city && !website) {
       return res.status(200).json({ ok: false, skipped: "no identifying info" });
@@ -56,7 +60,8 @@ export default async function handler(req, res) {
     // member scans don't look like real inbound leads.
     let subject = (isMine ? "[MY SCAN] " : "New scan — ") + (bizName || "Unknown business");
     if (city) subject += ", " + city;
-    if (overallScore !== null) subject += " — " + overallScore + "/100";
+    if (partial) subject += " — partial check (" + partial + ")";
+    else if (overallScore !== null) subject += " — " + overallScore + "/100";
 
     // Body = a clean, consistently-structured record (same fields, same order,
     // every time) so it reads well AND any future database can ingest it.
@@ -87,7 +92,13 @@ export default async function handler(req, res) {
     if (websiteScan) lines.push("WEBSITE SCAN  could not reach site (" + websiteScan + ")");
     lines.push("DIR MEMBER " + (hasDirPage === "yes" ? "Yes" : hasDirPage === "no" ? "No" : "(not provided)"));
     lines.push("");
-    lines.push("OVERALL    " + (overallScore !== null ? (overallScore + " / 100") : "(not available)") + (overallGrade ? ("  (" + overallGrade + ")") : ""));
+    if (partial) {
+      lines.push("OVERALL    PARTIAL CHECK: only " + partial + " sections scored. No overall score was shown to the customer.");
+      if (overallScore !== null) lines.push("           (internal average of the scored sections: " + overallScore + " / 100)");
+    } else {
+      lines.push("OVERALL    " + (overallScore !== null ? (overallScore + " / 100") : "(not available)") + (overallGrade ? ("  (" + overallGrade + ")") : ""));
+    }
+    if (basis) lines.push("BASIS      " + basis);
 
     // Component scores — one per line, labeled, consistent.
     const compKeys = Object.keys(components);
