@@ -688,6 +688,9 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
         parsed.categories.forEach(function(c){
           if (c && c.name === "Google Business Profile" && typeof c.score === "number" && c.score !== 50) {
             c.score = 50;
+            // A neutral 50 is a placeholder, not a measurement: it doesn't count
+            // as a checked section or go into the overall average.
+            c.neutral = true;
             c.scoreReason = gbp.ownerSaysListed
               ? "Neutral: you told us your Google listing exists, but our lookup couldn't read it, so we didn't score its details this time. That's a limit of our lookup, not a penalty."
               : "Neutral: our lookup couldn't confirm your Google listing, so we didn't score it this time. That's a limit of our lookup, not a sign anything is missing.";
@@ -724,7 +727,7 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
       // corrected a section above, so the headline number matches the parts.
       if ((siteUnreadable || gbpNeutralized) && Array.isArray(parsed.categories)) {
         const scored = parsed.categories.filter(function(c){
-          return c && typeof c.score === "number" && c.score >= 0 && !c.comingSoon && !c.notScored;
+          return c && typeof c.score === "number" && c.score >= 0 && !c.comingSoon && !c.notScored && !c.neutral;
         });
         if (scored.length) {
           parsed.overallScore = Math.round(scored.reduce(function(a,c){return a+c.score;}, 0) / scored.length);
@@ -786,7 +789,12 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
       if (Array.isArray(parsed.categories)) {
         const five = parsed.categories.filter(function(c){ return c && !c.comingSoon; });
         parsed.sectionsTotal = five.length;
-        parsed.sectionsScored = five.filter(function(c){ return !c.notScored && typeof c.score === "number" && c.score >= 0; }).length;
+        parsed.sectionsScored = five.filter(function(c){ return !c.notScored && !c.neutral && typeof c.score === "number" && c.score >= 0; }).length;
+        // PARTIAL CHECK (7 Oct 2026): with fewer than 4 of 5 sections scored, an
+        // overall "73 / 100" reads as a full grade when half the report is
+        // missing. The headline number is withheld and the report says how
+        // much was checked instead. The section scores still show.
+        parsed.partial = parsed.sectionsTotal >= 4 && parsed.sectionsScored < 4;
       }
       if (Array.isArray(parsed.categories)) {
         parsed.categories = parsed.categories.filter(
@@ -811,7 +819,7 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
 let advisorModelBroken = false;
 
 async function chatReply(history, results, bizName) {
-  const sys = "You are the PresenceScanner AI Advisor, helping "+bizName+" understand and improve their online footprint — how customers and AI search engines find them. Score: "+results.overallScore+"/100. Top priority: "+results.topPriority+"."+(results.gbp && !results.gbp.userProvided ? " Google listing facts: "+[results.gbp.name, results.gbp.address, results.gbp.phone, results.gbp.website ? "website "+results.gbp.website : "", results.gbp.rating!=null ? results.gbp.rating+" stars from "+results.gbp.reviewCount+" reviews" : "", (results.gbp.hours && results.gbp.hours.length) ? "hours: "+results.gbp.hours.join("; ") : "hours not available"].filter(Boolean).join(", ")+"." : "")+(results.mapsRank ? " Live Google Maps check: "+mapsRankLine(results.mapsRank) : "")+(results.aiCheck ? " Live AI assistant check: "+aiCheckLine(results.aiCheck) : "")+" Write like talking to a busy small business owner. Plain English only, no jargon. 2-3 short paragraphs max. End with one clear next action. IMPORTANT: Only answer questions about THIS business's online presence — its website, Google listing, reviews, local visibility, or how AI search engines find it. Questions about what their Google listing shows (hours, phone, address, website, rating) ARE on topic: answer them from the Google listing facts above, and if a fact isn't there, say the listing data we pulled doesn't include it. If a question is off-topic (travel, general trivia, coding help, anything unrelated to their online presence), do not answer it. In one friendly sentence, say that's outside what this advisor covers, and point them back to improving how customers and AI find their business. RULES YOU MUST FOLLOW: Never use em dashes. Never promise rankings, results or that AI tools will recommend them. Never quote statistics or percentages you can't source. Never advise putting a directory page, social media page or any other third-party page in the website field of a Google Business Profile: Google's guidelines require that field to be the business's own website, and if they have none it stays empty. Never invent facts about this business; use only the report. If they want hands-on help, tell them Michael Putnam, who built PresenceScanner, helps local businesses with this himself and can be reached at PresenceScanner@gmail.com.";
+  const sys = "You are the PresenceScanner AI Advisor, helping "+bizName+" understand and improve their online footprint — how customers and AI search engines find them. Score: "+(results.partial ? ("no overall score given, because only "+results.sectionsScored+" of "+results.sectionsTotal+" areas could be checked") : (results.overallScore+"/100"))+". Top priority: "+results.topPriority+"."+(results.gbp && !results.gbp.userProvided ? " Google listing facts: "+[results.gbp.name, results.gbp.address, results.gbp.phone, results.gbp.website ? "website "+results.gbp.website : "", results.gbp.rating!=null ? results.gbp.rating+" stars from "+results.gbp.reviewCount+" reviews" : "", (results.gbp.hours && results.gbp.hours.length) ? "hours: "+results.gbp.hours.join("; ") : "hours not available"].filter(Boolean).join(", ")+"." : "")+(results.mapsRank ? " Live Google Maps check: "+mapsRankLine(results.mapsRank) : "")+(results.aiCheck ? " Live AI assistant check: "+aiCheckLine(results.aiCheck) : "")+" Write like talking to a busy small business owner. Plain English only, no jargon. 2-3 short paragraphs max. End with one clear next action. IMPORTANT: Only answer questions about THIS business's online presence — its website, Google listing, reviews, local visibility, or how AI search engines find it. Questions about what their Google listing shows (hours, phone, address, website, rating) ARE on topic: answer them from the Google listing facts above, and if a fact isn't there, say the listing data we pulled doesn't include it. If a question is off-topic (travel, general trivia, coding help, anything unrelated to their online presence), do not answer it. In one friendly sentence, say that's outside what this advisor covers, and point them back to improving how customers and AI find their business. RULES YOU MUST FOLLOW: Never use em dashes. Never promise rankings, results or that AI tools will recommend them. Never quote statistics or percentages you can't source. Never advise putting a directory page, social media page or any other third-party page in the website field of a Google Business Profile: Google's guidelines require that field to be the business's own website, and if they have none it stays empty. Never invent facts about this business; use only the report. If they want hands-on help, tell them Michael Putnam, who built PresenceScanner, helps local businesses with this himself and can be reached at PresenceScanner@gmail.com.";
   const msgs = [{role:"user",content:sys+"\n\nConversation:"},{role:"assistant",content:"Ready to help."},...history];
   const model = advisorModelBroken ? SCAN_MODEL : ADVISOR_MODEL;
   try {
@@ -830,8 +838,21 @@ async function chatReply(history, results, bizName) {
 
 const STEPS=["Fetching website signals…","Analyzing SEO structure…","Checking Google Business Profile…","Scoring AI search visibility…","Scanning citation consistency…","Reviewing social presence…","Assessing review authority…","Building your action plan…"];
 
-function Ring({score,c}){
+function Ring({score,c,partial,scored,total}){
   const r=52,circ=2*Math.PI*r;
+  if(partial){
+    const pc="#64748b";
+    return(
+      <div className="ring">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r={r} fill="none" stroke="#1e2d45" strokeWidth="9"/>
+          <circle cx="60" cy="60" r={r} fill="none" stroke={pc} strokeWidth="9" strokeLinecap="round"
+            strokeDasharray={circ} strokeDashoffset={circ-((scored||0)/(total||5))*circ}/>
+        </svg>
+        <div className="rnum" style={{color:pc,fontSize:"1.6rem"}}>{scored} of {total}<div className="rlbl">checked</div></div>
+      </div>
+    );
+  }
   const col=c==="good"?"#0a8a5f":c==="warn"?"#b06b1c":"#b91c1c";
   return(
     <div className="ring">
@@ -1651,6 +1672,8 @@ function App(){
             hasDirPage:hasDirPage||"",
             overallScore:(typeof results.overallScore!=="undefined")?results.overallScore:null,
             overallGrade:results.overallGrade||"",
+            partial:results.partial?(results.sectionsScored+" of "+results.sectionsTotal):"",
+            basis:(results.sectionsTotal && results.sectionsScored < results.sectionsTotal)?("Based on "+results.sectionsScored+" of "+results.sectionsTotal+" sections."+(results.websiteUnreadable?" Website could not be read.":"")):"",
             components:comps,
             topIssues:issues,
             aiCheck:results.aiCheck?(results.aiCheck.named?("named "+results.aiCheck.position+" of "+results.aiCheck.count):("not named; named "+(results.aiCheck.names||[]).join(", ")))+" for \""+results.aiCheck.question+"\"":"",
@@ -1667,13 +1690,13 @@ function App(){
             bizName:(results.scannedInputs&&results.scannedInputs.bizName)||bizName,
             scannedName:(results.gbp&&results.gbp.name)||"",
             scannedAddress:(results.gbp&&results.gbp.address)||"",
-            overallScore:(typeof results.overallScore==="number")?results.overallScore:null,
-            overallGrade:results.overallGrade||"",
+            overallScore:(!results.partial && typeof results.overallScore==="number")?results.overallScore:null,
+            overallGrade:results.partial?"Partial check":(results.overallGrade||""),
             summary:results.summary||"",
             topPriority:results.topPriority||"",
             mapsLine:mapsRankLine(results.mapsRank),
             aiLine:aiCheckLine(results.aiCheck),
-            basisLine:(results.sectionsTotal && results.sectionsScored < results.sectionsTotal) ? ("Based on "+results.sectionsScored+" of "+results.sectionsTotal+" sections."+(results.websiteUnreadable?" We couldn't read your website, so the others weren't scored.":"")) : "",
+            basisLine:(results.sectionsTotal && results.sectionsScored < results.sectionsTotal) ? ((results.partial ? ("We could check "+results.sectionsScored+" of "+results.sectionsTotal+" areas, so we're not giving an overall score.") : ("Based on "+results.sectionsScored+" of "+results.sectionsTotal+" sections."))+(results.websiteUnreadable?" We couldn't read your website, so the others weren't scored.":"")) : "",
             isMember:hasDirPage==="yes",
             categories:(results.categories||[]).map(function(c){return {
               name:c.name, score:c.score, notScored:!!c.notScored, scoreReason:c.scoreReason||"",
@@ -2259,11 +2282,11 @@ function App(){
       {view==="results"&&results&&(
         <div className="results">
           <div className="shero">
-            <Ring score={results.overallScore} c={sc}/>
+            <Ring score={results.overallScore} c={sc} partial={results.partial} scored={results.sectionsScored} total={results.sectionsTotal}/>
             <div className="sinfo">
-              <div className={`gpill ${sc}-g`}>{results.overallGrade}</div>
+              <div className={`gpill ${results.partial?"warn":sc}-g`}>{results.partial ? "Partial check" : results.overallGrade}</div>
               {(results.sectionsTotal && results.sectionsScored < results.sectionsTotal) ? (
-                <div style={{fontSize:"0.85rem",color:"var(--t2)",margin:"-2px 0 8px"}}>Based on {results.sectionsScored} of {results.sectionsTotal} sections.{results.websiteUnreadable ? " We couldn't read your website, so the others weren't scored." : ""}</div>
+                <div style={{fontSize:"0.85rem",color:"var(--t2)",margin:"-2px 0 8px"}}>{results.partial ? ("We could check " + results.sectionsScored + " of " + results.sectionsTotal + " areas, so we're not giving an overall score.") : ("Based on " + results.sectionsScored + " of " + results.sectionsTotal + " sections.")}{results.websiteUnreadable ? " We couldn't read your website, so the others weren't scored." : ""}</div>
               ) : null}
               <h2>Presence Report: {bizName}</h2>
               {reportStatus==="sending" && <div className="rsend" style={{fontSize:"0.9rem",color:"var(--t2)",margin:"4px 0 8px"}}>Emailing a copy of this report to {email.trim()}…</div>}
@@ -2338,7 +2361,7 @@ function App(){
                       </>
                     ) : (
                       <>
-                        <p className="scorecta-h">Want to try to score higher?</p>
+                        <p className="scorecta-h">{results.partial ? "Want Google and AI to find you more easily?" : "Want to try to score higher?"}</p>
                         <p className="scorecta-s">Get a free page in the local business directory, built to help more customers and AI search tools find you.</p>
                       </>
                     )}
