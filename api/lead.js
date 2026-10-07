@@ -42,6 +42,10 @@ export default async function handler(req, res) {
     const components = (b.components && typeof b.components === "object") ? b.components : {};
     const topIssues = Array.isArray(b.topIssues) ? b.topIssues : [];
     const isMine = b.mine === true;
+    // True when the person skipped the email on the form, saw the results, and
+    // then asked for the report by email (added 7 Oct 2026). Same record as the
+    // first lead email, now with their email address.
+    const emailLater = b.emailLater === true;
     const hasDirPage = (b.hasDirPage || "").toString().trim(); // "yes" / "no" / ""
     // "2 of 5" when too few sections were scored for the customer to be shown an
     // overall number. Michael still sees the internal number, clearly marked.
@@ -58,7 +62,7 @@ export default async function handler(req, res) {
 
     // Subject: useful data up front. Michael's own scans are tagged so his 25
     // member scans don't look like real inbound leads.
-    let subject = (isMine ? "[MY SCAN] " : "New scan — ") + (bizName || "Unknown business");
+    let subject = (isMine ? "[MY SCAN] " : "") + (emailLater ? "Email added after results — " : (isMine ? "" : "New scan — ")) + (bizName || "Unknown business");
     if (city) subject += ", " + city;
     if (partial) subject += " — partial check (" + partial + ")";
     else if (overallScore !== null) subject += " — " + overallScore + "/100";
