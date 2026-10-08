@@ -130,7 +130,7 @@ export default async function handler(req, res) {
     T.push('Questions? Just reply to this email.');
     T.push('');
     T.push('This report is an automated estimate based on public information, not professional advice.');
-    T.push('You got this because you typed this address into the scan form at www.presencescanner.ai.');
+    T.push('You got this because a copy of this report was requested for this address at www.presencescanner.ai.');
     T.push('Unsubscribe: ' + unsubUrl);
 
     // ---------- HTML version ----------
@@ -168,7 +168,7 @@ export default async function handler(req, res) {
     if (!isMember) H += '<p style="margin:0 0 10px">Want a free page in the PresenceScanner local business directory? <a href="' + SITE + '/directory" style="color:' + cyan + '">See the directory</a></p>';
     H += '<p style="margin:0 0 10px">Run a new scan any time at <a href="' + SITE + '" style="color:' + cyan + '">www.presencescanner.ai</a>. Questions? Just reply to this email.</p>';
     H += '</div>';
-    H += '<div style="font-size:12px;line-height:1.5;color:#718096;margin-top:14px">This report is an automated estimate based on public information, not professional advice. You got this because you typed this address into the scan form at www.presencescanner.ai. <a href="' + esc(unsubUrl) + '" style="color:#718096">Unsubscribe</a></div>';
+    H += '<div style="font-size:12px;line-height:1.5;color:#718096;margin-top:14px">This report is an automated estimate based on public information, not professional advice. You got this because a copy of this report was requested for this address at www.presencescanner.ai. <a href="' + esc(unsubUrl) + '" style="color:#718096">Unsubscribe</a></div>';
     H += '</div></div>';
 
     const subject = 'Your PresenceScanner report: ' + biz + (score !== null ? ', ' + score + '/100' : '');
