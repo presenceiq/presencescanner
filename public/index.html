@@ -577,7 +577,7 @@ ABSOLUTE RULES — breaking any of these produces a false report:
 - NEVER claim the business has NO listing either. You did not confirm that.
 - NEVER use language like \"you're invisible online\", \"you have no web presence\", \"customers can't find you\", or \"your business is missing from the internet\". Failing to confirm a listing automatically is NOT the same as being absent from it, and this is especially untrue for service-area businesses that are simply hard to auto-match.
 - Score the Google Business Profile category NEUTRALLY (around 50): no credit for a listing you did not confirm, no penalty for one you did not confirm is missing. Say plainly in scoreReason that the listing could not be confirmed either way.
-- Correct phrasing to use: \"We couldn't automatically confirm a Google Business Profile for this business in our scan. This is especially common for service-area businesses that hide their street address \u2014 Google's lookup APIs have a hard time matching those. It does NOT mean the business is missing from Google. Checking your Google Business Profile dashboard is the fastest way to know for sure.\"
+- Correct phrasing to use: \"We couldn't automatically confirm a Google Business Profile for this business in our scan. This is especially common for service-area businesses that hide their street address. Google's lookup APIs have a hard time matching those. It does NOT mean the business is missing from Google. Checking your Google Business Profile dashboard is the fastest way to know for sure.\"
 - The name, address, phone and other details below are simply WHAT THE USER TYPED. Refer to them as \"the details you provided\", never as something we found on Google.
 The rest of this data was also typed by hand, so the same care applies:
 Any field marked "Not provided — could not verify" means we could not read it — NOT that the business lacks it. For any such field:
@@ -696,8 +696,8 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
             // as a checked section or go into the overall average.
             c.neutral = true;
             c.scoreReason = gbp.ownerSaysListed
-              ? "Neutral: you told us your Google listing exists, but our lookup couldn't read it, so we didn't score its details this time. That's a limit of our lookup, not a penalty."
-              : "Neutral: our lookup couldn't confirm your Google listing, so we didn't score it this time. That's a limit of our lookup, not a sign anything is missing.";
+              ? "You told us your Google listing exists, but our lookup couldn't read it, so we didn't score its details this time. That's a limit of our lookup, not a penalty."
+              : "Our lookup couldn't confirm your Google listing, so we didn't score it this time. That's a limit of our lookup, not a sign anything is missing.";
             gbpNeutralized = true;
           }
         });
@@ -842,7 +842,7 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
           if (!(c.name in out)) {
             // Sections built on the website when no website was confirmed.
             if (noWebsiteAnywhere && ["Website Health", "AI Search Visibility", "GEO Score"].indexOf(c.name) !== -1) {
-              c.score = 50; c.neutral = true; c.scoreReason = "Neutral: we couldn't confirm a website for this business, so this section wasn't scored.";
+              c.score = 50; c.neutral = true; c.scoreReason = "We couldn't confirm a website for this business, so this section wasn't scored.";
             }
             return;
           }
@@ -852,8 +852,8 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
             // Nothing in this section could be checked this time.
             c.score = 50; c.neutral = true;
             c.scoreReason = c.name === "AI Search Visibility"
-              ? "Neutral: we didn't get an answer from the AI assistant check this time, so this section wasn't scored."
-              : "Neutral: we couldn't check the details for this section this time, so it wasn't scored.";
+              ? "We didn't get an answer from the AI assistant check this time, so this section wasn't scored."
+              : "We couldn't check the details for this section this time, so it wasn't scored.";
           }
         });
       }
@@ -989,6 +989,24 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
         // missing. The headline number is withheld and the report says how
         // much was checked instead. The section scores still show.
         parsed.partial = parsed.sectionsTotal >= 4 && parsed.sectionsScored < 4;
+        // NOT SCORED, NOT 50 (8 Oct 2026). A neutral section used to show "50%",
+        // which reads as a middling grade (a 5.0-star, 35-review business saw
+        // "Google Business Profile 50%" because our lookup missed its listing).
+        // It was already left out of the overall; now it also shows "Not scored"
+        // with its reason, and its findings no longer count as top issues.
+        five.forEach(function(c){
+          if (!c.neutral) return;
+          c.notScored = true;
+          c.score = -1;
+          // When the owner told us the listing exists, "your listing could not
+          // be confirmed" is our lookup's limit, not their problem. The reason
+          // line already says so, so the AI's warning saying it again is dropped.
+          if (c.name === "Google Business Profile" && gbp && gbp.userProvided && Array.isArray(c.findings)) {
+            c.findings = c.findings.filter(function(f){
+              return !(f && f.status !== "good" && /could ?n.?o?t (be )?(confirm|verif)|couldn.t (confirm|verif)|not (be )?(confirmed|verified)|unable to (confirm|verif)/i.test(String(f.title || "")));
+            });
+          }
+        });
       }
       if (Array.isArray(parsed.categories)) {
         parsed.categories = parsed.categories.filter(
@@ -1089,11 +1107,11 @@ function CatCard({cat}){
             <b>Source:</b> {cat.sourceNote}
           </div>
         )}
-        {!soon && cat.scoreReason && (
+        {(!soon || cat.notScored) && cat.scoreReason && (
           <div className="finding" style={{opacity:0.85}}>
             <div className="fd warn-d" style={{background:"var(--t2)"}}/>
             <div className="ft">
-              <h4 style={{color:"var(--t2)"}}>Why this score</h4>
+              <h4 style={{color:"var(--t2)"}}>{soon ? "Why it wasn't scored" : "Why this score"}</h4>
               <p>{cat.scoreReason}</p>
             </div>
           </div>
