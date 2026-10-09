@@ -1,8 +1,8 @@
 {
   "name": "Who To Recommend",
   "short_name": "Recommend",
-  "start_url": "/recommend-mp",
-  "scope": "/recommend-mp",
+  "start_url": "/wtr-mp",
+  "scope": "/wtr-mp",
   "display": "standalone",
   "background_color": "#f4f6f9",
   "theme_color": "#1f7c9c",
