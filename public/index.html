@@ -478,7 +478,9 @@ async function runLiveChecks(bizName, gbp, site, city){
     const post = function(url, body){ return fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)})
       .then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }); };
     const res = await Promise.all([
-      gbp.placeId ? post("/api/mapsrank", {phrase: sp.phrase, city: nc, placeId: gbp.placeId}) : Promise.resolve(null),
+      // Hidden-address businesses don't show in the Maps search our rank check
+      // uses, so checking would wrongly say "not in the first 20". Skipped.
+      (gbp.placeId && !gbp.serviceArea) ? post("/api/mapsrank", {phrase: sp.phrase, city: nc, placeId: gbp.placeId}) : Promise.resolve(null),
       post("/api/aicheck", {bizName: gbp.name || bizName, phrase: sp.phrase, city: nc, question: sp.question})
     ]);
     const m = res[0], a = res[1];
@@ -1878,7 +1880,7 @@ function App(){
             website:(results.scannedInputs&&results.scannedInputs.website)||website||"",
             phone:phone||"",
             city:(results.scannedInputs&&results.scannedInputs.city)||city||"",
-            matchedAddress:(results.gbp&&!results.gbp.userProvided&&results.gbp.address)?results.gbp.address:"",
+            matchedAddress:(results.gbp&&!results.gbp.userProvided)?(results.gbp.address||(results.gbp.serviceArea?("Google listing found by phone (address hidden, service-area business): "+(results.gbp.name||"")):"")):"",
             gbpStatus:!results.gbp?"owner-says-none":(results.gbp.ownerSaysListed?"owner-says-listed":(results.gbp.userProvided?"owner-typed":"google")),
             listingUrl:(results.gbp&&results.gbp.listingUrl)?results.gbp.listingUrl:"",
             googleListing:(results.gbp&&results.gbp.placeId&&!results.gbp.userProvided)?("https://www.google.com/maps/place/?q=place_id:"+results.gbp.placeId):"",
@@ -1967,7 +1969,7 @@ function App(){
         try{
           const pRes=await fetch("/api/findplace",{
             method:"POST",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({phone:phone.trim(),name:bizName,website})
+            body:JSON.stringify({phone:phone.trim(),name:bizName,website,city})
           });
           const pMatch=await pRes.json();
           if(pMatch&&pMatch.found){
