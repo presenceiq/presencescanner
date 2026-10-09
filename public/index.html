@@ -564,7 +564,7 @@ ${userProvided ? `UNCONFIRMED BUSINESS DETAILS — TYPED IN BY THE USER. NO GOOG
 - Business Name on Google: ${gbp.name}`}
 - Star Rating: ${ratingLine}
 - Total Reviews: ${reviewLine}
-- Address: ${gbp.address || 'Not listed'}
+- Address: ${gbp.serviceArea ? (gbp.address ? gbp.address + ' (service-area business: the street address is hidden on purpose)' : 'Hidden on purpose. This is a service-area business, which Google allows to hide its street address. Do NOT write a finding about a missing address and do NOT suggest adding one. Do not claim anything about its service area settings either; we did not read them.') : (gbp.address || 'Not listed')}
 - Phone: ${gbp.phone || 'Not listed'}
 - Website on GBP: ${gbp.website || (userProvided ? 'Not provided — could not verify' : 'NOT SET')}
 - Has Business Hours Set: ${hoursLine}
@@ -889,6 +889,18 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
             status: "good"
           }]);
         }
+      }
+      // SERVICE-AREA LISTINGS (8 Oct 2026): a hidden street address is Google's
+      // normal setup for these businesses, not a problem, so a warning about a
+      // missing address is dropped.
+      if (gbp && gbp.serviceArea && Array.isArray(parsed.categories)) {
+        parsed.categories.forEach(function(c){
+          if (!c || !Array.isArray(c.findings)) return;
+          c.findings = c.findings.filter(function(f){
+            return !(f && f.status !== "good" && /\baddress\b/i.test(String(f.title || "")));
+          });
+        });
+        if (/\baddress\b/i.test(String(parsed.topPriority || "").split(/[.!?](\s|$)/)[0])) parsed.topPriority = "";
       }
       // FINDINGS FOLLOW THE SCORE (7 Oct 2026). Code scores each fact in one
       // section, so a finding about that fact is moved to that section. Then a
