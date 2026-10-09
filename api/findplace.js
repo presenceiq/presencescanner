@@ -67,6 +67,88 @@ async function fetchDetails(placeId, apiKey) {
   return { result: j.result || null, status: j.status || null, errorMessage: j.error_message || null };
 }
 
+// SECOND CHANCE FOR HIDDEN-ADDRESS BUSINESSES (8 Oct 2026).
+// Cleaners, pool services, pressure washers and other businesses that hide
+// their address are left out of the older Google lookup above, even by phone.
+// Google's newer search includes them only when asked to
+// (includePureServiceAreaBusinesses, added by Google Nov 2024). We use it only
+// when the older lookup finds nothing, and we accept a result ONLY if its phone
+// number matches the one the owner typed, so a same-name business elsewhere is
+// never picked. One search returns everything the report needs.
+const SAB_FIELDS = [
+  'places.id', 'places.displayName', 'places.formattedAddress', 'places.nationalPhoneNumber',
+  'places.internationalPhoneNumber', 'places.websiteUri', 'places.rating', 'places.userRatingCount',
+  'places.regularOpeningHours', 'places.photos', 'places.businessStatus', 'places.types',
+  'places.pureServiceAreaBusiness',
+].join(',');
+
+async function sabSearch(textQuery, apiKey) {
+  const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': SAB_FIELDS },
+    body: JSON.stringify({ textQuery: textQuery, includePureServiceAreaBusinesses: true, regionCode: 'US', pageSize: 20 }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    console.error('SAB SEARCH ' + r.status + ' ' + JSON.stringify(j).slice(0, 300));
+    return [];
+  }
+  return Array.isArray(j.places) ? j.places : [];
+}
+
+function sabPhoneDigits(p) {
+  let d = String((p && (p.nationalPhoneNumber || p.internationalPhoneNumber)) || '').replace(/\D/g, '');
+  if (d.length === 11 && d.startsWith('1')) d = d.slice(1);
+  return d;
+}
+
+function shapeSab(p) {
+  const hours = p.regularOpeningHours && Array.isArray(p.regularOpeningHours.weekdayDescriptions)
+    ? p.regularOpeningHours.weekdayDescriptions.slice(0, 7) : [];
+  return {
+    found: true,
+    placeId: p.id,
+    name: (p.displayName && p.displayName.text) || null,
+    rating: typeof p.rating === 'number' ? p.rating : null,
+    reviewCount: typeof p.userRatingCount === 'number' ? p.userRatingCount : 0,
+    address: p.formattedAddress || null,
+    phone: p.nationalPhoneNumber || p.internationalPhoneNumber || null,
+    website: p.websiteUri || null,
+    hasHours: !!p.regularOpeningHours,
+    isOpen: null,
+    hours: hours,
+    photoCount: Array.isArray(p.photos) ? p.photos.length : 0,
+    businessStatus: p.businessStatus || null,
+    types: Array.isArray(p.types) ? p.types : [],
+    // Found by the hidden-address search. The Google Maps rank check can't see
+    // these businesses, so the scanner skips that check for them.
+    serviceArea: true,
+    matchCount: 1,
+  };
+}
+
+async function sabLookup(req, digits, name, city, website, apiKey) {
+  const ok = await spend(req, 'sab');
+  if (!ok.ok) return null;
+  const queries = [];
+  if (name && String(name).trim()) queries.push(String(name).trim() + (city ? ' ' + String(city).trim() : ''));
+  queries.push('(' + digits.slice(0, 3) + ') ' + digits.slice(3, 6) + '-' + digits.slice(6));
+  for (const q of queries) {
+    const places = await sabSearch(q, apiKey);
+    const hits = places.filter((p) => sabPhoneDigits(p) === digits);
+    if (hits.length) {
+      hits.sort((a, b) =>
+        (nameMatchScore(b.displayName && b.displayName.text, name) + siteMatchScore(b.websiteUri, website)) -
+        (nameMatchScore(a.displayName && a.displayName.text, name) + siteMatchScore(a.websiteUri, website)));
+      const out = shapeSab(hits[0]);
+      out.matchCount = hits.length;
+      out.sharedPhoneNumber = hits.length > 1;
+      return out;
+    }
+  }
+  return null;
+}
+
 // Shape a Google details result into the object the rest of the app expects.
 function shape(placeId, d) {
   return {
@@ -102,7 +184,7 @@ export default async function handler(req, res) {
   try {
     // `name` is OPTIONAL. When the scan sends it, we use it to pick the
     // right business if the phone number maps to more than one.
-    const { phone, name, website } = req.body || {};
+    const { phone, name, website, city } = req.body || {};
     const apiKey = process.env.GOOGLE_PLACES_KEY;
 
     if (!phone || !String(phone).trim()) {
@@ -148,6 +230,10 @@ export default async function handler(req, res) {
     }
 
     if (!findData.candidates || findData.candidates.length === 0) {
+      try {
+        const sab = await sabLookup(req, digits, name, city, website, apiKey);
+        if (sab) return res.status(200).json(sab);
+      } catch (e) { console.error('SAB LOOKUP ERROR ' + String(e).slice(0, 200)); }
       return res.status(200).json({ found: false, message: 'No Google business found for that phone number' });
     }
 
