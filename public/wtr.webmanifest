@@ -1,13 +1,13 @@
 {
-  "name": "Who To Recommend",
-  "short_name": "Recommend",
+  "name": "Who To Recommend, mine",
+  "short_name": "WTR Mine",
   "start_url": "/wtr-mp",
   "scope": "/wtr-mp",
   "display": "standalone",
   "background_color": "#f4f6f9",
   "theme_color": "#1f7c9c",
   "icons": [
-    { "src": "/favicon-32x32.png", "sizes": "32x32", "type": "image/png" },
-    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+    { "src": "/wtr-mp-icon-32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "/wtr-mp-icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
   ]
 }
