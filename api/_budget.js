@@ -24,6 +24,7 @@ export const LIMITS = {
   scan:    { perIp: 3,   site: 40  },  // full AI scans (the per-IP 3 matches the old limiter)
   advisor: { perIp: 25,  site: 200 },  // advisor chat messages (7 per visit) and the short search-phrase call
   aicheck: { perIp: 3,   site: 30  },  // AI assistant check (1 web search each)
+  sab:     { perIp: 4,   site: 30  },  // second-chance lookup for hidden-address businesses (up to 2 Google searches each)
 };
 
 const DAY = 86400;
