@@ -334,12 +334,12 @@ function tidyText(s){
   // inside a range like "7:30–2:00" is left alone.
   const D = "(?:\\s*\\u2014\\s*|\\s+\\u2013\\s+)";
   // Two dashes around a short aside ("load times, dash, under 3 seconds, dash, matter") become commas.
-  s = s.replace(new RegExp(D + "([^\\u2014.!?]{1,80}?)" + D, "g"), ", $1, ");
+  s = s.replace(new RegExp(D + "([^\\u2014.!?]{1,200}?)" + D, "g"), ", $1, ");
   // A dash right before punctuation or the end: just drop it.
   s = s.replace(new RegExp(D + "(?=[.,;:!?)]|$)", "g"), "");
   // Any other dash: if a full clause follows (6+ words), start a new
   // sentence there; if it's a short phrase, use a comma.
-  s = s.replace(new RegExp(D + "([^.!?]*)", "g"), function(m, rest){
+  s = s.replace(new RegExp(D + "([^.!?\\u2014]*)", "g"), function(m, rest){
     const words = rest.trim().split(/\s+/).filter(Boolean).length;
     const startsClause = /^(this|that|it|they|you|we|there|these|those|its|your|which is|which are)\b/i.test(rest.trim());
     return (words >= 6 || startsClause) ? ". " + rest.charAt(0).toUpperCase() + rest.slice(1) : ", " + rest;
@@ -2670,7 +2670,7 @@ function App(){
                 </div>
               )}
               <p>{results.summary}</p>
-              {results.topPriority ? <div className="priority"><strong>High-Impact Opportunity</strong>{results.topPriority}</div> : null}
+              {results.topPriority ? <div className="priority"><strong>Start here</strong>{results.topPriority}</div> : null}
               <div className="scorecta">
                 {hasDirPage==="yes" ? (
                   <>
