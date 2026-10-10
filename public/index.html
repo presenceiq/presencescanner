@@ -424,6 +424,18 @@ function niceCity(c){
   const cap = function(x){ return x.toLowerCase().replace(/\b[a-z]/g, function(ch){ return ch.toUpperCase(); }); };
   return m ? cap(m[1].replace(/,\s*$/, "")) + ", " + m[2].toUpperCase() : cap(s);
 }
+// SAME TOWN EVERY TIME (10 Oct 2026). The live checks used the town exactly as
+// typed, so "Punta Gorda" and "Punta Gorda, FL" ran 2 different Google searches
+// (10 results vs 13) and moved the same business from #3 to #5. When Google
+// gave us the listing's address, its own town and state are used instead, so
+// the checks don't depend on how the owner typed it.
+function checkCity(gbp, typed){
+  if (gbp && !gbp.userProvided && gbp.address) {
+    const m = String(gbp.address).match(/,\s*([^,]+?),\s*([A-Z]{2})\s+\d{5}/);
+    if (m) return niceCity(m[1] + ", " + m[2]);
+  }
+  return niceCity(typed);
+}
 // Step 1 of the live checks: a tiny AI call picks (a) the words a customer
 // would type into Google Maps and (b) the question they'd ask an AI assistant.
 async function getSearchPhrase(bizName, gbp, site, city){
@@ -459,7 +471,7 @@ async function getSearchPhrase(bizName, gbp, site, city){
 // same live checks twice.
 const LIVE_CACHE = {};
 async function getLiveChecks(bizName, gbp, site, city){
-  const key = (gbp && gbp.placeId ? gbp.placeId : "") + "|" + niceCity(city);
+  const key = (gbp && gbp.placeId ? gbp.placeId : "") + "|" + checkCity(gbp, city);
   if (gbp && gbp.placeId && LIVE_CACHE[key]) return LIVE_CACHE[key];
   const out = await runLiveChecks(bizName, gbp, site, city);
   if (gbp && gbp.placeId && (out.maps || out.ai)) LIVE_CACHE[key] = out;
@@ -472,7 +484,7 @@ async function runLiveChecks(bizName, gbp, site, city){
     // name, the kind of business and the town. The Maps rank still needs a
     // Google listing ID, so it's skipped for them.
     if (!gbp || !city) return out;
-    const nc = niceCity(city);
+    const nc = checkCity(gbp, city);
     const sp = await getSearchPhrase(bizName, gbp, site, nc);
     if (!sp.phrase) return out;
     const post = function(url, body){ return fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)})
@@ -617,7 +629,8 @@ REAL WEBSITE DATA (use this for Website Health, AI Search Visibility, and GEO Sc
 - Approx word count on homepage: ${site.wordCount}
 - Text sample from homepage: ${site.textSample || '(none)'}
 
-WEBSITE SIGNAL RULE: For the website signals above, do NOT describe a feature as missing unless it is explicitly marked "Not found on the scanned homepage." Even then, phrase it as "not found on the scanned page," NOT "the business does not have it" — it may exist on another page or platform we did not check. If a signal is "Unknown — could not verify," treat it as unverified: do not write a negative finding about it and do not lower the score for it.
+${site.jsBuilt ? `PAGE BUILT BY CODE: this homepage sends almost no words. Its text, headings and photos are added by code that runs in the visitor's browser${site.builder ? ' (the page says it was made with ' + site.builder + ')' : ''}. People see a full website; we could read only the page header (title, description, phone setup). So: do NOT say the page lacks content, text, headings, FAQ or social links, and do NOT tell them to add content; we could not see it. Our code adds one finding explaining this, so do not write your own finding about it. Base the website-related findings only on the title, the meta description and the mobile setup.
+` : ''}WEBSITE SIGNAL RULE: For the website signals above, do NOT describe a feature as missing unless it is explicitly marked "Not found on the scanned homepage." Even then, phrase it as "not found on the scanned page," NOT "the business does not have it" — it may exist on another page or platform we did not check. If a signal is "Unknown — could not verify," treat it as unverified: do not write a negative finding about it and do not lower the score for it.
 ` : (site && site.likelyAccessibleToHumans) ? `
 REAL WEBSITE DATA: A website exists, but our automated scanner could not fetch it. ${site.reasonForUser || ''}
 IMPORTANT — handle this honestly:
@@ -666,6 +679,8 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
       const siteUnreadable = !noWebsiteAnywhere && !(site && site.fetched);
       parsed.websiteUnreadable = siteUnreadable;
       parsed.noWebsite = noWebsiteAnywhere;
+      parsed.websiteJsBuilt = !!(site && site.fetched && site.jsBuilt);
+      parsed.websiteBuilder = (site && site.builder) || "";
       parsed.websiteScanReason = (site && !site.fetched && site.scanReason) ? site.scanReason : "";
       // GBP NOT CONFIRMED BY OUR LOOKUP: the profile details came from the
       // owner (typed in, or "my listing exists, you just can't see it"), not
@@ -780,17 +795,19 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
             yesNo(site.title ? true : false, 20, "a page title", "no page title"),
             yesNo(site.metaDescription ? true : false, 20, "a search description (meta description)", "no search description (meta description)"),
             yesNo(on(site.viewportStatus), 25, "a phone-friendly setup", "no phone-friendly setup tag found"),
-            typeof site.h1Count === "number" ? yesNo(site.h1Count >= 1, 20, "a main heading (H1)", "no main heading (H1)") : null,
-            typeof site.h2Count === "number" ? yesNo(site.h2Count >= 1, 15, "section headings", "no section headings") : null,
+            (typeof site.h1Count === "number" && !site.jsBuilt) ? yesNo(site.h1Count >= 1, 20, "a main heading (H1)", "no main heading (H1)") : null,
+            (typeof site.h2Count === "number" && !site.jsBuilt) ? yesNo(site.h2Count >= 1, 15, "section headings", "no section headings") : null,
           ]);
+          // Built by code: anything we didn't find may just be hidden from us.
+          const seen = function(st){ const v = on(st); return (site.jsBuilt && v === false) ? null : v; };
           out["AI Search Visibility"] = aiF ? build([aiF,
-            yesNo(on(site.schemaStatus), 40, "schema markup that tells AI tools what your business is", "no schema markup found")]) : null;
-          const wc = typeof site.wordCount === "number" ? site.wordCount : null;
+            yesNo(seen(site.schemaStatus), 40, "schema markup that tells AI tools what your business is", "no schema markup found")]) : null;
+          const wc = (typeof site.wordCount === "number" && !site.jsBuilt) ? site.wordCount : null;
           out["GEO Score"] = build([
-            yesNo(on(site.faqStatus), 35, "question-and-answer (FAQ) content", "no FAQ content found"),
+            yesNo(seen(site.faqStatus), 35, "question-and-answer (FAQ) content", "no FAQ content found"),
             wc === null ? null : (wc >= 300 ? [35, 35, "plenty of text (about " + fmt(wc) + " words)", ""]
               : [wc >= 150 ? 18 : 0, 35, "", "only about " + fmt(wc) + " words of text"]),
-            (on(site.facebookStatus) === null && on(site.instagramStatus) === null) ? null
+            (seen(site.facebookStatus) === null && seen(site.instagramStatus) === null) ? null
               : yesNo(on(site.facebookStatus) === true || on(site.instagramStatus) === true, 30, "links to your Facebook or Instagram", "no Facebook or Instagram links found"),
           ]);
         }
@@ -855,7 +872,9 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
             c.score = 50; c.neutral = true;
             c.scoreReason = c.name === "AI Search Visibility"
               ? "We didn't get an answer from the AI assistant check this time, so this section wasn't scored."
-              : "We couldn't check the details for this section this time, so it wasn't scored.";
+              : (site && site.jsBuilt && c.name === "GEO Score")
+                ? "Your website's words load after the page opens, so we couldn't read them to score this section. See the note under Website Health."
+                : "We couldn't check the details for this section this time, so it wasn't scored.";
           }
         });
       }
@@ -902,6 +921,29 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
         });
         if (/\baddress\b/i.test(String(parsed.topPriority || "").split(/[.!?](\s|$)/)[0])) parsed.topPriority = "";
       }
+      // PAGE BUILT BY CODE (10 Oct 2026): one plain explanation, written here so
+      // the wording never varies, and no "add content" advice for words the
+      // owner can see on their own site.
+      if (site && site.fetched && site.jsBuilt && !noWebsiteAnywhere && Array.isArray(parsed.categories)) {
+        const hidden = /\bheadings?\b|\bh1\b|\bh2\b|\bcontent\b|\btext\b|\bwords?\b|word count|\bfaq|facebook|instagram|social/i;
+        parsed.categories.forEach(function(c){
+          if (!c || !Array.isArray(c.findings)) return;
+          c.findings = c.findings.filter(function(f){ return !(f && f.status !== "good" && hidden.test(String(f.title || ""))); });
+        });
+        const wh = parsed.categories.find(function(c){ return c && c.name === "Website Health"; });
+        if (wh) {
+          wh.findings = [{
+            title: "Your website's words load after the page opens",
+            detail: "Your site shows its words, headings and photos only after code runs in the visitor's browser" + (site.builder ? " (it was made with " + site.builder + ")" : "") + ". People see the full page, and Google can usually run that code. But a December 2024 study by Vercel found that the crawlers used by ChatGPT, Claude and Perplexity don't run it, so those AI tools likely see a nearly blank page. That's also why parts of this report couldn't be checked.",
+            status: "warn",
+            pinned: true,
+            action: "Ask whoever built your site, or your site builder's support, whether your pages can be published so the words are in the page itself, without needing code to show them."
+          }].concat(wh.findings || []);
+        }
+        if (hidden.test(String(parsed.topPriority || "").split(/[.!?](\s|$)/)[0])) {
+          parsed.topPriority = "Ask whoever built your website whether your pages can be published so the words are in the page itself. The reason is under Website Health.";
+        }
+      }
       // FINDINGS FOLLOW THE SCORE (7 Oct 2026). Code scores each fact in one
       // section, so a finding about that fact is moved to that section. Then a
       // section never says "nothing held it back" while showing a problem that
@@ -928,6 +970,7 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
         parsed.categories.forEach(function(c){
           if (!c || c.comingSoon || c.notScored || !Array.isArray(c.findings)) return;
           c.findings = c.findings.filter(function(f){
+            if (f && f.pinned) return true;
             const t = String((f && f.title) || "").toLowerCase();
             const hits = home.filter(function(x){ return x[1].test(t); });
             // No match, or a title about 2 different things: leave it where it is.
@@ -1896,7 +1939,7 @@ function App(){
             gbpStatus:!results.gbp?"owner-says-none":(results.gbp.ownerSaysListed?"owner-says-listed":(results.gbp.userProvided?"owner-typed":"google")),
             listingUrl:(results.gbp&&results.gbp.listingUrl)?results.gbp.listingUrl:"",
             googleListing:(results.gbp&&results.gbp.placeId&&!results.gbp.userProvided)?("https://www.google.com/maps/place/?q=place_id:"+results.gbp.placeId):"",
-            websiteScan:results.websiteUnreadable?(results.websiteScanReason||"could not reach site"):"",
+            websiteScan:results.websiteUnreadable?(results.websiteScanReason||"could not reach site"):(results.websiteJsBuilt?("page built by code"+(results.websiteBuilder?" ("+results.websiteBuilder+")":"")+": words not readable without running it, likely the same for AI crawlers"):""),
             email:email||"",
             hasDirPage:hasDirPage||"",
             overallScore:(typeof results.overallScore!=="undefined")?results.overallScore:null,
