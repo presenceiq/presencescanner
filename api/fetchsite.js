@@ -222,6 +222,20 @@ export default async function handler(req, res) {
     // A short text sample so the AI can judge tone/clarity — capped small.
     const textSample = textOnly.slice(0, 1500);
 
+    // PAGE BUILT BY CODE (10 Oct 2026). Some site builders (Hostinger's AI
+    // Builder, for one) send an almost empty page and add the words, headings
+    // and photos with code in the visitor's browser. People see a full site;
+    // anything that reads the page without running the code, including this
+    // scanner and the AI crawlers behind ChatGPT, Claude and Perplexity, sees
+    // next to nothing. Flag it so the report says so instead of "no content".
+    const genMatch = html.match(/<meta[^>]*name=["']generator["'][^>]*content=["']([^"']{1,80})["']/i);
+    const generator = genMatch ? genMatch[1].trim() : '';
+    const scriptCount = (html.match(/<script\b/gi) || []).length;
+    const appShell = /<div[^>]+id=["'](root|app|__next|__nuxt|___gatsby)["']/i.test(html) || /<noscript[^>]*>[\s\S]{0,300}(enable|turn on) javascript/i.test(html);
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    const bodyWords = bodyMatch ? bodyMatch[1].replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean).length : wordCount;
+    const jsBuilt = bodyWords < 40 && h1Count === 0 && (scriptCount >= 3 || appShell || !!generator);
+
     return res.status(200).json({
       fetched: true,
       url: website,
@@ -242,6 +256,8 @@ export default async function handler(req, res) {
       instagramStatus,
       wordCount,
       textSample,
+      jsBuilt,
+      builder: jsBuilt ? generator.slice(0, 60) : '',
     });
 
   } catch (e) {
