@@ -93,7 +93,7 @@ export default async function handler(req, res) {
     if (phone)   lines.push("PHONE      " + phone);
     lines.push("EMAIL      " + (email || "(not provided)"));
     if (website) lines.push("WEBSITE    " + website);
-    if (websiteScan) lines.push("WEBSITE SCAN  could not reach site (" + websiteScan + ")");
+    if (websiteScan) lines.push("WEBSITE SCAN  " + (/^page built by code/.test(websiteScan) ? websiteScan : "could not reach site (" + websiteScan + ")"));
     lines.push("DIR MEMBER " + (hasDirPage === "yes" ? "Yes" : hasDirPage === "no" ? "No" : "(not provided)"));
     lines.push("");
     if (partial) {
