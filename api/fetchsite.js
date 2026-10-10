@@ -228,7 +228,9 @@ export default async function handler(req, res) {
     // anything that reads the page without running the code, including this
     // scanner and the AI crawlers behind ChatGPT, Claude and Perplexity, sees
     // next to nothing. Flag it so the report says so instead of "no content".
-    const genMatch = html.match(/<meta[^>]*name=["']generator["'][^>]*content=["']([^"']{1,80})["']/i);
+    // Builder tag, read in either attribute order (name first or content first).
+    const genTag = (html.match(/<meta\b[^>]*\b(?:name|property)=["']?generator["']?[^>]*>/i) || [''])[0];
+    const genMatch = genTag.match(/\bcontent=["']([^"']{1,80})["']/i);
     const generator = genMatch ? genMatch[1].trim() : '';
     const scriptCount = (html.match(/<script\b/gi) || []).length;
     const appShell = /<div[^>]+id=["'](root|app|__next|__nuxt|___gatsby)["']/i.test(html) || /<noscript[^>]*>[\s\S]{0,300}(enable|turn on) javascript/i.test(html);
@@ -259,7 +261,7 @@ export default async function handler(req, res) {
       jsBuilt,
       // The site builder named in the page's own code, e.g. "WebStarts.com",
       // "Hostinger AI Builder", "Wix.com Website Builder". Version numbers dropped.
-      builder: generator.replace(/\s+v?\d[\d.]*.*$/i, '').slice(0, 60),
+      builder: generator.replace(/\s+[-|:]\s+.*$/, '').replace(/\s+v?\d[\d.]*.*$/i, '').slice(0, 60),
     });
 
   } catch (e) {
