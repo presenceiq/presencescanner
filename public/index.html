@@ -784,7 +784,11 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
             : [0, 60, "", "the AI assistant we asked not naming you"];
         }
         // No website confirmed: the AI check is still a real measurement.
-        if (noWebsiteAnywhere && aiF) out["AI Search Visibility"] = build([aiF]);
+        // LIVE CHECKS DON'T MOVE THE SCORE (10 Oct 2026). Google reshuffles its
+        // Maps results day to day and an AI assistant answers differently each
+        // time, so counting them made the same business score 41, 40, 41. They
+        // still show in the "Live checks" box; the score counts only facts that
+        // stay put until the business changes something.
         if (fetched) {
           const wc0 = typeof site.wordCount === "number" ? site.wordCount : 0;
           okFacts.title = !!site.title; okFacts.meta = !!site.metaDescription; okFacts.mobile = on(site.viewportStatus) === true;
@@ -800,8 +804,9 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
           ]);
           // Built by code: anything we didn't find may just be hidden from us.
           const seen = function(st){ const v = on(st); return (site.jsBuilt && v === false) ? null : v; };
-          out["AI Search Visibility"] = aiF ? build([aiF,
-            yesNo(seen(site.schemaStatus), 40, "schema markup that tells AI tools what your business is", "no schema markup found")]) : null;
+          out["AI Search Visibility"] = build([
+            [site.jsBuilt ? 0 : 50, 50, "a homepage AI tools can read without running code", "a homepage whose words load by code, which AI tools likely can't read"],
+            yesNo(seen(site.schemaStatus), 50, "schema markup that tells AI tools what your business is", "no schema markup found")]);
           const wc = (typeof site.wordCount === "number" && !site.jsBuilt) ? site.wordCount : null;
           out["GEO Score"] = build([
             yesNo(seen(site.faqStatus), 35, "question-and-answer (FAQ) content", "no FAQ content found"),
@@ -834,7 +839,6 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
               : [0, 30, "", "no photos"]),
             gbp.matchCount === 1 ? [10, 10, "your phone number leading to one listing", ""]
               : (gbp.matchCount > 1 ? [0, 10, "", "your phone number leading to more than one listing"] : null),
-            mapsF,
           ]);
         } else if (!gbp) {
           out["Google Business Profile"] = { score: 0, reason: "No Google listing yet, so there's nothing to score here." };
