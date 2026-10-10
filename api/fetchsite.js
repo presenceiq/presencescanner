@@ -257,7 +257,9 @@ export default async function handler(req, res) {
       wordCount,
       textSample,
       jsBuilt,
-      builder: jsBuilt ? generator.slice(0, 60) : '',
+      // The site builder named in the page's own code, e.g. "WebStarts.com",
+      // "Hostinger AI Builder", "Wix.com Website Builder". Version numbers dropped.
+      builder: generator.replace(/\s+v?\d[\d.]*.*$/i, '').slice(0, 60),
     });
 
   } catch (e) {
