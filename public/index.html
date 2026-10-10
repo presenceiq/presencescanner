@@ -925,7 +925,7 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
       // the wording never varies, and no "add content" advice for words the
       // owner can see on their own site.
       if (site && site.fetched && site.jsBuilt && !noWebsiteAnywhere && Array.isArray(parsed.categories)) {
-        const hidden = /\bheadings?\b|\bh1\b|\bh2\b|\bcontent\b|\btext\b|\bwords?\b|word count|\bfaq|facebook|instagram|social/i;
+        const hidden = /\bheadings?\b|\bh1\b|\bh2\b|\bcontent\b|\btext\b|\bwords?\b|word count|\bfaq|facebook|instagram|social|schema|structured data/i;
         parsed.categories.forEach(function(c){
           if (!c || !Array.isArray(c.findings)) return;
           c.findings = c.findings.filter(function(f){ return !(f && f.status !== "good" && hidden.test(String(f.title || ""))); });
