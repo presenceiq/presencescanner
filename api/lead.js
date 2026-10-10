@@ -36,6 +36,7 @@ export default async function handler(req, res) {
     const mapsRank = (b.mapsRank || "").toString().trim().slice(0, 200);
     const aiCheck = (b.aiCheck || "").toString().trim().slice(0, 900);
     const websiteScan = (b.websiteScan || "").toString().trim();
+    const builder = (b.builder || "").toString().trim().slice(0, 60);
     const email   = (b.email   || "").toString().trim();
     const overallScore = (b.overallScore === 0 || b.overallScore) ? b.overallScore : null;
     const overallGrade = (b.overallGrade || "").toString().trim();
@@ -93,6 +94,7 @@ export default async function handler(req, res) {
     if (phone)   lines.push("PHONE      " + phone);
     lines.push("EMAIL      " + (email || "(not provided)"));
     if (website) lines.push("WEBSITE    " + website);
+    if (builder) lines.push("BUILT WITH " + builder);
     if (websiteScan) lines.push("WEBSITE SCAN  " + (/^page built by code/.test(websiteScan) ? websiteScan : "could not reach site (" + websiteScan + ")"));
     lines.push("DIR MEMBER " + (hasDirPage === "yes" ? "Yes" : hasDirPage === "no" ? "No" : "(not provided)"));
     lines.push("");
