@@ -945,9 +945,9 @@ REAL WEBSITE DATA: A website is known to exist (${knownWebsite}) but our automat
             action: "Ask whoever built your site, or your site builder's support, whether your pages can be published so the words are in the page itself, without needing code to show them."
           }].concat(wh.findings || []);
         }
-        if (hidden.test(String(parsed.topPriority || "").split(/[.!?](\s|$)/)[0])) {
-          parsed.topPriority = "Ask whoever built your website whether your pages can be published so the words are in the page itself. The reason is under Website Health.";
-        }
+        // A site AI tools likely can't read always leads (11 Oct 2026): a
+        // meta description or photo tip comes second to that.
+        parsed.topPriority = "Ask whoever built your website whether your pages can be published so the words are in the page itself. The reason is under Website Health.";
       }
       // NO "VERIFIED" (10 Oct 2026): we never check whether a Google listing is
       // verified, so the AI's "verified profile / verified address" is removed.
