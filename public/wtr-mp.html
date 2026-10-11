@@ -93,7 +93,7 @@ button.copy + button.copy{margin-top:8px}
   </div>
 
   <div class="searchbar">
-    <input id="q" type="search" placeholder="Type a trade: roof, AC, lawn, paint…" aria-label="Search by trade or business name" autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off">
+    <input id="q" type="search" placeholder="Trade, town, or owner's name" aria-label="Search by trade, town, business name or owner's name" autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off">
     <div class="countrow">
       <p class="count" id="count"></p>
       <button type="button" id="clear" hidden>Show all 32</button>
@@ -282,36 +282,69 @@ function near(v){
   return out;
 }
 
-function filter(){
-  const v = q.value.trim().toLowerCase();
-  if (clearBtn) clearBtn.hidden = !v;
-  if(!v){ render(MEMBERS); countEl.textContent = allLabel; return; }
-  const startsWord = new RegExp('(^|[^a-z0-9])' + reEsc(v));
+const STOP = {and:1,the:1,for:1,who:1,any:1,you:1,are:1,was:1,can:1,got:1,get:1,someone:1,somebody:1,anyone:1,anybody:1,need:1,needs:1,looking:1,know:1,good:1,best:1,near:1,around:1,recommend:1,with:1,that:1,this:1,does:1,guy:1,gal:1,lady:1,person:1,people:1};
+
+function rank(v){
+  var all = v.split(/[^a-z0-9]+/).filter(function(w){ return w.length > 2 || w === 'ac'; });
+  var words = all.filter(function(w){ return !STOP[w]; });
+  if (!words.length) words = all;
+
   const scored = [];
   MEMBERS.forEach(function(m){
     const trade = m.t.toLowerCase();
     const name  = m.n.toLowerCase();
+    const owner = (m.o || '').toLowerCase();
     const keys  = (m.k || '').toLowerCase().split(/\s+/);
     const hay   = (m.t + ' ' + m.n + ' ' + m.a + ' ' + (m.o||'') + ' ' + (m.k||'')).toLowerCase();
-    let s = 0;
-    if (keys.indexOf(v) !== -1)        s = 5;   // exact keyword, e.g. "ac"
-    else if (startsWord.test(trade))   s = 4;   // start of a word in the trade
-    else if (startsWord.test(name))    s = 3;   // start of a word in the name
-    else if (m.o && startsWord.test(m.o.toLowerCase())) s = 3;   // the owner's name
-    else if (startsWord.test(hay))     s = 2;   // start of a word anywhere
-    else if (v.length > 3 && hay.indexOf(v) !== -1) s = 1;  // loose, longer queries only
-    if (s > 0) scored.push({ m: m, s: s });
+    const toks  = hay.split(/[^a-z0-9]+/).filter(function(t){ return t.length > 3; });
+
+    var best = 0, hits = 0, tradeHit = 0;
+    words.forEach(function(w){
+      var sw = new RegExp('(^|[^a-z0-9])' + reEsc(w));
+      var s = 0;
+      if (sw.test(trade)) tradeHit = 1;              // tiebreak: what they actually do
+      if (keys.indexOf(w) !== -1)          s = 5;   // exact keyword, e.g. "ac"
+      else if (sw.test(trade))             s = 4;   // start of a word in the trade
+      else if (sw.test(name))              s = 3;   // start of a word in the name
+      else if (owner && sw.test(owner))    s = 3;   // the owner's name
+      else if (sw.test(hay))               s = 2;   // start of a word anywhere
+      else if (w.length > 3 && hay.indexOf(w) !== -1) s = 1;  // loose, longer queries only
+      else {
+        // compound typed as one word: "hairstylist" begins with "hair"
+        for (var i = 0; i < toks.length; i++){
+          if (w.length > toks[i].length && w.lastIndexOf(toks[i], 0) === 0){
+            s = 1;
+            if (trade.indexOf(toks[i]) !== -1) tradeHit = 1;
+            break;
+          }
+        }
+      }
+      if (s > 0){ hits++; if (s > best) best = s; }
+    });
+
+    if (hits > 0) scored.push({ m: m, s: best * 100 + tradeHit * 10 + hits });
   });
-  if(!scored.length){
-    var nr = near(v);
-    if(nr.length){
-      render(nr.map(function(x){ return x.m; }));
-      countEl.textContent = 'Nothing matched "' + q.value.trim() + '". Closest is "' + nr[0].w + '".';
-      return;
-    }
-  }
   scored.sort(function(a,b){ return b.s - a.s; });
-  render(scored.map(function(x){ return x.m; }));
+  return scored.map(function(x){ return x.m; });
+}
+
+function filter(){
+  const raw = q.value.trim();
+  const v = raw.toLowerCase();
+  if (clearBtn) clearBtn.hidden = !v;
+  if(!v){ render(MEMBERS); countEl.textContent = allLabel; return; }
+
+  const found = rank(v);
+  if(found.length){ render(found); return; }
+
+  var nr = near(v);
+  if(nr.length){
+    render(nr.map(function(x){ return x.m; }));
+    countEl.textContent = 'Nothing matched "' + raw + '". Closest is "' + nr[0].w + '".';
+    return;
+  }
+  render([]);
+  countEl.textContent = 'Nothing matched "' + raw + '". Try a trade, a town, or the owner’s name.';
 }
 
 const clearBtn = document.getElementById('clear');
