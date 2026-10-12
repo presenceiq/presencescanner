@@ -18,16 +18,29 @@
 // ---------------------------------------------------------------
 
 // Daily limits. Change a number here to raise or lower a cap.
+// 11 Oct 2026: scan 40 -> 80 and google 60 -> 200 for the Facebook push, with
+// email alerts at 80% and at the cap (see _alert.js).
 export const LIMITS = {
-  google:  { perIp: 10,  site: 60  },  // business lookups (places, findplace, resolveplace); a real scan uses 1 to 3
+  google:  { perIp: 10,  site: 200 },  // business lookups (places, findplace, resolveplace); a real scan uses 1 to 3
   mapsrank:{ perIp: 6,   site: 30  },  // Google Maps rank check
-  scan:    { perIp: 3,   site: 40  },  // full AI scans (the per-IP 3 matches the old limiter)
+  scan:    { perIp: 3,   site: 80  },  // full AI scans (the per-IP 3 matches the old limiter)
   advisor: { perIp: 25,  site: 200 },  // advisor chat messages (7 per visit) and the short search-phrase call
   aicheck: { perIp: 3,   site: 30  },  // AI assistant check (1 web search each)
   sab:     { perIp: 4,   site: 30  },  // second-chance lookup for hidden-address businesses (up to 2 Google searches each)
 };
 
+import { alertOnce } from './_alert.js';
+
 const DAY = 86400;
+
+// What each cap blocks, for the alert email. Maps rank and the AI check are
+// left out: when they hit their cap the report just skips that check.
+const WHAT = {
+  google:  'Business lookups. New visitors will see a "reached its limit for today" message instead of finding their business.',
+  scan:    'Full scans. New visitors will see a "reached its limit for today" message.',
+  advisor: 'Advisor chat replies.',
+  sab:     'The second-chance lookup for businesses that hide their address. Those businesses may be told we could not find their listing.',
+};
 
 function ipOf(req) {
   const xff = req.headers['x-forwarded-for'];
@@ -75,6 +88,17 @@ export async function spend(req, bucket) {
       }
     }
     const site = await incr('bg:' + bucket + ':site:' + today());
+    if (site !== null && WHAT[bucket]) {
+      if (site === Math.ceil(lim.site * 0.8)) {
+        await alertOnce('warn:' + bucket, 'PresenceScanner has used 80% of today\'s ' + bucket + ' limit',
+          'Today ' + site + ' of ' + lim.site + ' ' + bucket + ' calls are used. When the limit is reached, this stops: ' + WHAT[bucket] +
+          '\n\nThe limit resets at midnight UTC (8 PM Eastern). To raise it, change the number for ' + bucket + ' in api/_budget.js.');
+      } else if (site === lim.site + 1) {
+        await alertOnce('cap:' + bucket, 'PresenceScanner hit today\'s ' + bucket + ' limit',
+          'All ' + lim.site + ' ' + bucket + ' calls for today are used. This is now stopped: ' + WHAT[bucket] +
+          '\n\nThe limit resets at midnight UTC (8 PM Eastern). To raise it, change the number for ' + bucket + ' in api/_budget.js.');
+      }
+    }
     if (site !== null && site > lim.site) {
       console.error('Spending guard: site-wide daily cap reached for ' + bucket + ' (' + lim.site + ')');
       return { ok: false, message: 'PresenceScanner has reached its limit for today. Please try again tomorrow.' };
