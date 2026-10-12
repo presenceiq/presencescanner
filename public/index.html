@@ -364,7 +364,12 @@ async function callClaude(messages, maxTokens=3000, model=SCAN_MODEL, temperatur
     // scores more consistently run to run. (Round 3, 6 Oct 2026.)
     body:JSON.stringify(Object.assign({model:model, max_tokens:maxTokens, messages}, typeof temperature==="number"?{temperature:temperature}:{}))
   });
-  if(!res.ok){const t=await res.text();throw new Error("API "+res.status+": "+t.slice(0,200));}
+  if(!res.ok){
+    // Show the server's plain-English reason (daily limit, AI account down,
+    // busy), never raw error text. (11 Oct 2026)
+    const j=await res.json().catch(function(){ return {}; });
+    throw new Error((j&&typeof j.error==="string"&&j.error)||"Something went wrong with the scan. Please try again in a few minutes.");
+  }
   const d=await res.json();
   // Safety guard: if the response doesn't have a content array (e.g. the
   // API returned an error object instead of a normal message), fail with a
@@ -390,6 +395,9 @@ async function getCandidates(bizName, city, phone, website) {
     const j = await res.json().catch(function(){ return {}; });
     throw new Error(j.error || "PresenceScanner has reached its limit for today. Please try again tomorrow.");
   }
+  // Google itself refused (billing, key or quota): say so, instead of
+  // telling the owner we couldn't find their business. Michael is emailed.
+  if (res.status === 502) throw new Error("We couldn't reach Google to look up your business just now. We've been notified. Please try again later.");
   if (!res.ok) return null;
   try { return await res.json(); } catch { return null; }
 }
@@ -503,18 +511,20 @@ async function runLiveChecks(bizName, gbp, site, city){
 }
 function mapsRankLine(m){
   if (!m) return "";
-  if (m.rank) return "When someone searches Google Maps for “" + m.query + "”, this business comes up #" + m.rank + " of " + m.checked + ".";
+  // STEADY WORDING (11 Oct 2026): Google's order moves between runs, so the
+  // position number is left out; showing up or not is what holds steady.
+  if (m.rank) return "We searched Google Maps for “" + m.query + "”. This business showed up in the first " + m.checked + " results.";
   const names = (m.top || []).map(function(x){ return x.name; }).filter(Boolean);
-  return "When someone searches Google Maps for “" + m.query + "”, this business doesn't come up in the first " + m.checked + "." +
-    (names.length ? " The first results are " + names.join(", ") + "." : "");
+  return "We searched Google Maps for “" + m.query + "”. This business didn't show up in the first " + m.checked + " results." +
+    (names.length ? " This time the first results were " + names.join(", ") + "." : "");
 }
 function aiCheckLine(a){
   if (!a) return "";
   const ord = function(n){ return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : n + "th"; };
   const asked = "We asked an AI assistant (Claude, with live web search): “" + a.question + "”";
-  if (a.named) return asked + " It recommended this business " + ord(a.position) + " of " + a.count + ".";
-  if (!a.count) return asked + " It didn't recommend any specific business.";
-  return asked + " It didn't mention this business. It recommended " + a.names.join(", ") + ".";
+  if (a.named) return asked + " It named this business.";
+  if (!a.count) return asked + " It didn't name any specific business.";
+  return asked + " It didn't name this business. This time it named " + a.names.join(", ") + ".";
 }
 
 async function runScan(bizName, website, city, phone, gbp) {
@@ -1976,8 +1986,8 @@ function App(){
             basis:(results.sectionsTotal && results.sectionsScored < results.sectionsTotal)?("Based on "+results.sectionsScored+" of "+results.sectionsTotal+" sections."+(results.websiteUnreadable?" Website could not be read.":(results.noWebsite?" No website confirmed.":""))):"",
             components:comps,
             topIssues:issues,
-            aiCheck:results.aiCheck?(results.aiCheck.named?("named "+results.aiCheck.position+" of "+results.aiCheck.count):("not named; named "+(results.aiCheck.names||[]).join(", ")))+" for \""+results.aiCheck.question+"\"":"",
-            mapsRank:results.mapsRank?(results.mapsRank.rank?("#"+results.mapsRank.rank+" of "+results.mapsRank.checked):("not in first "+results.mapsRank.checked))+" for \""+results.mapsRank.query+"\"":"",
+            aiCheck:results.aiCheck?(results.aiCheck.named?"named":("not named; this time named "+(results.aiCheck.names||[]).join(", ")))+" for \""+results.aiCheck.question+"\"":"",
+            mapsRank:results.mapsRank?(results.mapsRank.rank?("showed up in first "+results.mapsRank.checked):("not in first "+results.mapsRank.checked))+" for \""+results.mapsRank.query+"\"":"",
             mine:isMine
           };
         leadBodyRef.current=leadBody;
@@ -2654,7 +2664,7 @@ function App(){
                   {results.mapsRank && (
                     <div style={{marginBottom:"10px"}}>
                       <b>📍 Google Maps:</b> {mapsRankLine(results.mapsRank)}
-                      {(results.mapsRank.top||[]).length > 0 && (
+                      {false && (results.mapsRank.top||[]).length > 0 && (
                         <ol style={{margin:"6px 0 0",paddingLeft:"20px",fontSize:"0.88rem",color:"var(--t2)"}}>
                           {results.mapsRank.top.map(function(x,i){ return (
                             <li key={i} style={x.isYou?{fontWeight:700,color:"var(--t1)"}:null}>{x.name}{x.isYou?" (you)":""}{x.rating!=null?(" · ★ "+x.rating):""}{x.reviews!=null?(" · "+x.reviews.toLocaleString()+" reviews"):""}</li>
@@ -2666,7 +2676,7 @@ function App(){
                   {results.aiCheck && (
                     <div style={{marginBottom:"6px"}}><b>🤖 AI assistant:</b> {aiCheckLine(results.aiCheck)}</div>
                   )}
-                  <div style={{fontSize:"0.8rem",color:"var(--t3)",marginTop:"4px"}}>Results change with the exact words used, where the person searching is, and from one AI to another. Each check was run once.</div>
+                  <div style={{fontSize:"0.8rem",color:"var(--t3)",marginTop:"4px"}}>Results change with the exact words used, where the person searching is, and from one AI to another. Each check was run once, and your score doesn't depend on them.</div>
                 </div>
               )}
               <p>{results.summary}</p>
