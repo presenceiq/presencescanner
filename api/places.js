@@ -1,5 +1,6 @@
 import { isSiteDisabled, disabledResponse } from './_killswitch.js';
 import { spend, refused } from './_budget.js';
+import { alertOnce } from './_alert.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -101,6 +102,9 @@ export default async function handler(req, res) {
     // other status (REQUEST_DENIED, INVALID_REQUEST, OVER_QUERY_LIMIT,
     // UNKNOWN_ERROR) is a Google-side failure we MUST NOT report as "not found."
     if (searchData.status && searchData.status !== 'OK' && searchData.status !== 'ZERO_RESULTS') {
+      await alertOnce('google-' + searchData.status, 'Business lookups are failing: Google returned ' + searchData.status,
+        'Google refused a business lookup with ' + searchData.status + (searchData.error_message ? ': ' + String(searchData.error_message).slice(0, 300) : '') +
+        '\n\nVisitors are told we could not reach Google. Check billing and the API key in Google Cloud.');
       return res.status(502).json({
         error: true,
         upstream: 'google-places-textsearch',
@@ -140,6 +144,9 @@ export default async function handler(req, res) {
 
     if (detailed.length === 0) {
       if (lastDetailError) {
+        await alertOnce('google-' + lastDetailError.googleStatus, 'Business lookups are failing: Google returned ' + lastDetailError.googleStatus,
+          'Google refused business details with ' + lastDetailError.googleStatus + (lastDetailError.googleErrorMessage ? ': ' + String(lastDetailError.googleErrorMessage).slice(0, 300) : '') +
+          '\n\nVisitors are told we could not reach Google. Check billing and the API key in Google Cloud.');
         return res.status(502).json({
           error: true,
           upstream: 'google-places-details',
