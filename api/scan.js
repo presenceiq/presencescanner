@@ -1,5 +1,6 @@
 import { isSiteDisabled, disabledResponse } from './_killswitch.js';
 import { spend, refused } from './_budget.js';
+import { alertOnce } from './_alert.js';
 
 // Only these models may be called through this endpoint, each with a ceiling
 // on reply length, so nobody can use it to run an expensive model or a huge
@@ -59,6 +60,23 @@ export default async function handler(req, res) {
     });
     clearTimeout(timeoutId);
     const data = await response.json();
+    // AI ACCOUNT PROBLEMS (11 Oct 2026). Anthropic answers with an error
+    // object, not a report. Say what's really wrong instead of "try again in
+    // a moment", and email Michael once a day.
+    if (!response.ok || (data && data.type === 'error')) {
+      const msg = String((data && data.error && data.error.message) || '');
+      if (/credit|usage limit|spend|billing|quota/i.test(msg)) {
+        await alertOnce('anthropic-credit', 'Scans are down: the AI account is out of credit or over its limit',
+          'Anthropic refused a scan with: ' + msg.slice(0, 300) + '\n\nScans stay down until the limit or credit is raised in the Anthropic console.');
+        return res.status(503).json({ error: "PresenceScanner can't run new scans right now. We've been notified and are fixing it. Please try again tomorrow." });
+      }
+      if (response.status === 529 || response.status === 503 || /overloaded/i.test(msg)) {
+        return res.status(503).json({ error: 'The AI service we use is busy right now. Please try again in a few minutes.' });
+      }
+      await alertOnce('anthropic-other', 'A scan failed with an AI service error',
+        'Status ' + response.status + ': ' + msg.slice(0, 300));
+      return res.status(502).json({ error: "The scan couldn't finish. Please try again in a few minutes." });
+    }
     return res.status(200).json(data);
   } catch (e) {
     clearTimeout(timeoutId);
@@ -67,7 +85,7 @@ export default async function handler(req, res) {
     if (e.name === 'AbortError') {
       return res.status(504).json({
         timeout: true,
-        error: 'The scan took too long and was stopped. Please try again — this is usually temporary.',
+        error: 'The scan took too long and was stopped. Please try again. This is usually temporary.',
       });
     }
     return res.status(500).json({ error: e.message });
