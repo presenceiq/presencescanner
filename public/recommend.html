@@ -198,16 +198,34 @@ function near(v){
 }
 var STOP={and:1,the:1,for:1,who:1,any:1,you:1,are:1,was:1,can:1,got:1,get:1,someone:1,somebody:1,anyone:1,anybody:1,need:1,needs:1,looking:1,know:1,good:1,best:1,near:1,around:1,recommend:1,with:1,that:1,this:1,does:1,guy:1,gal:1,lady:1,person:1,people:1};
 
+// Every word in a listing's own write-up is searchable, not just its keyword list.
+// Words that turn up in most listings are boilerplate, so they are left out.
+var BODYWORDS = (function(){
+  var df = {}, n = MEMBERS.length, per = [];
+  MEMBERS.forEach(function(m){
+    var seen = {}, got = [];
+    ((m.c||'') + ' ' + (m.d||'') + ' ' + (m.note||'')).toLowerCase()
+      .split(/[^a-z0-9]+/).forEach(function(w){
+        if (w.length > 3 && !seen[w]) { seen[w] = 1; got.push(w); df[w] = (df[w]||0) + 1; }
+      });
+    per.push(got);
+  });
+  return per.map(function(got){
+    return got.filter(function(w){ return df[w] <= n * 0.4; }).join(' ');
+  });
+})();
+
 function rank(v){
   var all=v.split(/[^a-z0-9]+/).filter(function(w){return w.length>2||w==='ac';});
   var words=all.filter(function(w){return !STOP[w];});
   if(!words.length) words=all;
   var scored=[];
-  MEMBERS.forEach(function(m){
+  MEMBERS.forEach(function(m, mi){
     var trade=m.t.toLowerCase(), name=m.n.toLowerCase(), owner=(m.o||'').toLowerCase();
     var keys=(m.k||'').toLowerCase().split(/\s+/);
-    var hay=(m.t+' '+m.n+' '+m.a+' '+(m.o||'')+' '+(m.k||'')).toLowerCase();
-    var toks=hay.split(/[^a-z0-9]+/).filter(function(t){return t.length>3;});
+    var core=(m.t+' '+m.n+' '+m.a+' '+(m.o||'')+' '+(m.k||'')).toLowerCase();
+    var hay=core+' '+BODYWORDS[mi];
+    var toks=core.split(/[^a-z0-9]+/).filter(function(t){return t.length>3;});
     var best=0, hits=0, tradeHit=0;
     words.forEach(function(w){
       var sw=new RegExp('(^|[^a-z0-9])'+reEsc(w));
