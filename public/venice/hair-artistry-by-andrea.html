@@ -43,7 +43,8 @@
   "sameAs": [
     "https://andreahairartistry.glossgenius.com/",
     "https://share.google/3gKOxHX7HoVwxn9mH",
-    "https://www.facebook.com/HairArtistrybyAndrea"
+    "https://www.facebook.com/share/1HuJFYq5yf/",
+    "https://www.instagram.com/andrea.hair.artistry"
   ],
   "areaServed": [
     "Port Charlotte, FL",
@@ -327,7 +328,7 @@
 
   <div class="card">
     <h2>Find them online</h2>
-    <div class="online-links"><a href="https://andreahairartistry.glossgenius.com/" target="_blank" rel="noopener">Book online</a><a href="https://share.google/3gKOxHX7HoVwxn9mH" target="_blank" rel="noopener">Find us on Google &rarr;</a><a href="https://www.facebook.com/HairArtistrybyAndrea" target="_blank" rel="noopener">Facebook</a></div>
+    <div class="online-links"><a href="https://andreahairartistry.glossgenius.com/" target="_blank" rel="noopener">Book online</a><a href="https://share.google/3gKOxHX7HoVwxn9mH" target="_blank" rel="noopener">Find us on Google &rarr;</a><a href="https://www.facebook.com/share/1HuJFYq5yf/" target="_blank" rel="noopener">Facebook</a><a href="https://www.instagram.com/andrea.hair.artistry" target="_blank" rel="noopener">Instagram</a></div>
   </div>
 
   <div class="ps-strip">
@@ -494,6 +495,7 @@ function copyShare(){
     else if (h.indexOf('myfloridalicense') > -1) send('licence_check', h);
     else if (h.indexOf('share.google') > -1 || h.indexOf('maps.app.goo.gl') > -1 || h.indexOf('g.page') > -1) send('google_profile', h);
     else if (h.indexOf('facebook.com') > -1) send('facebook', h);
+    else if (h.indexOf('instagram.com') > -1) send('instagram', h);
     else if (h.indexOf('presencescanner.ai') === -1 && h.indexOf('http') === 0) send('website', h);
   }, true);
 })();
