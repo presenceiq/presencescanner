@@ -1228,6 +1228,25 @@ function CatCard({cat}){
   );
 }
 
+/* Builds the intake form link with what the scan already knows filled in, so a
+   visitor who wants a free page does not retype what they just told us.
+   Business name and town come from what THEY typed on the scanner, so a wrong
+   Google match cannot contaminate them. Phone and the Google profile link come
+   from the lookup, and the form still asks them to confirm accuracy before it
+   submits. Falls back to the plain short link when there is nothing to fill. */
+function intakeUrl(results, bizName){
+  var BASE = "https://docs.google.com/forms/d/e/1FAIpQLScDrXqdaAHVU5-k_e6Nj7mSWdto1cPJb5HhnCoyBb9ydQx-pA/viewform";
+  var si = (results && results.scannedInputs) || {};
+  var g  = (results && results.gbp) || {};
+  var f = [];
+  function add(id, v){ if (v) f.push(id + "=" + encodeURIComponent(String(v).trim())); }
+  add("entry.2129064360", si.bizName || g.name || bizName);
+  add("entry.741664966",  si.city);
+  add("entry.450178600",  g.phone);
+  add("entry.1594329178", g.listingUrl || (g.placeId ? "https://www.google.com/maps/place/?q=place_id:" + g.placeId : ""));
+  return f.length ? (BASE + "?" + f.join("&")) : "https://forms.gle/9yzjCMDn3gUoxBNf7";
+}
+
 function AffCards({results,bizName,hasDirPage}){
   const cards=[];
   if(!results.hasWebsite){
@@ -1261,7 +1280,7 @@ function AffCards({results,bizName,hasDirPage}){
         <div style={{fontFamily:"var(--fh)",fontWeight:700,fontSize:"1.12rem",color:"var(--t1)",marginBottom:"7px"}}>Get a free listing on the PresenceScanner directory</div>
         <div style={{fontSize:"0.97rem",color:"var(--t2)",lineHeight:1.6,marginBottom:"14px"}}>A free page with your services, service area and real reviews, built from what you send in. A person reads it before it goes up, and you confirm it's accurate. Join the local businesses already listed.</div>
         <div style={{display:"flex",gap:"10px",flexWrap:"wrap"}}>
-          <a href="https://forms.gle/9yzjCMDn3gUoxBNf7" target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"12px 24px",background:"linear-gradient(135deg,var(--cyan),var(--purple))",color:"#fff",fontFamily:"var(--fh)",fontWeight:700,fontSize:"0.98rem",textDecoration:"none",borderRadius:"8px"}}>Get your free listing &rarr;</a>
+          <a href={intakeUrl(results,bizName)} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"12px 24px",background:"linear-gradient(135deg,var(--cyan),var(--purple))",color:"#fff",fontFamily:"var(--fh)",fontWeight:700,fontSize:"0.98rem",textDecoration:"none",borderRadius:"8px"}}>Get your free listing &rarr;</a>
           <a href="https://www.presencescanner.ai/directory" target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"12px 24px",background:"transparent",color:"var(--cyan)",fontFamily:"var(--fh)",fontWeight:700,fontSize:"0.98rem",textDecoration:"none",borderRadius:"8px",border:"2px solid var(--cyan)"}}>See the directory</a>
         </div>
       </div>
@@ -2703,7 +2722,7 @@ function App(){
                         <p className="scorecta-s">Get a free page in the local business directory, built to help more customers and AI search tools find you.</p>
                       </>
                     )}
-                    <a className="scorecta-btn" href="https://forms.gle/9yzjCMDn3gUoxBNf7" target="_blank" rel="noopener noreferrer">Get My Free Page →</a>
+                    <a className="scorecta-btn" href={intakeUrl(results,bizName)} target="_blank" rel="noopener noreferrer">Get My Free Page →</a>
                   </>
                 )}
                 <p style={{fontSize:"0.82rem",marginTop:"14px",opacity:0.7,lineHeight:1.6}}>Want to understand your results first?{" "}<a href="https://www.presencescanner.ai/get-found" style={{color:"var(--cyan)",fontWeight:600}}>How to get found in AI search</a>{" · "}<a href="https://www.presencescanner.ai/how-it-works" style={{color:"var(--cyan)",fontWeight:600}}>How the directory works</a></p></div>
