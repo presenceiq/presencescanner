@@ -1244,6 +1244,15 @@ function intakeUrl(results, bizName){
   add("entry.741664966",  si.city);
   add("entry.450178600",  g.phone);
   add("entry.1594329178", g.listingUrl || (g.placeId ? "https://www.google.com/maps/place/?q=place_id:" + g.placeId : ""));
+  /* The website question is a radio of yes / No / Other, and the address itself
+     belongs on the Other line, so it needs Google's other_option pattern rather
+     than a plain value. Left alone when the scan found no website, since the
+     question is required and they should answer it themselves. */
+  var site = si.website || g.website;
+  if (site) {
+    f.push("entry.293443332=__other_option__");
+    f.push("entry.293443332.other_option_response=" + encodeURIComponent(String(site).trim()));
+  }
   return f.length ? (BASE + "?" + f.join("&")) : "https://forms.gle/9yzjCMDn3gUoxBNf7";
 }
 
