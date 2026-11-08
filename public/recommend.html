@@ -171,14 +171,20 @@ function ed(a,b){
   }
   return prev[n];
 }
+// Punctuation inside a word joins it instead of splitting it, so "K&C" reads
+// as "kc" and "a/c" reads as "ac", on both sides of the search.
+// 7 Nov 2026: searching "k&c" found nothing. The ampersand split it into "k"
+// and "c", and single letters are thrown away, so it searched for nothing.
+function wsplit(s){ return String(s).toLowerCase().replace(/[&'’.\/]/g,'').split(/[^a-z0-9]+/).filter(Boolean); }
+
 function near(v){
-  var lim = v.length<=4 ? 1 : 2, out=[], seen={};
+  var vn = wsplit(v).join(''), lim = vn.length<=4 ? 1 : 2, out=[], seen={};
   MEMBERS.forEach(function(m){
-    var toks=(m.t+' '+m.n+' '+(m.o||'')+' '+(m.k||'')).toLowerCase().split(/[^a-z0-9]+/), hit=null;
+    var toks=wsplit(m.t+' '+m.n+' '+(m.o||'')+' '+(m.k||'')), hit=null;
     for(var i=0;i<toks.length;i++){
       var t=toks[i]; if(t.length<3) continue;
-      var d=ed(v,t);
-      if(d>lim && t.length>v.length) d=ed(v,t.slice(0,v.length));
+      var d=ed(vn,t);
+      if(d>lim && t.length>vn.length) d=ed(vn,t.slice(0,vn.length));
       if(d<=lim){ hit=t; break; }
     }
     if(hit && !seen[m.u]){ seen[m.u]=1; out.push({m:m,w:hit}); }
@@ -193,8 +199,8 @@ var BODYWORDS = (function(){
   var df = {}, n = MEMBERS.length, per = [];
   MEMBERS.forEach(function(m){
     var seen = {}, got = [];
-    ((m.c||'') + ' ' + (m.d||'') + ' ' + (m.note||'')).toLowerCase()
-      .split(/[^a-z0-9]+/).forEach(function(w){
+    wsplit((m.c||'') + ' ' + (m.d||'') + ' ' + (m.note||''))
+      .forEach(function(w){
         if (w.length > 3 && !seen[w]) { seen[w] = 1; got.push(w); df[w] = (df[w]||0) + 1; }
       });
     per.push(got);
@@ -205,21 +211,31 @@ var BODYWORDS = (function(){
 })();
 
 function rank(v){
-  var all=v.split(/[^a-z0-9]+/).filter(function(w){return w.length>2||w==='ac';});
+  var typed=wsplit(v);
+  // "k & c" typed with spaces around it: glue the single letters back together.
+  if(typed.length>1 && typed.every(function(w){return w.length===1;})) typed=[typed.join('')];
+  // A one or two word search may be an abbreviation, so 2 letters count there.
+  var min=typed.length<=2?2:3;
+  var all=typed.filter(function(w){return w.length>=min;});
   var words=all.filter(function(w){return !STOP[w];});
   if(!words.length) words=all;
   var scored=[];
   MEMBERS.forEach(function(m, mi){
-    var trade=m.t.toLowerCase(), name=m.n.toLowerCase(), owner=(m.o||'').toLowerCase();
-    var keys=(m.k||'').toLowerCase().split(/\s+/);
-    var core=(m.t+' '+m.n+' '+m.a+' '+(m.o||'')+' '+(m.k||'')).toLowerCase();
+    var trade=wsplit(m.t).join(' '), name=wsplit(m.n).join(' '), owner=wsplit(m.o||'').join(' ');
+    var keys=wsplit(m.k||'');
+    var core=wsplit(m.t+' '+m.n+' '+m.a+' '+(m.o||'')+' '+(m.k||'')).join(' ');
     var hay=core+' '+BODYWORDS[mi];
     var toks=core.split(/[^a-z0-9]+/).filter(function(t){return t.length>3;});
     var best=0, hits=0, tradeHit=0;
     words.forEach(function(w){
-      var sw=new RegExp('(^|[^a-z0-9])'+reEsc(w));
+      // A 2-letter search has to match a whole word, or "ac" hits "accordion".
+      // And it counts inside the trade for the tiebreak, so "ac" puts the HVAC
+      // man above the garage that also does car ac.
+      var sw=w.length<=2
+        ? new RegExp('(^|[^a-z0-9])'+reEsc(w)+'([^a-z0-9]|$)')
+        : new RegExp('(^|[^a-z0-9])'+reEsc(w));
       var s=0;
-      if(sw.test(trade)) tradeHit=1;
+      if(sw.test(trade) || (w.length<=2 && trade.indexOf(w)!==-1)) tradeHit=1;
       if(keys.indexOf(w)!==-1) s=5;
       else if(sw.test(trade)) s=4;
       else if(sw.test(name)) s=3;
