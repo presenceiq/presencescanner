@@ -1312,7 +1312,7 @@ function AffCards({results,bizName,hasDirPage}){
   const cards=[];
   if(!results.hasWebsite){
     // We found no website anywhere — the business may genuinely not have one yet.
-    cards.push({ico:"🌐",title:"Claim Your Domain",desc:"If you don't have a website yet, every business needs a web address. Search for yours before someone else takes it.",label:"Search Domains →",href:AFF.domain(bizName),note:"From ~$12/yr via GoDaddy"});
+    cards.push({ico:"🌐",title:"Get a Website of Your Own",desc:"Every business needs a web address of its own. One-page sites built by hand, with the address registered in your name so you own it from the first day.",label:"See what's included →",href:"https://www.presencescanner.ai/websites",note:"One payment, no monthly fee"});
   } else if(results.websiteMissingFromGBP){
     // Business has a website — it's just not listed on their Google profile.
     cards.push({ico:"🔗",title:"Add Your Website to Google",desc:"Your website isn't on your Google Business Profile, so customers searching Google can't click through. Free 2-minute fix in your Google dashboard.",label:"Open Google Business Profile →",href:"https://business.google.com/",note:"Free — about 2 minutes"});
