@@ -8,6 +8,18 @@
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-WD4QS0XK2C');
+  // Records a click on either Google Form, so a Facebook post or a page can
+  // finally be traced to somebody who actually went for it. The prefilled intake
+  // link carries the visitor's own business name and phone, so the address is
+  // deliberately NOT sent to Analytics. Added 9 November 2026.
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a) return;
+    var h = a.getAttribute('href') || '';
+    if (h.indexOf('1FAIpQLSf1Yjv7mu') !== -1) gtag('event', 'website_form_click');
+    else if (h.indexOf('forms.gle/9yzjCMDn3gUoxBNf7') !== -1) gtag('event', 'intake_form_click', { prefilled: false });
+    else if (h.indexOf('1FAIpQLScDrXqdaAHVU5') !== -1) gtag('event', 'intake_form_click', { prefilled: true });
+  }, true);
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Simple Books Bookkeeping, Sarasota FL | PresenceScanner</title>
