@@ -322,13 +322,6 @@ const AFF = {
   gbp: () => `https://business.google.com/create?utm_source=presenceiq`,
 };
 
-// ── FOUNDING-MEMBER WAITLIST ──────────────────────────────────────────
-// Honest scarcity: this number is the REAL count of claimed founding spots.
-// When a real spot is claimed, hand-edit FOUNDING_SPOTS_CLAIMED upward and
-// re-commit. Do NOT inflate it — fake urgency was explicitly rejected.
-const FOUNDING_SPOTS_CLAIMED = 0;
-const FOUNDING_SPOTS_TOTAL = 50;
-
 // ── BUG REPORT FORMSPREE FORM ID ──────────────────────────────────────
 // Where "Something off?" submissions go. To set up: log into Formspree,
 // create a new form named "PresenceScanner Bug Reports", copy its form
@@ -1358,87 +1351,6 @@ function AffCards({results,bizName,hasDirPage}){
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-
-function FoundingWaitlist(){
-  const [email,setEmail]=useState("");
-  const [state,setState]=useState("idle"); // idle | sending | done | error
-  const [errMsg,setErrMsg]=useState("");
-  const spotsLeft=FOUNDING_SPOTS_TOTAL-FOUNDING_SPOTS_CLAIMED;
-
-  async function claim(){
-    const e=email.trim();
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){
-      setState("error");setErrMsg("Please enter a valid email address.");return;
-    }
-    setState("sending");
-    try{
-      const res=await fetch("/api/subscribe",{
-        method:"POST",headers:HEADERS,
-        body:JSON.stringify({email:e,tag:"founding-member-waitlist"})
-      });
-      const data=await res.json().catch(()=>({}));
-      if(!res.ok){
-        setState("error");
-        setErrMsg(data.error||"Something went wrong. Please try again in a moment.");
-        return;
-      }
-      setState("done");
-    }catch(err){
-      setState("error");
-      setErrMsg("We couldn't reach the server. Please try again in a moment.");
-    }
-  }
-
-  return(
-    <div className="fw" id="jump-founding">
-      <span className="fw-beta">● Beta — Help Shape It</span>
-      <h3>Become a PresenceScanner Founding Member</h3>
-      <p className="fw-lead">
-        PresenceScanner is in beta. We're looking for a small group of business
-        owners to test it and tell us what works. As a thank-you for getting in
-        early, founding members lock in our lowest price — for as long as they
-        stay subscribed.
-      </p>
-      <div className="fw-offer">
-        <span className="fw-tag"><b>$19/mo</b> — locked forever</span>
-        <span className="fw-tag"><b>{FOUNDING_SPOTS_TOTAL}</b> founding-member spots</span>
-      </div>
-      <div className="fw-count">
-        <b>{FOUNDING_SPOTS_CLAIMED} of {FOUNDING_SPOTS_TOTAL}</b> spots claimed
-        {spotsLeft>0 ? ` — ${spotsLeft} still open` : " — full"}
-      </div>
-
-      {state==="done" ? (
-        <div className="fw-msg ok">
-          Almost there — check your email and click the confirmation link to
-          reserve your founding-member spot.
-        </div>
-      ) : (
-        <React.Fragment>
-          <div className="fw-row">
-            <input
-              type="email"
-              placeholder="your@email.com"
-              value={email}
-              onChange={e=>{setEmail(e.target.value);if(state==="error")setState("idle");}}
-              onKeyDown={e=>e.key==="Enter"&&state!=="sending"&&claim()}
-              disabled={state==="sending"}
-            />
-            <button onClick={claim} disabled={state==="sending"||!email.trim()}>
-              {state==="sending"?"Reserving…":"Reserve My Spot"}
-            </button>
-          </div>
-          {state==="error"&&<div className="fw-msg bad" style={{marginTop:"9px"}}>{errMsg}</div>}
-          <div className="fw-fine">
-            No payment and no card today — you're just reserving a spot. We'll
-            email you when founding membership opens.
-          </div>
-        </React.Fragment>
-      )}
     </div>
   );
 }
@@ -2816,7 +2728,7 @@ function App(){
               colored CTA box — the report's credibility stays the product.
               Results page only (never the picker, loading screen, or email). */}
           <p style={{fontSize:"0.9rem",lineHeight:1.7,color:"var(--t2)",textAlign:"center",maxWidth:600,margin:"28px auto 0",padding:"18px 16px 0",borderTop:"1px solid rgba(0,0,0,0.08)"}}>
-            This scanner is free and it stays free. If you want a <a href="https://www.presencescanner.ai/websites" style={{color:"var(--cyan)",textDecoration:"underline",fontWeight:500}}>one-page website built by hand</a>, I build those for $299. One payment, no monthly fee, and I buy the web address in your own name.
+            This scanner is free. If you want a <a href="https://www.presencescanner.ai/websites" style={{color:"var(--cyan)",textDecoration:"underline",fontWeight:500}}>one-page website built by hand</a>, I build those for $299. One payment, no monthly fee, and I buy the web address in your own name.
           </p>
           <SentimentStrip onTextFeedback={requestFeedback} voted={moodVoted} setVoted={setMoodVoted}/>
           <button className="rescan" onClick={reset}>← Scan Another Business</button>
