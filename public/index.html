@@ -1344,7 +1344,7 @@ function AffCards({results,bizName,hasDirPage}){
       )}
       {!results.hasWebsite && (
       <div style={{background:"linear-gradient(135deg,rgba(43,142,176,0.08),rgba(109,40,217,0.08))",border:"1px solid rgba(109,40,217,0.22)",borderRadius:"14px",padding:"20px 22px",marginBottom:"16px"}}>
-        <div style={{fontFamily:"var(--fh)",fontWeight:700,fontSize:"1.12rem",color:"var(--t1)",marginBottom:"7px"}}>Get a website of your own</div>
+        <div style={{fontFamily:"var(--fh)",fontWeight:700,fontSize:"1.12rem",color:"var(--t1)",marginBottom:"7px"}}>Get a website of your own, $299</div>
         <div style={{fontSize:"0.97rem",color:"var(--t2)",lineHeight:1.6,marginBottom:"14px"}}>Every business needs a web address of its own. One-page sites built by hand, with the address registered in your name so you own it from the first day. One payment, no monthly fee.</div>
         <div style={{display:"flex",gap:"10px",flexWrap:"wrap"}}>
           <a href="https://www.presencescanner.ai/websites" target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"12px 24px",background:"linear-gradient(135deg,var(--cyan),var(--purple))",color:"#fff",fontFamily:"var(--fh)",fontWeight:700,fontSize:"0.98rem",textDecoration:"none",borderRadius:"8px"}}>See what&rsquo;s included &rarr;</a>
@@ -2694,13 +2694,12 @@ function App(){
               <p>{results.summary}</p>
               {results.topPriority ? <div className="priority"><strong>Start here</strong>{results.topPriority}</div> : null}
               <div className="scorecta">
-                {hasDirPage==="yes" ? (
-                  <>
-                    <p className="scorecta-h">You're on the directory ✓</p>
-                    <p className="scorecta-s">Your directory page gives Google and AI a citable source for your business. Keep your details current and share your page link.</p>
-                    <a className="scorecta-btn" href="https://www.presencescanner.ai/directory" target="_blank" rel="noopener noreferrer">View the directory →</a>
-                  </>
-                ) : (
+                {/* A member used to get a "You're on the directory" block here AND an
+                    almost identical one down in Recommended Next Steps. Michael called
+                    the repetition out on 11 November 2026, so the member version is gone
+                    and only the one lower down survives. The non-member CTA below stays
+                    put: for a stranger this is the best spot on the page. */}
+                {hasDirPage==="yes" ? null : (
                   <>
                     {((results.mapsRank && results.mapsRank.rank) || (results.aiCheck && results.aiCheck.named)) ? (
                       <>
