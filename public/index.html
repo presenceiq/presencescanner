@@ -1303,10 +1303,13 @@ function intakeUrl(results, bizName){
 
 function AffCards({results,bizName,hasDirPage}){
   const cards=[];
-  if(!results.hasWebsite){
-    // We found no website anywhere — the business may genuinely not have one yet.
-    cards.push({ico:"🌐",title:"Get a Website of Your Own",desc:"Every business needs a web address of its own. One-page sites built by hand, with the address registered in your name so you own it from the first day.",label:"See what's included →",href:"https://www.presencescanner.ai/websites",note:"One payment, no monthly fee"});
-  } else if(results.websiteMissingFromGBP){
+  // The $299 website is Michael's own work and not a referral, so it does NOT
+  // belong in the affiliate grid below. It renders as its own block above the
+  // affiliate disclosure, beside the free directory offer. Moved 11 November
+  // 2026 on his instruction, after the card was found sitting directly under
+  // "Some of these are affiliate links. If you sign up, I may earn a small
+  // commission." Its copy is unchanged.
+  if(results.hasWebsite&&results.websiteMissingFromGBP){
     // Business has a website — it's just not listed on their Google profile.
     cards.push({ico:"🔗",title:"Add Your Website to Google",desc:"Your website isn't on your Google Business Profile, so customers searching Google can't click through. Free 2-minute fix in your Google dashboard.",label:"Open Google Business Profile →",href:"https://business.google.com/",note:"Free — about 2 minutes"});
   }
@@ -1337,6 +1340,23 @@ function AffCards({results,bizName,hasDirPage}){
           <a href={intakeUrl(results,bizName)} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"12px 24px",background:"linear-gradient(135deg,var(--cyan),var(--purple))",color:"#fff",fontFamily:"var(--fh)",fontWeight:700,fontSize:"0.98rem",textDecoration:"none",borderRadius:"8px"}}>Get your free listing &rarr;</a>
           <a href="https://www.presencescanner.ai/directory" target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"12px 24px",background:"transparent",color:"var(--cyan)",fontFamily:"var(--fh)",fontWeight:700,fontSize:"0.98rem",textDecoration:"none",borderRadius:"8px",border:"2px solid var(--cyan)"}}>See the directory</a>
         </div>
+      </div>
+      )}
+      {!results.hasWebsite && (
+      <div style={{background:"linear-gradient(135deg,rgba(43,142,176,0.08),rgba(109,40,217,0.08))",border:"1px solid rgba(109,40,217,0.22)",borderRadius:"14px",padding:"20px 22px",marginBottom:"16px"}}>
+        <div style={{fontFamily:"var(--fh)",fontWeight:700,fontSize:"1.12rem",color:"var(--t1)",marginBottom:"7px"}}>Get a website of your own</div>
+        <div style={{fontSize:"0.97rem",color:"var(--t2)",lineHeight:1.6,marginBottom:"14px"}}>Every business needs a web address of its own. One-page sites built by hand, with the address registered in your name so you own it from the first day. One payment, no monthly fee.</div>
+        <div style={{display:"flex",gap:"10px",flexWrap:"wrap"}}>
+          <a href="https://www.presencescanner.ai/websites" target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"12px 24px",background:"linear-gradient(135deg,var(--cyan),var(--purple))",color:"#fff",fontFamily:"var(--fh)",fontWeight:700,fontSize:"0.98rem",textDecoration:"none",borderRadius:"8px"}}>See what&rsquo;s included &rarr;</a>
+        </div>
+      </div>
+      )}
+      {!results.hasWebsite && (
+      <div style={{border:"1px solid var(--line)",borderRadius:"14px",padding:"20px 22px",marginBottom:"16px"}}>
+        <div style={{fontFamily:"var(--fh)",fontWeight:700,fontSize:"1.05rem",color:"var(--t1)",marginBottom:"9px"}}>Two different things, and it's worth knowing which does what.</div>
+        <div style={{fontSize:"0.97rem",color:"var(--t2)",lineHeight:1.65,marginBottom:"11px"}}>A directory listing is a page on <a href="https://www.presencescanner.ai/directory" target="_blank" rel="noopener noreferrer" style={{color:"var(--cyan)"}}>https://www.presencescanner.ai/directory</a>, my free local business directory. What it does is come up on Google when somebody searches your business by name. That's most of our members right now.</div>
+        <div style={{fontSize:"0.97rem",color:"var(--t2)",lineHeight:1.65,marginBottom:"11px"}}>A website is a page at your own web address, something like <a href="https://gogopaintingfl.com/" target="_blank" rel="noopener noreferrer" style={{color:"var(--cyan)"}}>https://gogopaintingfl.com/</a>, registered in your name with you holding the password. Nobody can take it away from you, including me.</div>
+        <div style={{fontSize:"0.97rem",color:"var(--t2)",lineHeight:1.65,marginBottom:0}}>Here's the part worth paying for. When somebody asks ChatGPT or Google's AI who to hire around here, those tools build the answer out of what they can read on a business's own website. I've watched them do it, and I've watched them walk straight past the directory page to do it. That's not an argument against your free listing. It's the reason a page of your own is worth $299.</div>
       </div>
       )}
       <div style={{fontSize:"0.8rem",color:"var(--t3)",lineHeight:1.5,marginBottom:"11px",paddingLeft:"2px"}}>Some of these are affiliate links. If you sign up, I may earn a small commission.</div>
