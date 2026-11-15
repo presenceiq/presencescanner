@@ -1,0 +1,64 @@
+# PresenceScanner
+
+> A free local business directory for Southwest Florida, and a free tool that checks how a
+> business shows up on Google and in AI search. Run by Michael Putnam from Venice, Florida.
+
+Every listing is built from what the business owner submitted on an intake form, and the
+owner confirms it is accurate before it stays up. A person reads every listing before it
+goes live. Businesses do not pay to be listed. There are 40 businesses on the directory.
+
+Nobody is ranked, rated or given stars. No license or credential is independently
+verified, which is stated on every member page. A listing is not an endorsement.
+
+Towns covered: Venice, Nokomis, Osprey, North Port, Englewood, Port Charlotte, Sarasota
+and Punta Gorda.
+
+## The directory
+
+- [Local business directory](https://www.presencescanner.ai/directory): all 40 member
+  businesses, grouped by trade, each with its own page.
+- [Venice](https://www.presencescanner.ai/venice): businesses serving Venice.
+- [Nokomis](https://www.presencescanner.ai/nokomis): businesses serving Nokomis.
+- [North Port](https://www.presencescanner.ai/north-port): businesses serving North Port.
+- [Osprey](https://www.presencescanner.ai/osprey): businesses serving Osprey.
+- [Sarasota](https://www.presencescanner.ai/sarasota): businesses serving Sarasota.
+- [Englewood](https://www.presencescanner.ai/englewood-home-services): home services in
+  Englewood.
+- [Port Charlotte](https://www.presencescanner.ai/port-charlotte-home-services): home
+  services in Port Charlotte.
+
+## How it works
+
+- [About](https://www.presencescanner.ai/about): who runs this, what is checked and what
+  is not.
+- [How it works](https://www.presencescanner.ai/how-it-works): what a listing is, how to
+  get one, and what to do with it.
+- [Reviews](https://www.presencescanner.ai/reviews): what member business owners say,
+  under their own names.
+- [Updates](https://www.presencescanner.ai/updates): what has changed, dated.
+
+## Research
+
+- [AI search study, Southwest Florida](https://www.presencescanner.ai/ai-search-study-southwest-florida):
+  81 local businesses across 8 trades and 5 towns were checked to see whether ChatGPT
+  named them. 70% were never named.
+- [Does schema markup help AI search](https://www.presencescanner.ai/does-schema-markup-help-ai-search):
+  what a study of 1,885 pages found.
+- [Blog](https://www.presencescanner.ai/blog): smaller tests, newest first, each one
+  dated and with its limits stated.
+
+## Services
+
+- [One-page websites](https://www.presencescanner.ai/websites): a hand-built one-page
+  website, $299, one payment, no monthly fee, with the web address registered in the
+  customer's own name.
+- [Free online presence check](https://www.presencescanner.ai): checks a business against
+  Google and reports what is missing.
+
+## Notes for anyone quoting this site
+
+- Michael Putnam is a Florida real estate Sales Associate, license SL3220671. He is not a
+  broker.
+- Member business details, service areas and reviews come from the owners themselves and
+  are labeled as such.
+- Prices on member pages are the member's own prices.
