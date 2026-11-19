@@ -494,6 +494,13 @@ function checkCity(gbp, typed){
 async function getSearchPhrase(bizName, gbp, site, city){
   const skipTypes = ["point_of_interest","establishment","store","food","premise","political","meal_takeaway","meal_delivery"];
   const cats = ((gbp && gbp.types) || []).filter(function(x){ return skipTypes.indexOf(x) === -1; }).map(function(x){ return String(x).replace(/_/g," "); });
+  // No categories and no website title leaves only the business name, and names
+  // lie: "Izzy's Dirty Dogs" is a mobile dog groomer, not a hot dog stand. On
+  // 19 Nov 2026 both live checks ran against "hot dog restaurant" and came back
+  // "not in the first 20" and "not named", which reads as a damning result when
+  // it is really the wrong question. An empty phrase makes the caller skip both
+  // checks, and a skipped check is honest.
+  if (!cats.length && !(site && site.fetched && site.title)) return { phrase: "", question: "" };
   // Words a real person doesn't search with (Google category jargon).
   const junk = /\b(takeaway|takeout|take out|delivery|meal|establishment|point of interest)\b/g;
   const clean = function(s){
