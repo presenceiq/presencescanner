@@ -211,7 +211,9 @@ export default async function handler(req, res) {
         score: scoreCandidate(detail),
         name: detail.name || null,
         rating: detail.rating || null,
-        reviewCount: detail.user_ratings_total || 0,
+        // Absent is not zero. A missing count stays null so the report says the
+        // review data could not be read, instead of "no reviews yet" (19 Nov 2026).
+        reviewCount: typeof detail.user_ratings_total === 'number' ? detail.user_ratings_total : null,
         address: detail.formatted_address || null,
         phone: detail.formatted_phone_number || null,
         website: detail.website || null,
