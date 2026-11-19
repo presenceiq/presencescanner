@@ -110,8 +110,7 @@ function shapeSab(p) {
     placeId: p.id,
     name: (p.displayName && p.displayName.text) || null,
     rating: typeof p.rating === 'number' ? p.rating : null,
-    // Absent is not zero. See the note in resolveplace.js (19 Nov 2026).
-    reviewCount: typeof p.userRatingCount === 'number' ? p.userRatingCount : null,
+    reviewCount: typeof p.userRatingCount === 'number' ? p.userRatingCount : 0,
     address: p.formattedAddress || null,
     phone: p.nationalPhoneNumber || p.internationalPhoneNumber || null,
     website: p.websiteUri || null,
@@ -157,7 +156,7 @@ function shape(placeId, d) {
     placeId: placeId,
     name: d.name || null,
     rating: d.rating || null,
-    reviewCount: typeof d.user_ratings_total === 'number' ? d.user_ratings_total : null,
+    reviewCount: d.user_ratings_total || 0,
     address: d.formatted_address || null,
     phone: d.formatted_phone_number || null,
     website: d.website || null,

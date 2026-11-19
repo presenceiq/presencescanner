@@ -46,10 +46,7 @@ export default async function handler(req, res) {
         placeId: pid,
         name: d.name || null,
         rating: d.rating || null,
-        // Absent is not zero. A missing count stays null so the report says the
-        // review data could not be read, instead of "no reviews yet". Izzy's Dirty
-        // Dogs scored 0 here on 19 Nov 2026 with 8 reviews live at 5.0 stars.
-        reviewCount: typeof d.user_ratings_total === 'number' ? d.user_ratings_total : null,
+        reviewCount: d.user_ratings_total || 0,
         address: d.formatted_address || null,
         phone: d.formatted_phone_number || null,
         website: d.website || null,
@@ -110,7 +107,7 @@ export default async function handler(req, res) {
       placeId,
       name: d.name || null,
       rating: d.rating || null,
-      reviewCount: typeof d.user_ratings_total === 'number' ? d.user_ratings_total : null,
+      reviewCount: d.user_ratings_total || 0,
       address: d.formatted_address || null,
       phone: d.formatted_phone_number || null,
       website: d.website || null,
