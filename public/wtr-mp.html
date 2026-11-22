@@ -213,7 +213,9 @@ function answerText(m, v){
   // "p" is the ISO answer: the business name and the phone, nothing else.
   // A name and a number is allowed in every group. A directory link is not.
   if(v==='p' && m.p) return m.n + ", " + m.p;
-  var t = fillCounts((v==='d' && m.d) ? m.d : m.c); return m.u ? (t + "\n\n" + m.u) : t;
+  var t = fillCounts((v==='d' && m.d) ? m.d : m.c);
+  if(m.p) t = t + "\n\n" + m.p;
+  return m.u ? (t + "\n\n" + m.u) : t;
 }
 
 function render(items){
@@ -245,7 +247,7 @@ function render(items){
           ? '<button class="copy" type="button" data-v="c">Copy for your own group</button>'
             + '<button class="copy alt" type="button" data-v="d">Copy for someone else&rsquo;s post</button>'
           : '<button class="copy" type="button" data-v="c">'+esc(m.btn||'Copy the comment')+'</button>'+ (m.btn2 ? '<button class="copy alt" type="button" data-v="d">'+esc(m.btn2)+'</button>' : ''))
-      + (m.p ? '<button class="copy alt" type="button" data-v="p">Copy name and phone</button>' : '')
+      + (m.p ? '<button class="copy alt" type="button" data-v="p">Copy without the link</button>' : '')
       + '<p class="preview">'+esc(answerText(m,'c'))+'</p>';
 
     const prev = card.querySelector('.preview');
