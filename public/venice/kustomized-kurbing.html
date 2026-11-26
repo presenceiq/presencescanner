@@ -318,15 +318,15 @@
     <a class="ps-btn" href="https://www.presencescanner.ai">Run your free check &rarr;</a> <div class="s" style="margin:14px 0 0;font-size:.92rem">Need your own website? I build one-page websites by hand. $299, one payment, with no monthly fee. <a href="https://www.presencescanner.ai/websites" style="color:var(--cyan);text-decoration:none;font-weight:600">See what that includes &rarr;</a></div>
   </div>
 
-  <details class="owner-zone">
+  <details class="owner-zone" id="share">
     <summary>Own this business? Tools to share your listing <span class="hint">Tap to open</span></summary>
 
   <div class="share-box">
     <div class="sh-h">Share your listing</div>
-    <div class="sh-s">Copy the message below and share it wherever your customers are. <strong>On Facebook, paste it in the first comment (not the post itself) so more people see it.</strong> Everywhere else, email, texts, your bio, just paste it normally.</div>
+    <div class="sh-s">Copy the message below and share it wherever your customers are. <strong>On Facebook, paste it straight into the post, not into a comment. The link builds a picture card with your business on it, and that only happens in the post.</strong> Everywhere else, email, texts, your bio, just paste it normally.</div>
     <textarea class="sh-msg" id="shareMsg" readonly>Need curbing, pavers or landscaping between Punta Gorda and Sarasota? Kustomized Kurbing have 20 years in and they'll tell you what not to do as readily as what to do: https://www.presencescanner.ai/venice/kustomized-kurbing
 
-Found through PresenceScanner, a free local business directory.</textarea>
+Listed on PresenceScanner, a free local business directory.</textarea>
     <div class="sh-btns">
       <button class="sh-copy" onclick="copyShare()">Copy message</button>
       <a class="sh-fb" href="https://www.facebook.com/groups/325910794902164/" target="_blank" rel="noopener">Open the North Port Business Network &rarr;</a>
@@ -380,6 +380,7 @@ Found through PresenceScanner, a free local business directory.</textarea>
     <div class="sh-done" id="webDone"></div>
     <p class="sh-why">One thing to get right either way: leave the word PresenceScanner as plain text and never make it part of the link. Search engines and AI tools pick up business names written in ordinary sentences, and a plain mention is worth more to you than the link itself. Making the name into the link is a pattern search engines treat with suspicion.</p>
   </div>
+  <script>(function(){if(location.hash!=="#share")return;var d=document.getElementById("share");if(d){d.open=true;setTimeout(function(){d.scrollIntoView();},0);}})();</script>
   </details>
 
   <footer>
